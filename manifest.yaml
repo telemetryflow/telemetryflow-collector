@@ -1,0 +1,109 @@
+# TelemetryFlow Collector - OpenTelemetry Collector Builder Manifest
+#
+# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+#
+# This manifest defines the components to include in the TelemetryFlow Collector
+# distribution based on OpenTelemetry Collector Community.
+#
+# Build with: ocb --config manifest.yaml
+
+dist:
+  name: tfo-collector-ocb
+  description: TelemetryFlow Collector OCB - Community Enterprise Observability Platform (CEOP)
+  output_path: ./build/ocb
+  module: github.com/telemetryflow/telemetryflow-collector-ocb
+  # Skip compilation - we build manually
+  skip_compilation: true
+
+# Extensions
+extensions:
+  # Health check extension
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.114.0
+
+# Receivers
+receivers:
+  # OTLP receiver (gRPC and HTTP)
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
+  # Host metrics receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.114.0
+  # File log receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.114.0
+  # Journald receiver (Linux systemd logs)
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.114.0
+  # Prometheus receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.114.0
+  # Kafka receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.114.0
+  # Docker stats receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.114.0
+  # Kubernetes cluster receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.114.0
+  # Kubernetes events receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.114.0
+  # Kubernetes objects receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.114.0
+  # Syslog receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.114.0
+  # TCP/UDP log receiver
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.114.0
+
+# Processors
+processors:
+  # Batch processor
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.114.0
+  # Memory limiter processor
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.114.0
+  # Attributes processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.114.0
+  # Resource processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.114.0
+  # Resource detection processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.114.0
+  # Filter processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.114.0
+  # Transform processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.114.0
+  # K8s attributes processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.114.0
+  # Tail sampling processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.114.0
+  # Probabilistic sampling processor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.114.0
+
+# Exporters
+exporters:
+  # OTLP exporter (gRPC)
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.114.0
+  # OTLP HTTP exporter
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.114.0
+  # Debug exporter (replaces deprecated loggingexporter)
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
+  # Kafka exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.114.0
+  # Prometheus exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.114.0
+  # Prometheus remote write exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.114.0
+  # Loki exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.114.0
+  # File exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.114.0
+  # Elasticsearch exporter
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.114.0
+
+# Connectors
+connectors:
+  # Forward connector
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.114.0
+  # Count connector
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.114.0
+  # Span metrics connector
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.114.0

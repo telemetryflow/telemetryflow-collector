@@ -1,0 +1,10 @@
+{
+  "status": "healthy",
+  "components": {
+    "receiver": "ok",
+    "processor": "ok",
+    "exporter": "ok"
+  },
+  "uptime": "5m30s",
+  "version": "1.0.0"
+}

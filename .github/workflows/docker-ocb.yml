@@ -1,0 +1,306 @@
+# =============================================================================
+# TelemetryFlow Collector - Docker Image Builder Workflow (OCB)
+# =============================================================================
+#
+# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+#
+# This workflow builds and publishes Docker images for TelemetryFlow Collector:
+# - Build Type: OCB (OpenTelemetry Collector Builder)
+# - Multi-platform support: linux/amd64, linux/arm64
+# - Semantic versioning tags
+# - GitHub Container Registry (ghcr.io)
+# - Docker Hub (optional)
+#
+# Triggers:
+# - Push tags matching v*.*.*-ocb
+# - Manual workflow dispatch
+#
+# For Standalone build, see docker-standalone.yml
+#
+# =============================================================================
+
+name: Docker Build (OCB)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*-ocb'
+    paths:
+      - 'Dockerfile.ocb'
+      - 'manifest.yaml'
+      - 'configs/ocb-collector.yaml'
+      - '.github/workflows/docker-ocb.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., 1.0.0)'
+        required: false
+        default: ''
+      otel_version:
+        description: 'OpenTelemetry version (e.g., 0.114.0)'
+        required: false
+        default: '0.114.0'
+      push:
+        description: 'Push images to registry'
+        required: false
+        type: boolean
+        default: true
+      platforms:
+        description: 'Target platforms'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+
+env:
+  REGISTRY_GHCR: ghcr.io
+  REGISTRY_DOCKER: docker.io
+  IMAGE_NAME: telemetryflow/telemetryflow-collector-ocb
+  PRODUCT_NAME: TelemetryFlow Collector
+  BUILD_TYPE: ocb
+  OTEL_VERSION: '0.114.0'
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  # ===========================================================================
+  # Prepare Build Context
+  # ===========================================================================
+  prepare:
+    name: Prepare Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      commit: ${{ steps.info.outputs.commit }}
+      branch: ${{ steps.info.outputs.branch }}
+      build_time: ${{ steps.info.outputs.build_time }}
+      otel_version: ${{ steps.info.outputs.otel_version }}
+      push: ${{ steps.check.outputs.push }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get build info
+        id: info
+        run: |
+          echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+          echo "build_time=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+          # Determine OTEL version
+          if [ "${{ github.event.inputs.otel_version }}" != "" ]; then
+            echo "otel_version=${{ github.event.inputs.otel_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "otel_version=${{ env.OTEL_VERSION }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if should push
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "push=${{ github.event.inputs.push }}" >> $GITHUB_OUTPUT
+          else
+            echo "push=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/telemetryflow-collector-ocb
+            ${{ env.REGISTRY_DOCKER }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+          tags: |
+            # Semantic versioning from tags (strip -ocb suffix)
+            type=match,pattern=v(.*)-ocb,group=1,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=semver,pattern={{version}},suffix=-ocb
+            type=semver,pattern={{major}}.{{minor}},suffix=-ocb
+            type=semver,pattern={{major}},suffix=-ocb
+            # Manual version input
+            type=raw,value=${{ github.event.inputs.version }}-ocb,enable=${{ github.event.inputs.version != '' }}
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            # OCB latest
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=ocb,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            # Git SHA
+            type=sha,prefix=sha-,format=short,suffix=-ocb
+          labels: |
+            org.opencontainers.image.title=${{ env.PRODUCT_NAME }} (OCB)
+            org.opencontainers.image.description=OpenTelemetry Collector built with OCB for TelemetryFlow platform
+            org.opencontainers.image.vendor=TelemetryFlow
+            io.telemetryflow.product=${{ env.PRODUCT_NAME }}
+            io.telemetryflow.component=tfo-collector-ocb
+            io.telemetryflow.platform=CEOP
+            io.telemetryflow.build.type=ocb
+
+  # ===========================================================================
+  # Build and Push Docker Image
+  # ===========================================================================
+  build:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: needs.prepare.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: needs.prepare.outputs.push == 'true' && vars.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKER }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            VERSION="${VERSION%-ocb}"
+          else
+            VERSION="${{ needs.prepare.outputs.commit }}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.ocb
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: ${{ needs.prepare.outputs.push == 'true' }}
+          tags: ${{ needs.prepare.outputs.tags }}
+          labels: ${{ needs.prepare.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            GIT_COMMIT=${{ needs.prepare.outputs.commit }}
+            GIT_BRANCH=${{ needs.prepare.outputs.branch }}
+            BUILD_TIME=${{ needs.prepare.outputs.build_time }}
+            OTEL_VERSION=${{ needs.prepare.outputs.otel_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Generate SBOM
+        if: needs.prepare.outputs.push == 'true'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/telemetryflow-collector-ocb:${{ steps.version.outputs.version }}
+          format: spdx-json
+          output-file: sbom-ocb-${{ steps.version.outputs.version }}.spdx.json
+
+      - name: Upload SBOM
+        if: needs.prepare.outputs.push == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-ocb-${{ steps.version.outputs.version }}
+          path: sbom-*.spdx.json
+          retention-days: 90
+
+  # ===========================================================================
+  # Security Scan
+  # ===========================================================================
+  scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    if: needs.prepare.outputs.push == 'true'
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/telemetryflow-collector-ocb:sha-${{ needs.prepare.outputs.commit }}-ocb
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Docker Build Summary (OCB)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Product** | ${{ env.PRODUCT_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Type** | OCB (OpenTelemetry Collector Builder) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **OTEL Version** | ${{ needs.prepare.outputs.otel_version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | ${{ needs.prepare.outputs.commit }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ needs.prepare.outputs.branch }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Time** | ${{ needs.prepare.outputs.build_time }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Push** | ${{ needs.prepare.outputs.push }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ needs.prepare.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# GitHub Container Registry" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/telemetryflow-collector-ocb:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Docker Hub" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Run OCB collector (note: uses --config, not 'start --config')" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --name tfo-collector-ocb \\" >> $GITHUB_STEP_SUMMARY
+          echo "  -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \\" >> $GITHUB_STEP_SUMMARY
+          echo "  ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### CLI Difference" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Type | Command |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Standalone | \`tfo-collector start --config config.yaml\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| OCB | \`tfo-collector --config config.yaml\` |" >> $GITHUB_STEP_SUMMARY

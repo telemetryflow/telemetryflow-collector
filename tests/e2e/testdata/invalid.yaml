@@ -1,0 +1,22 @@
+collector:
+  id: "test-collector"
+
+receivers:
+  otlp:
+    enabled: false
+  prometheus:
+    enabled: false
+
+processors:
+  batch:
+    enabled: true
+
+exporters:
+  logging:
+    enabled: true
+
+pipelines:
+  metrics:
+    receivers: []
+    processors: [batch]
+    exporters: [logging]

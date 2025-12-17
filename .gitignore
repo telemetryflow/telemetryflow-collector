@@ -1,0 +1,52 @@
+# TelemetryFlow Collector - Git Ignore
+
+# Build artifacts
+/build/*
+!/build/.gitkeep
+/dist/
+
+# Generated files (from OCB)
+/build/go.mod
+/build/go.sum
+/build/main.go
+/build/components.go
+
+# Binaries
+tfo-collector
+tfo-collector.exe
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Local configuration overrides
+configs/local*.yaml
+configs/*.local.yaml
+
+# Secrets (never commit)
+*.key
+*.pem
+*.crt
+secrets/

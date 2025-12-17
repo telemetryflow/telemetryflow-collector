@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  tfo-collector-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+      - "13133:13133"
+    volumes:
+      - ./tests/e2e/testdata/minimal.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:13133/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - e2e-test
+
+  mock-backend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    networks:
+      - e2e-test
+
+networks:
+  e2e-test:
+    driver: bridge

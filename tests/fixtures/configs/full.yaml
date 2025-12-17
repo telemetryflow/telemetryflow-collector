@@ -1,0 +1,96 @@
+collector:
+  id: "full-test-collector"
+  hostname: "test-host"
+  description: "Complete test configuration"
+  tags:
+    environment: "test"
+    datacenter: "dc1"
+
+receivers:
+  otlp:
+    enabled: true
+    protocols:
+      grpc:
+        enabled: true
+        endpoint: "0.0.0.0:4317"
+        max_recv_msg_size_mib: 4
+        max_concurrent_streams: 100
+        tls:
+          enabled: false
+      http:
+        enabled: true
+        endpoint: "0.0.0.0:4318"
+        max_request_body_size: 10485760
+        cors:
+          allowed_origins: ["*"]
+          allowed_headers: ["*"]
+  prometheus:
+    enabled: true
+    scrape_configs:
+      - job_name: "test-job"
+        scrape_interval: 15s
+        static_configs:
+          - targets: ["localhost:9100"]
+
+processors:
+  batch:
+    enabled: true
+    send_batch_size: 8192
+    timeout: 200ms
+  memory_limiter:
+    enabled: true
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  attributes:
+    enabled: true
+    actions:
+      - key: "environment"
+        action: "insert"
+        value: "test"
+
+exporters:
+  otlp:
+    enabled: true
+    endpoint: "backend:4317"
+    compression: "gzip"
+  prometheus:
+    enabled: true
+    endpoint: "0.0.0.0:8889"
+  logging:
+    enabled: true
+    loglevel: "info"
+  file:
+    enabled: true
+    path: "/tmp/test-output.json"
+    format: "json"
+
+pipelines:
+  metrics:
+    receivers: [otlp, prometheus]
+    processors: [memory_limiter, attributes, batch]
+    exporters: [otlp, prometheus, logging, file]
+  logs:
+    receivers: [otlp]
+    processors: [memory_limiter, batch]
+    exporters: [otlp, logging, file]
+  traces:
+    receivers: [otlp]
+    processors: [memory_limiter, batch]
+    exporters: [otlp, logging, file]
+
+extensions:
+  health_check:
+    enabled: true
+    endpoint: "0.0.0.0:13133"
+    path: "/"
+  zpages:
+    enabled: true
+    endpoint: "0.0.0.0:55679"
+  pprof:
+    enabled: true
+    endpoint: "0.0.0.0:1777"
+
+logging:
+  level: "debug"
+  format: "json"
+  development: true

@@ -1,0 +1,35 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "host.name", "value": {"stringValue": "test-host"}},
+          {"key": "service.name", "value": {"stringValue": "test-service"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test-tracer",
+            "version": "1.0.0"
+          },
+          "spans": [
+            {
+              "traceId": "0102030405060708090a0b0c0d0e0f10",
+              "spanId": "0102030405060708",
+              "parentSpanId": "",
+              "name": "test-span",
+              "kind": 1,
+              "startTimeUnixNano": "1640995199000000000",
+              "endTimeUnixNano": "1640995200000000000",
+              "status": {
+                "code": 1,
+                "message": ""
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

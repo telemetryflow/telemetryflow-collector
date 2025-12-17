@@ -1,0 +1,110 @@
+# =============================================================================
+# TelemetryFlow Collector - Docker Compose (Standalone Build)
+# =============================================================================
+#
+# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+#
+# This docker-compose uses the STANDALONE build (Dockerfile)
+# For OCB build, use docker-compose.ocb.yml
+#
+# Usage:
+#   # Start with default .env
+#   docker-compose up -d
+#
+#   # Build and start
+#   docker-compose up -d --build
+#
+#   # View logs
+#   docker-compose logs -f tfo-collector
+#
+#   # Stop
+#   docker-compose down
+#
+# =============================================================================
+
+services:
+  tfo-collector:
+    container_name: ${CONTAINER_NAME:-tfo-collector}
+    image: ${IMAGE_NAME:-telemetryflow/tfo-collector}:${IMAGE_TAG:-1.0.0}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-1.0.0}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-main}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    hostname: ${COLLECTOR_ID:-tfo-collector}
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      - TELEMETRYFLOW_API_ENDPOINT=${TELEMETRYFLOW_API_ENDPOINT:-http://localhost:3100}
+      - TELEMETRYFLOW_TENANT_ID=${TELEMETRYFLOW_TENANT_ID:-default}
+      - TELEMETRYFLOW_WORKSPACE_ID=${TELEMETRYFLOW_WORKSPACE_ID:-default}
+      - OTLP_EXPORTER_ENDPOINT=${OTLP_EXPORTER_ENDPOINT:-}
+      - LOKI_ENDPOINT=${LOKI_ENDPOINT:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+    # Port mappings
+    ports:
+      - "${OTLP_GRPC_PORT:-4317}:4317"               # OTLP gRPC
+      - "${OTLP_HTTP_PORT:-4318}:4318"               # OTLP HTTP
+      - "${METRICS_PORT:-8888}:8888"                 # Prometheus metrics (self)
+      - "${PROMETHEUS_EXPORTER_PORT:-8889}:8889"    # Prometheus exporter
+      - "${HEALTH_PORT:-13133}:13133"                # Health check
+      - "${ZPAGES_PORT:-55679}:55679"                # zPages
+      - "${PPROF_PORT:-1777}:1777"                   # pprof
+
+    # Volume mounts
+    volumes:
+      - ./configs/tfo-collector.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
+      - tfo-collector-queue:/var/lib/tfo-collector
+      - tfo-collector-logs:/var/log/tfo-collector
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:13133/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-2G}
+          cpus: "${CPU_LIMIT:-2.0}"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    # Network
+    networks:
+      - telemetryflow
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  tfo-collector-queue:
+    driver: local
+  tfo-collector-logs:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  telemetryflow:
+    driver: bridge
+    name: telemetryflow-network

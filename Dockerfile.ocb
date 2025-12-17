@@ -1,0 +1,186 @@
+# =============================================================================
+# TelemetryFlow Collector - Dockerfile.ocb (OCB Build)
+# =============================================================================
+#
+# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# =============================================================================
+# OCB Build: Standard OpenTelemetry Collector built with OCB
+# =============================================================================
+#
+# This Dockerfile builds the OCB (OpenTelemetry Collector Builder) version:
+#   - Standard OTEL CLI (--config flag)
+#   - Standard OTEL configuration format (no `enabled` flags)
+#   - Full OpenTelemetry ecosystem compatibility
+#   - Components defined in manifest.yaml
+#
+# For standalone build with TelemetryFlow branding, use Dockerfile
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Builder
+# -----------------------------------------------------------------------------
+FROM golang:1.24-alpine AS builder
+
+# Build arguments
+ARG VERSION=1.0.0
+ARG GIT_COMMIT=unknown
+ARG GIT_BRANCH=unknown
+ARG BUILD_TIME=unknown
+ARG OTEL_VERSION=0.114.0
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    make \
+    ca-certificates \
+    tzdata \
+    curl
+
+# Set working directory
+WORKDIR /build
+
+# Install OCB (OpenTelemetry Collector Builder)
+RUN go install go.opentelemetry.io/collector/cmd/builder@v${OTEL_VERSION}
+
+# Copy manifest
+COPY manifest.yaml .
+
+# Generate collector code with OCB
+RUN builder --config manifest.yaml
+
+# Build OCB binary
+WORKDIR /build/build/ocb
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-s -w" \
+    -o /tfo-collector-ocb .
+
+# -----------------------------------------------------------------------------
+# Stage 2: Runtime
+# -----------------------------------------------------------------------------
+FROM alpine:3.21
+
+# Build arguments for labels
+ARG VERSION=1.0.0
+ARG OTEL_VERSION=0.114.0
+
+# =============================================================================
+# TelemetryFlow Metadata Labels (OCI Image Spec) - OCB Build
+# =============================================================================
+LABEL org.opencontainers.image.title="TelemetryFlow Collector (OCB)" \
+      org.opencontainers.image.description="OpenTelemetry Collector built with OCB - Community Enterprise Observability Platform (CEOP)" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.vendor="TelemetryFlow" \
+      org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
+      org.opencontainers.image.url="https://telemetryflow.id" \
+      org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
+      org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.base.name="alpine:3.21" \
+      # TelemetryFlow specific labels
+      io.telemetryflow.product="TelemetryFlow Collector" \
+      io.telemetryflow.component="tfo-collector-ocb" \
+      io.telemetryflow.platform="CEOP" \
+      io.telemetryflow.build.type="ocb" \
+      io.telemetryflow.otel.version="${OTEL_VERSION}" \
+      io.telemetryflow.maintainer="DevOpsCorner Indonesia"
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user and group
+RUN addgroup -g 10001 -S telemetryflow && \
+    adduser -u 10001 -S telemetryflow -G telemetryflow -h /home/telemetryflow
+
+# Create required directories
+RUN mkdir -p \
+    /etc/tfo-collector \
+    /var/lib/tfo-collector/queue \
+    /var/log/tfo-collector \
+    && chown -R telemetryflow:telemetryflow \
+    /etc/tfo-collector \
+    /var/lib/tfo-collector \
+    /var/log/tfo-collector
+
+# Copy binary from builder
+COPY --from=builder /tfo-collector-ocb /usr/local/bin/tfo-collector
+RUN chmod +x /usr/local/bin/tfo-collector
+
+# Copy OCB configuration (standard OTEL format)
+COPY configs/ocb-collector.yaml /etc/tfo-collector/collector.yaml
+RUN chown telemetryflow:telemetryflow /etc/tfo-collector/collector.yaml
+
+# Switch to non-root user
+USER telemetryflow
+
+# Set working directory
+WORKDIR /home/telemetryflow
+
+# =============================================================================
+# Exposed Ports
+# =============================================================================
+# 4317  - OTLP gRPC receiver
+# 4318  - OTLP HTTP receiver
+# 8888  - Prometheus metrics (self-observability)
+# 8889  - Prometheus exporter
+# 13133 - Health check endpoint
+# 55679 - zPages debugging
+# 1777  - pprof profiling
+EXPOSE 4317 4318 8888 8889 13133 55679 1777
+
+# =============================================================================
+# Health Check
+# =============================================================================
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:13133/ || exit 1
+
+# =============================================================================
+# Entrypoint & Command (standard OTEL format)
+# =============================================================================
+ENTRYPOINT ["/usr/local/bin/tfo-collector"]
+CMD ["--config", "/etc/tfo-collector/collector.yaml"]
+
+# =============================================================================
+# Build Information
+# =============================================================================
+# Build with:
+#   docker build \
+#     -f Dockerfile.ocb \
+#     --build-arg VERSION=1.0.0 \
+#     --build-arg OTEL_VERSION=0.114.0 \
+#     -t telemetryflow/tfo-collector-ocb:1.0.0 .
+#
+# Run with:
+#   docker run -d \
+#     --name tfo-collector-ocb \
+#     -p 4317:4317 \
+#     -p 4318:4318 \
+#     -p 8888:8888 \
+#     -p 13133:13133 \
+#     -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
+#     telemetryflow/tfo-collector-ocb:1.0.0
+#
+# Validate config:
+#   docker run --rm \
+#     -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
+#     telemetryflow/tfo-collector-ocb:1.0.0 \
+#     validate --config /etc/tfo-collector/collector.yaml
+# =============================================================================
