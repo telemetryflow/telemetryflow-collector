@@ -48,7 +48,7 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all build build-all clean test test-unit test-integration test-e2e test-all test-coverage test-script test-short lint lint-fix help install-ocb generate run docker build-standalone run-standalone test-standalone tidy
+.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage test-script test-short lint lint-fix fmt vet help install-ocb generate run docker build-standalone run-standalone test-standalone tidy deps deps-update install uninstall validate-config
 
 # Default target: build standalone (uses internal packages directly)
 all: build-standalone
@@ -75,7 +75,11 @@ help:
 	@echo "  make generate         - Generate collector code using OCB"
 	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME_OCB) --config configs/ocb-collector.yaml"
 	@echo ""
-	@echo "$(YELLOW)Common:$(NC)"
+	@echo "$(YELLOW)Platform Builds:$(NC)"
+	@echo "  make build-linux      - Build for Linux (amd64 and arm64)"
+	@echo "  make build-darwin     - Build for macOS (amd64 and arm64)"
+	@echo ""
+	@echo "$(YELLOW)Testing:$(NC)"
 	@echo "  make test             - Run unit and integration tests"
 	@echo "  make test-unit        - Run unit tests only"
 	@echo "  make test-integration - Run integration tests only"
@@ -84,9 +88,23 @@ help:
 	@echo "  make test-coverage    - Generate coverage reports"
 	@echo "  make test-script      - Run test script"
 	@echo "  make test-short       - Run short tests"
+	@echo ""
+	@echo "$(YELLOW)Code Quality:$(NC)"
 	@echo "  make lint             - Run linters"
 	@echo "  make lint-fix         - Run linters with auto-fix"
+	@echo "  make fmt              - Format code"
+	@echo "  make vet              - Run go vet"
+	@echo ""
+	@echo "$(YELLOW)Dependencies:$(NC)"
+	@echo "  make deps             - Download dependencies"
+	@echo "  make deps-update      - Update dependencies"
+	@echo "  make tidy             - Tidy go modules"
+	@echo ""
+	@echo "$(YELLOW)Other:$(NC)"
 	@echo "  make clean            - Clean build artifacts"
+	@echo "  make install          - Install binary to /usr/local/bin"
+	@echo "  make uninstall        - Uninstall binary"
+	@echo "  make validate-config  - Validate configuration file"
 	@echo "  make docker           - Build Docker image"
 	@echo "  make version          - Show version information"
 	@echo ""
@@ -135,6 +153,22 @@ build-all: generate
 	done
 	@echo "$(GREEN)All builds complete in $(DIST_DIR)$(NC)"
 
+# Build standalone for Linux
+build-linux:
+	@echo "$(GREEN)Building $(BINARY_NAME) for Linux...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/tfo-collector
+	@GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/tfo-collector
+	@echo "$(GREEN)Linux builds complete$(NC)"
+
+# Build standalone for macOS
+build-darwin:
+	@echo "$(GREEN)Building $(BINARY_NAME) for macOS...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/tfo-collector
+	@GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/tfo-collector
+	@echo "$(GREEN)macOS builds complete$(NC)"
+
 # Run the OCB collector locally
 run: build
 	@echo "$(GREEN)Starting $(BINARY_NAME_OCB)...$(NC)"
@@ -146,7 +180,7 @@ run-debug: build
 	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/ocb-collector.yaml --set=service.telemetry.logs.level=debug
 
 # Validate OCB configuration
-validate-config: build
+validate-config-ocb: build
 	@echo "$(GREEN)Validating OCB configuration...$(NC)"
 	@$(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/ocb-collector.yaml
 
@@ -183,14 +217,30 @@ test-short:
 	@echo "$(GREEN)Running short tests...$(NC)"
 	@./scripts/test.sh short
 
-# Linting
+# Code quality
 lint:
 	@echo "$(GREEN)Running linters...$(NC)"
-	@golangci-lint run ./...
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run ./...; \
+	else \
+		echo "$(YELLOW)golangci-lint not installed, skipping...$(NC)"; \
+	fi
 
 lint-fix:
 	@echo "$(GREEN)Running linters with auto-fix...$(NC)"
-	@golangci-lint run --fix ./...
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --fix ./...; \
+	else \
+		echo "$(YELLOW)golangci-lint not installed, skipping...$(NC)"; \
+	fi
+
+fmt:
+	@echo "$(GREEN)Formatting code...$(NC)"
+	@go fmt ./...
+
+vet:
+	@echo "$(GREEN)Running go vet...$(NC)"
+	@go vet ./...
 
 # Clean build artifacts
 clean:
@@ -273,8 +323,36 @@ test-standalone:
 	@echo "$(GREEN)Running standalone tests...$(NC)"
 	@go test -v ./...
 
-# Tidy go modules
+# Dependencies
+deps:
+	@echo "$(GREEN)Downloading dependencies...$(NC)"
+	@go mod download
+	@go mod tidy
+	@echo "$(GREEN)Dependencies downloaded$(NC)"
+
+deps-update:
+	@echo "$(GREEN)Updating dependencies...$(NC)"
+	@go get -u ./...
+	@go mod tidy
+	@echo "$(GREEN)Dependencies updated$(NC)"
+
 tidy:
 	@echo "$(GREEN)Tidying go modules...$(NC)"
 	@go mod tidy
 	@echo "$(GREEN)Go modules tidied$(NC)"
+
+# Installation
+install: build-standalone
+	@echo "$(GREEN)Installing $(BINARY_NAME) to /usr/local/bin...$(NC)"
+	@sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
+	@echo "$(GREEN)Installed successfully$(NC)"
+
+uninstall:
+	@echo "$(GREEN)Removing $(BINARY_NAME) from /usr/local/bin...$(NC)"
+	@sudo rm -f /usr/local/bin/$(BINARY_NAME)
+	@echo "$(GREEN)Uninstalled successfully$(NC)"
+
+# Configuration
+validate-config: build-standalone
+	@echo "$(GREEN)Validating configuration...$(NC)"
+	@$(BUILD_DIR)/$(BINARY_NAME) validate --config $(CONFIG_DIR)/tfo-collector.yaml
