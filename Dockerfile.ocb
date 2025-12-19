@@ -60,6 +60,9 @@ RUN go install go.opentelemetry.io/collector/cmd/builder@v${OTEL_VERSION}
 # Copy manifest
 COPY manifest.yaml .
 
+# Create output directory for OCB
+RUN mkdir -p ./build/ocb
+
 # Generate collector code with OCB
 RUN builder --config manifest.yaml
 
