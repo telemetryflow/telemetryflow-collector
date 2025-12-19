@@ -1,0 +1,50 @@
+# TelemetryFlow Collector - Docker Ignore
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts (not source)
+/build/*
+/dist/
+
+# Documentation
+*.md
+LICENSE
+
+# IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+coverage-*.out
+coverage-*.html
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Local configuration overrides
+configs/local*.yaml
+configs/*.local.yaml
+
+# Secrets
+*.key
+*.pem
+*.crt
+secrets/
+
+# Docker files (avoid recursive builds)
+Dockerfile*
+docker-compose*.yaml
+docker-compose*.yml

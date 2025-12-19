@@ -12,8 +12,8 @@
 /build/components.go
 
 # Binaries
-tfo-collector
-tfo-collector.exe
+/tfo-collector
+/tfo-collector.exe
 *.exe
 *.dll
 *.so
