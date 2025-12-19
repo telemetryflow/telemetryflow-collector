@@ -77,10 +77,11 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
           else
-            # Remove -standalone suffix if present
             VERSION="${GITHUB_REF#refs/tags/v}"
-            VERSION="${VERSION%-standalone}"
           fi
+          # Always strip -ocb and -standalone suffixes for clean version
+          VERSION="${VERSION%-ocb}"
+          VERSION="${VERSION%-standalone}"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT

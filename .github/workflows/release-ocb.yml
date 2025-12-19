@@ -83,11 +83,12 @@ jobs:
             VERSION="${{ github.event.inputs.version }}"
             OTEL_VERSION="${{ github.event.inputs.otel_version }}"
           else
-            # Remove -ocb suffix
             VERSION="${GITHUB_REF#refs/tags/v}"
-            VERSION="${VERSION%-ocb}"
             OTEL_VERSION="${{ env.OTEL_VERSION }}"
           fi
+          # Always strip -ocb and -standalone suffixes for clean version
+          VERSION="${VERSION%-ocb}"
+          VERSION="${VERSION%-standalone}"
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "otel_version=${OTEL_VERSION}" >> $GITHUB_OUTPUT
           echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
