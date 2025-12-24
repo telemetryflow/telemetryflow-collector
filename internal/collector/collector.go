@@ -47,12 +47,12 @@ type Collector struct {
 	started time.Time
 
 	// Metrics
-	metricsReceived  int64
-	logsReceived     int64
-	tracesReceived   int64
-	metricsExported  int64
-	logsExported     int64
-	tracesExported   int64
+	metricsReceived int64
+	logsReceived    int64
+	tracesReceived  int64
+	metricsExported int64
+	logsExported    int64
+	tracesExported  int64
 }
 
 // New creates a new collector instance

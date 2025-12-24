@@ -22,13 +22,13 @@ import (
 
 // Config represents the complete collector configuration
 type Config struct {
-	Collector CollectorConfig `mapstructure:"collector"`
-	Receivers ReceiversConfig `mapstructure:"receivers"`
+	Collector  CollectorConfig  `mapstructure:"collector"`
+	Receivers  ReceiversConfig  `mapstructure:"receivers"`
 	Processors ProcessorsConfig `mapstructure:"processors"`
-	Exporters ExportersConfig `mapstructure:"exporters"`
-	Pipelines PipelinesConfig `mapstructure:"pipelines"`
+	Exporters  ExportersConfig  `mapstructure:"exporters"`
+	Pipelines  PipelinesConfig  `mapstructure:"pipelines"`
 	Extensions ExtensionsConfig `mapstructure:"extensions"`
-	Logging   LoggingConfig   `mapstructure:"logging"`
+	Logging    LoggingConfig    `mapstructure:"logging"`
 }
 
 // CollectorConfig contains collector identification settings

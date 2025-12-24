@@ -159,11 +159,11 @@ func (r *Registry) CountByType(t ComponentType) int {
 
 // Global registries for each component type
 var (
-	Receivers   = NewRegistry()
-	Processors  = NewRegistry()
-	Exporters   = NewRegistry()
-	Extensions  = NewRegistry()
-	Connectors  = NewRegistry()
+	Receivers  = NewRegistry()
+	Processors = NewRegistry()
+	Exporters  = NewRegistry()
+	Extensions = NewRegistry()
+	Connectors = NewRegistry()
 )
 
 // RegisterReceiver adds a receiver to the global registry
