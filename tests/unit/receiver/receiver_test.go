@@ -14,9 +14,9 @@ import (
 func TestMockReceiver(t *testing.T) {
 	t.Run("should start and stop receiver", func(t *testing.T) {
 		receiver := mocks.NewMockReceiver("test-receiver")
-		
+
 		ctx := context.Background()
-		
+
 		receiver.On("Start", ctx).Return(nil)
 		receiver.On("Stop").Return(nil)
 
@@ -33,7 +33,7 @@ func TestMockReceiver(t *testing.T) {
 
 	t.Run("should receive telemetry data", func(t *testing.T) {
 		receiver := mocks.NewMockReceiver("test-receiver")
-		
+
 		ctx := context.Background()
 		receiver.On("Start", ctx).Return(nil)
 		receiver.On("Stop").Return(nil)

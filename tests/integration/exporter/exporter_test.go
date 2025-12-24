@@ -13,10 +13,10 @@ import (
 func TestExporterIntegration(t *testing.T) {
 	t.Run("should export data successfully", func(t *testing.T) {
 		exporter := mocks.NewMockExporter("test-exporter")
-		
+
 		ctx := context.Background()
 		testData := []byte(`{"test": "data"}`)
-		
+
 		exporter.On("Start", ctx).Return(nil)
 		exporter.On("Export", ctx, testData).Return(nil)
 		exporter.On("Stop").Return(nil)

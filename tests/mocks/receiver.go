@@ -23,9 +23,9 @@ type TelemetryData struct {
 // MockReceiver is a mock implementation of the Receiver interface
 type MockReceiver struct {
 	mock.Mock
-	name       string
-	running    bool
-	dataChan   chan *TelemetryData
+	name     string
+	running  bool
+	dataChan chan *TelemetryData
 }
 
 // NewMockReceiver creates a new mock receiver
@@ -96,7 +96,7 @@ func MockOTLPMetrics() *TelemetryData {
 				"gauge": map[string]interface{}{
 					"dataPoints": []map[string]interface{}{
 						{
-							"asDouble":      45.5,
+							"asDouble":     45.5,
 							"timeUnixNano": time.Now().UnixNano(),
 						},
 					},
@@ -123,12 +123,12 @@ func MockOTLPLogs() *TelemetryData {
 		},
 		Data: []interface{}{
 			map[string]interface{}{
-				"timeUnixNano":         time.Now().UnixNano(),
-				"severityNumber":       9, // INFO
-				"severityText":         "INFO",
-				"body":                 map[string]interface{}{"stringValue": "Test log message"},
-				"traceId":              "",
-				"spanId":               "",
+				"timeUnixNano":   time.Now().UnixNano(),
+				"severityNumber": 9, // INFO
+				"severityText":   "INFO",
+				"body":           map[string]interface{}{"stringValue": "Test log message"},
+				"traceId":        "",
+				"spanId":         "",
 			},
 		},
 		ReceivedAt: time.Now(),

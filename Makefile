@@ -48,7 +48,8 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage test-script test-short lint lint-fix fmt vet help install-ocb generate run docker build-standalone run-standalone test-standalone tidy deps deps-update install uninstall validate-config
+.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage test-script test-short lint lint-fix fmt vet help install-ocb generate run docker build-standalone run-standalone test-standalone tidy deps deps-update install uninstall validate-config \
+	fmt-check staticcheck verify deps-verify test-unit-ci test-integration-ci test-e2e-ci security govulncheck coverage-merge coverage-report ci-lint ci-test ci-build-standalone ci-build-ocb
 
 # Default target: build standalone (uses internal packages directly)
 all: build-standalone
@@ -356,3 +357,129 @@ uninstall:
 validate-config: build-standalone
 	@echo "$(GREEN)Validating configuration...$(NC)"
 	@$(BUILD_DIR)/$(BINARY_NAME) validate --config $(CONFIG_DIR)/tfo-collector.yaml
+
+# =============================================================================
+# CI-Specific Targets
+# =============================================================================
+# These targets are optimized for CI/CD pipelines with proper exit codes,
+# coverage output, and race detection.
+
+## CI: Check formatting (fails if code needs formatting)
+fmt-check:
+	@echo "$(GREEN)Checking code formatting...$(NC)"
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "$(RED)The following files need formatting:$(NC)"; \
+		gofmt -l .; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)Code formatting OK$(NC)"
+
+## CI: Run staticcheck
+staticcheck:
+	@echo "$(GREEN)Running staticcheck...$(NC)"
+	@if command -v staticcheck >/dev/null 2>&1; then \
+		staticcheck ./...; \
+	else \
+		echo "$(YELLOW)Installing staticcheck...$(NC)"; \
+		go install honnef.co/go/tools/cmd/staticcheck@latest; \
+		staticcheck ./...; \
+	fi
+
+## CI: Verify dependencies
+verify:
+	@echo "$(GREEN)Verifying dependencies...$(NC)"
+	@go mod verify
+	@echo "$(GREEN)Dependencies verified$(NC)"
+
+## CI: Download and verify dependencies
+deps-verify: deps verify
+	@echo "$(GREEN)Dependencies downloaded and verified$(NC)"
+
+## CI: Run unit tests with race detection and coverage
+test-unit-ci:
+	@echo "$(GREEN)Running unit tests (CI mode)...$(NC)"
+	@go test -v -race -timeout 5m -coverprofile=coverage-unit.out -covermode=atomic ./tests/unit/...
+
+## CI: Run integration tests with race detection and coverage
+test-integration-ci:
+	@echo "$(GREEN)Running integration tests (CI mode)...$(NC)"
+	@go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./tests/integration/...
+
+## CI: Run E2E tests
+test-e2e-ci:
+	@echo "$(GREEN)Running E2E tests (CI mode)...$(NC)"
+	@go test -v -timeout 15m ./tests/e2e/...
+
+## CI: Run security scan with gosec
+security:
+	@echo "$(GREEN)Running security scan...$(NC)"
+	@if command -v gosec >/dev/null 2>&1; then \
+		gosec -no-fail -fmt sarif -out gosec-results.sarif ./...; \
+	else \
+		echo "$(YELLOW)gosec not installed, skipping...$(NC)"; \
+	fi
+
+## CI: Run govulncheck
+govulncheck:
+	@echo "$(GREEN)Running govulncheck...$(NC)"
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./... || true; \
+	else \
+		echo "$(YELLOW)Installing govulncheck...$(NC)"; \
+		go install golang.org/x/vuln/cmd/govulncheck@latest; \
+		govulncheck ./... || true; \
+	fi
+
+## CI: Merge coverage files
+coverage-merge:
+	@echo "$(GREEN)Merging coverage files...$(NC)"
+	@if command -v gocovmerge >/dev/null 2>&1; then \
+		if [ -f coverage-integration.out ]; then \
+			gocovmerge coverage-unit.out coverage-integration.out > coverage-merged.out; \
+		else \
+			cp coverage-unit.out coverage-merged.out; \
+		fi; \
+	else \
+		echo "$(YELLOW)Installing gocovmerge...$(NC)"; \
+		go install github.com/wadey/gocovmerge@latest; \
+		if [ -f coverage-integration.out ]; then \
+			gocovmerge coverage-unit.out coverage-integration.out > coverage-merged.out; \
+		else \
+			cp coverage-unit.out coverage-merged.out; \
+		fi; \
+	fi
+	@echo "$(GREEN)Coverage merged to coverage-merged.out$(NC)"
+
+## CI: Generate coverage report
+coverage-report: coverage-merge
+	@echo "$(GREEN)Generating coverage report...$(NC)"
+	@go tool cover -func=coverage-merged.out | tee coverage-summary.txt
+	@go tool cover -html=coverage-merged.out -o coverage.html
+	@echo "$(GREEN)Coverage report generated$(NC)"
+
+## CI: Complete lint pipeline
+ci-lint: deps-verify fmt-check vet staticcheck lint
+	@echo "$(GREEN)CI lint pipeline completed$(NC)"
+
+## CI: Complete test pipeline
+ci-test: test-unit-ci test-integration-ci
+	@echo "$(GREEN)CI test pipeline completed$(NC)"
+
+## CI: Build standalone for a specific platform
+ci-build-standalone:
+	@echo "$(GREEN)Building standalone for CI ($(GOOS)/$(GOARCH))...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH)"; \
+	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $${OUTPUT} ./cmd/tfo-collector; \
+	echo "$(GREEN)Built: $${OUTPUT}$(NC)"
+
+## CI: Build OCB for a specific platform (requires OCB to be installed and code generated)
+ci-build-ocb: check-ocb
+	@echo "$(GREEN)Building OCB for CI ($(GOOS)/$(GOARCH))...$(NC)"
+	@mkdir -p $(BUILD_DIR_OCB)
+	@$(OCB) --config manifest.yaml
+	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
+	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
+	cd $(BUILD_DIR_OCB) && CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o ../$$(basename $${OUTPUT}) .; \
+	echo "$(GREEN)Built: $${OUTPUT}$(NC)"
