@@ -20,7 +20,7 @@ func TestPipeline(t *testing.T) {
 		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
 		err := cmd.Run()
 		require.NoError(t, err)
-		defer os.Remove("tfo-collector-test")
+		defer func() { _ = os.Remove("tfo-collector-test") }()
 
 		collectorCmd := exec.Command("./tfo-collector-test", "start", "--config", "testdata/minimal.yaml")
 		err = collectorCmd.Start()
@@ -31,11 +31,11 @@ func TestPipeline(t *testing.T) {
 		// Check health endpoint
 		resp, err := http.Get("http://localhost:13133/")
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		}
 
-		collectorCmd.Process.Signal(os.Interrupt)
-		collectorCmd.Wait()
+		_ = collectorCmd.Process.Signal(os.Interrupt)
+		_ = collectorCmd.Wait()
 	})
 }

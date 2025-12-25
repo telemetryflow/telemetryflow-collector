@@ -75,7 +75,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
 # -----------------------------------------------------------------------------
-FROM alpine:3.21
+FROM alpine:3.23
 
 # Build arguments for labels
 ARG VERSION=1.0.0
@@ -128,8 +128,8 @@ COPY --from=builder /tfo-collector-ocb /usr/local/bin/tfo-collector
 RUN chmod +x /usr/local/bin/tfo-collector
 
 # Copy OCB configuration (standard OTEL format)
-COPY configs/ocb-collector.yaml /etc/tfo-collector/collector.yaml
-RUN chown telemetryflow:telemetryflow /etc/tfo-collector/collector.yaml
+COPY configs/ocb-collector.yaml /etc/tfo-collector/ocb-collector.yaml
+RUN chown telemetryflow:telemetryflow /etc/tfo-collector/ocb-collector.yaml
 
 # Switch to non-root user
 USER telemetryflow
@@ -159,7 +159,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 # Entrypoint & Command (standard OTEL format)
 # =============================================================================
 ENTRYPOINT ["/usr/local/bin/tfo-collector"]
-CMD ["--config", "/etc/tfo-collector/collector.yaml"]
+CMD ["--config", "/etc/tfo-collector/ocb-collector.yaml"]
 
 # =============================================================================
 # Build Information

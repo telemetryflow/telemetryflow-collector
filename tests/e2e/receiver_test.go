@@ -23,7 +23,7 @@ func TestOTLPReceiver(t *testing.T) {
 		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
 		err := cmd.Run()
 		require.NoError(t, err)
-		defer os.Remove("tfo-collector-test")
+		defer func() { _ = os.Remove("tfo-collector-test") }()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
@@ -64,11 +64,11 @@ func TestOTLPReceiver(t *testing.T) {
 		jsonData, _ := json.Marshal(metricsData)
 		resp, err := http.Post("http://localhost:4318/v1/metrics", "application/json", bytes.NewBuffer(jsonData))
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		}
 
-		collectorCmd.Process.Signal(os.Interrupt)
-		collectorCmd.Wait()
+		_ = collectorCmd.Process.Signal(os.Interrupt)
+		_ = collectorCmd.Wait()
 	})
 }

@@ -52,7 +52,7 @@ func TestMockReceiver(t *testing.T) {
 			t.Fatal("timeout waiting for data")
 		}
 
-		receiver.Stop()
+		_ = receiver.Stop()
 		receiver.AssertExpectations(t)
 	})
 }

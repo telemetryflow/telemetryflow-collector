@@ -46,7 +46,8 @@ RUN apk add --no-cache \
     git \
     make \
     ca-certificates \
-    tzdata
+    tzdata \
+    curl
 
 # Set working directory
 WORKDIR /build
@@ -75,7 +76,10 @@ RUN /tfo-collector version
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
 # -----------------------------------------------------------------------------
-FROM alpine:3.21
+FROM alpine:3.23
+
+# Build arguments for labels
+ARG VERSION=1.0.0
 
 # =============================================================================
 # TelemetryFlow Metadata Labels (OCI Image Spec)

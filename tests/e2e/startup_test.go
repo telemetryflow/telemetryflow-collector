@@ -20,7 +20,7 @@ func TestCollectorStartup(t *testing.T) {
 		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
 		err := cmd.Run()
 		require.NoError(t, err)
-		defer os.Remove("tfo-collector-test")
+		defer func() { _ = os.Remove("tfo-collector-test") }()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -30,7 +30,7 @@ func TestCollectorStartup(t *testing.T) {
 		require.NoError(t, err)
 
 		time.Sleep(2 * time.Second)
-		collectorCmd.Process.Signal(os.Interrupt)
+		_ = collectorCmd.Process.Signal(os.Interrupt)
 		err = collectorCmd.Wait()
 		assert.NoError(t, err)
 	})
@@ -39,7 +39,7 @@ func TestCollectorStartup(t *testing.T) {
 		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
 		err := cmd.Run()
 		require.NoError(t, err)
-		defer os.Remove("tfo-collector-test")
+		defer func() { _ = os.Remove("tfo-collector-test") }()
 
 		collectorCmd := exec.Command("./tfo-collector-test", "start", "--config", "testdata/invalid.yaml")
 		err = collectorCmd.Run()

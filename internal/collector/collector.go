@@ -232,10 +232,10 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 
 		if running {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"healthy"}`))
+			_, _ = w.Write([]byte(`{"status":"healthy"}`))
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status":"unhealthy"}`))
+			_, _ = w.Write([]byte(`{"status":"unhealthy"}`))
 		}
 	})
 
@@ -253,7 +253,7 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		server.Shutdown(shutdownCtx)
+		_ = server.Shutdown(shutdownCtx)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -336,7 +336,7 @@ func (c *Collector) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	c.logger.Debug("Received metrics", zap.String("content_type", r.Header.Get("Content-Type")))
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{}`))
+	_, _ = w.Write([]byte(`{}`))
 }
 
 // handleLogs handles OTLP logs requests
@@ -354,7 +354,7 @@ func (c *Collector) handleLogs(w http.ResponseWriter, r *http.Request) {
 	c.logger.Debug("Received logs", zap.String("content_type", r.Header.Get("Content-Type")))
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{}`))
+	_, _ = w.Write([]byte(`{}`))
 }
 
 // handleTraces handles OTLP traces requests
@@ -372,7 +372,7 @@ func (c *Collector) handleTraces(w http.ResponseWriter, r *http.Request) {
 	c.logger.Debug("Received traces", zap.String("content_type", r.Header.Get("Content-Type")))
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{}`))
+	_, _ = w.Write([]byte(`{}`))
 }
 
 // handleHealth handles health check requests
@@ -383,10 +383,10 @@ func (c *Collector) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	if running {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"healthy"}`))
+		_, _ = w.Write([]byte(`{"status":"healthy"}`))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status":"unhealthy"}`))
+		_, _ = w.Write([]byte(`{"status":"unhealthy"}`))
 	}
 }
 
