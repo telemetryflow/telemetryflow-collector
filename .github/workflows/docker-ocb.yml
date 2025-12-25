@@ -227,6 +227,7 @@ jobs:
           image: ${{ env.REGISTRY_DOCKER }}/${{ env.IMAGE_NAME }}:sha-${{ needs.prepare.outputs.commit }}-ocb
           format: spdx-json
           output-file: sbom-ocb-${{ steps.version.outputs.version }}.spdx.json
+          upload-release-assets: false
 
       - name: Upload SBOM
         if: needs.prepare.outputs.push == 'true'
