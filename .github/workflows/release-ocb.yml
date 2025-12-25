@@ -731,6 +731,7 @@ jobs:
           OTEL_VERSION: ${{ needs.prepare.outputs.otel_version }}
         run: |
           DMG_DIR="dmg-contents"
+          APP_NAME="${{ env.PRODUCT_NAME }}"
           mkdir -p "${DMG_DIR}"
 
           # Copy binary (rename to tfo-collector for consistency)

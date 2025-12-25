@@ -704,6 +704,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           DMG_DIR="dmg-contents"
+          APP_NAME="${{ env.PRODUCT_NAME }}"
           mkdir -p "${DMG_DIR}"
 
           # Copy binary
