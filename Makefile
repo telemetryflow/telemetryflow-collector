@@ -197,9 +197,9 @@ test-integration:
 	@echo "$(GREEN)Running integration tests...$(NC)"
 	@go test -v -timeout 5m -coverprofile=coverage-integration.out ./tests/integration/...
 
-test-e2e:
+test-e2e: build-standalone
 	@echo "$(GREEN)Running E2E tests...$(NC)"
-	@go test -v -timeout 10m ./tests/e2e/...
+	@TFO_COLLECTOR_BINARY=$(BUILD_DIR)/$(BINARY_NAME) go test -v -timeout 10m ./tests/e2e/...
 
 test-all: test-unit test-integration test-e2e
 	@echo "$(GREEN)All tests completed$(NC)"
@@ -406,9 +406,9 @@ test-integration-ci:
 	@go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./tests/integration/...
 
 ## CI: Run E2E tests
-test-e2e-ci:
+test-e2e-ci: build-standalone
 	@echo "$(GREEN)Running E2E tests (CI mode)...$(NC)"
-	@go test -v -timeout 15m ./tests/e2e/...
+	@TFO_COLLECTOR_BINARY=$(BUILD_DIR)/$(BINARY_NAME) go test -v -timeout 15m ./tests/e2e/...
 
 ## CI: Run security scan with gosec
 security:

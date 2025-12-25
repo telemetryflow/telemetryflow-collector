@@ -240,8 +240,12 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 	})
 
 	server := &http.Server{
-		Addr:    healthCfg.Endpoint,
-		Handler: mux,
+		Addr:              healthCfg.Endpoint,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	c.logger.Info("Health check server listening",

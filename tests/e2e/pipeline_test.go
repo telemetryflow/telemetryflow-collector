@@ -16,14 +16,12 @@ func TestPipeline(t *testing.T) {
 		t.Skip("Skipping E2E test in short mode")
 	}
 
-	t.Run("should process data through pipeline", func(t *testing.T) {
-		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
-		err := cmd.Run()
-		require.NoError(t, err)
-		defer func() { _ = os.Remove("tfo-collector-test") }()
+	binary := getCollectorBinary(t)
 
-		collectorCmd := exec.Command("./tfo-collector-test", "start", "--config", "testdata/minimal.yaml")
-		err = collectorCmd.Start()
+	t.Run("should process data through pipeline", func(t *testing.T) {
+		configPath := getTestdataPath(t, "minimal.yaml")
+		collectorCmd := exec.Command(binary, "start", "--config", configPath)
+		err := collectorCmd.Start()
 		require.NoError(t, err)
 
 		time.Sleep(2 * time.Second)

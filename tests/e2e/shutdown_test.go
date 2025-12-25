@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"os"
 	"os/exec"
 	"syscall"
 	"testing"
@@ -17,17 +16,15 @@ func TestGracefulShutdown(t *testing.T) {
 		t.Skip("Skipping E2E test in short mode")
 	}
 
-	t.Run("should shutdown gracefully on SIGINT", func(t *testing.T) {
-		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
-		err := cmd.Run()
-		require.NoError(t, err)
-		defer func() { _ = os.Remove("tfo-collector-test") }()
+	binary := getCollectorBinary(t)
 
+	t.Run("should shutdown gracefully on SIGINT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		collectorCmd := exec.CommandContext(ctx, "./tfo-collector-test", "start", "--config", "testdata/minimal.yaml")
-		err = collectorCmd.Start()
+		configPath := getTestdataPath(t, "minimal.yaml")
+		collectorCmd := exec.CommandContext(ctx, binary, "start", "--config", configPath)
+		err := collectorCmd.Start()
 		require.NoError(t, err)
 
 		time.Sleep(2 * time.Second)
@@ -40,13 +37,9 @@ func TestGracefulShutdown(t *testing.T) {
 	})
 
 	t.Run("should shutdown gracefully on SIGTERM", func(t *testing.T) {
-		cmd := exec.Command("go", "build", "-o", "tfo-collector-test", "./cmd/tfo-collector")
-		err := cmd.Run()
-		require.NoError(t, err)
-		defer func() { _ = os.Remove("tfo-collector-test") }()
-
-		collectorCmd := exec.Command("./tfo-collector-test", "start", "--config", "testdata/minimal.yaml")
-		err = collectorCmd.Start()
+		configPath := getTestdataPath(t, "minimal.yaml")
+		collectorCmd := exec.Command(binary, "start", "--config", configPath)
+		err := collectorCmd.Start()
 		require.NoError(t, err)
 
 		time.Sleep(2 * time.Second)

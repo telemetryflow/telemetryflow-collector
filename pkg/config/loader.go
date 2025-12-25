@@ -118,7 +118,11 @@ func (l *Loader) Load(configFile string, target interface{}) error {
 
 // loadFromFile loads configuration from a YAML file
 func (l *Loader) loadFromFile(path string, target interface{}) error {
-	data, err := os.ReadFile(path)
+	// Clean the path to prevent directory traversal
+	cleanPath := filepath.Clean(path)
+
+	// G304: path is intentionally user-provided (config file path from CLI flag or search)
+	data, err := os.ReadFile(cleanPath) //nolint:gosec // Config file path is user-specified
 	if err != nil {
 		return err
 	}
