@@ -76,7 +76,7 @@ RUN /tfo-collector version
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
 # -----------------------------------------------------------------------------
-FROM alpine:3.23
+FROM alpine:3.21
 
 # Build arguments for labels
 ARG VERSION=1.0.0
@@ -101,8 +101,9 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
       io.telemetryflow.build.type="standalone" \
       io.telemetryflow.maintainer="DevOpsCorner Indonesia"
 
-# Install runtime dependencies
-RUN apk add --no-cache \
+# Update packages to get security patches (CVE fixes) and install runtime dependencies
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     ca-certificates \
     tzdata \
     curl \
