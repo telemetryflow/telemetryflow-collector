@@ -50,3 +50,6 @@ configs/*.local.yaml
 *.pem
 *.crt
 secrets/
+
+.claude
+.kiro

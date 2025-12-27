@@ -36,6 +36,7 @@ var (
 	cfgFile   string
 	logLevel  string
 	logFormat string
+	useOTEL   bool // Use full OTEL collector with all capabilities
 )
 
 func main() {
@@ -78,14 +79,27 @@ Features:
 
 // startCmd returns the start command
 func startCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the TelemetryFlow collector",
-		Long:  `Start the TelemetryFlow collector and begin receiving telemetry data.`,
+		Long: `Start the TelemetryFlow collector and begin receiving telemetry data.
+
+Use --otel flag to enable full OTEL capabilities including:
+  • 50+ receivers (OTLP, Jaeger, Zipkin, Prometheus, hostmetrics, etc.)
+  • 20+ processors (batch, memory_limiter, attributes, transform, etc.)
+  • 40+ exporters (OTLP, Prometheus, Loki, Elasticsearch, etc.)
+  • Connectors for exemplars and service graphs
+  • Full OpenTelemetry ecosystem compatibility`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if useOTEL {
+				return runOTELCollector()
+			}
 			return runCollector()
 		},
 	}
+
+	cmd.Flags().BoolVar(&useOTEL, "otel", false, "Use full OTEL collector with all capabilities (metrics, logs, traces, exemplars)")
+	return cmd
 }
 
 // versionCmd returns the version command
@@ -250,6 +264,73 @@ func runCollector() error {
 	}
 
 	logger.Info("TelemetryFlow Collector stopped")
+	return nil
+}
+
+// runOTELCollector starts the full OTEL-based collector with all capabilities
+func runOTELCollector() error {
+	// Determine config path
+	configPath := cfgFile
+	if configPath == "" {
+		// Default to OTEL config format
+		configPath = "configs/otel-collector.yaml"
+	}
+
+	// Initialize basic logger for startup
+	zapCfg := zap.NewProductionConfig()
+	if logLevel == "debug" {
+		zapCfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+	logger, err := zapCfg.Build()
+	if err != nil {
+		return fmt.Errorf("failed to initialize logger: %w", err)
+	}
+	defer func() { _ = logger.Sync() }()
+
+	// Print startup banner
+	fmt.Print(version.Banner())
+
+	logger.Info("Starting TelemetryFlow OTEL Collector (Full Capabilities Mode)",
+		zap.String("product", version.ProductName),
+		zap.String("version", version.Short()),
+		zap.String("otel_version", version.OTELVersion),
+		zap.String("config", configPath),
+	)
+
+	// Create context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create OTEL collector
+	otelCollector, err := collector.NewOTELCollector(configPath, logger, version.Short())
+	if err != nil {
+		return fmt.Errorf("failed to create OTEL collector: %w", err)
+	}
+
+	// Handle shutdown signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start collector in goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- otelCollector.Run(ctx)
+	}()
+
+	// Wait for signals or error
+	select {
+	case sig := <-sigChan:
+		logger.Info("Received signal, shutting down", zap.String("signal", sig.String()))
+		otelCollector.Shutdown()
+		cancel()
+	case err := <-errChan:
+		if err != nil && err != context.Canceled {
+			logger.Error("OTEL Collector error", zap.Error(err))
+			return err
+		}
+	}
+
+	logger.Info("TelemetryFlow OTEL Collector stopped")
 	return nil
 }
 

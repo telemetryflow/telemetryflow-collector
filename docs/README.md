@@ -68,7 +68,7 @@ make install-ocb
 make build
 
 # Run
-./build/tfo-collector-ocb --config configs/ocb-collector.yaml
+./build/tfo-collector-ocb --config configs/otel-collector.yaml
 ```
 
 ---
@@ -219,47 +219,55 @@ sequenceDiagram
 
 ## Configuration Overview
 
+Both builds now use **standard OpenTelemetry Collector YAML format**. The standalone config adds optional TelemetryFlow-specific sections for authentication and collector identification.
+
 ### Standalone Configuration
 
 ```yaml
-# configs/tfo-collector.yaml (custom format)
-collector:
-  id: "collector-001"
-  description: "TelemetryFlow Collector"
+# configs/tfo-collector.yaml (standard OTEL format + TelemetryFlow extensions)
 
+# TelemetryFlow-specific extensions (optional, ignored by OCB)
+telemetryflow:
+  api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
+  api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
+  endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
+
+collector:
+  id: "${TELEMETRYFLOW_COLLECTOR_ID}"
+  name: "${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
+  tags:
+    environment: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
+
+# Standard OTEL configuration (same format as OCB)
 receivers:
   otlp:
-    enabled: true
     protocols:
       grpc:
-        enabled: true
         endpoint: "0.0.0.0:4317"
       http:
-        enabled: true
         endpoint: "0.0.0.0:4318"
 
 processors:
   batch:
-    enabled: true
     send_batch_size: 8192
     timeout: 200ms
 
 exporters:
-  logging:
-    enabled: true
-    loglevel: "info"
+  debug:
+    verbosity: detailed
 
-pipelines:
-  metrics:
-    receivers: [otlp]
-    processors: [batch]
-    exporters: [logging]
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
 ```
 
 ### OCB Configuration
 
 ```yaml
-# configs/ocb-collector.yaml (standard OTEL format)
+# configs/otel-collector.yaml (standard OTEL format)
 receivers:
   otlp:
     protocols:
@@ -317,7 +325,7 @@ tfo-collector/
 │   └── plugin/                 # Component registry
 ├── configs/
 │   ├── tfo-collector.yaml      # Standalone config (custom)
-│   ├── ocb-collector.yaml      # OCB config (standard OTEL)
+│   ├── otel-collector.yaml      # OCB config (standard OTEL)
 │   └── ocb-collector-minimal.yaml
 ├── build/                      # Build output directory
 │   ├── tfo-collector           # Standalone binary
@@ -386,26 +394,26 @@ TelemetryFlow Collector provides separate Dockerfiles for each build type:
 
 | Dockerfile | Image | Description |
 |------------|-------|-------------|
-| `Dockerfile` | `telemetryflow/tfo-collector` | Standalone build with Cobra CLI |
-| `Dockerfile.ocb` | `telemetryflow/tfo-collector-ocb` | OCB build with standard OTEL CLI |
+| `Dockerfile` | `telemetryflow/telemetryflow-collector` | Standalone build with Cobra CLI |
+| `Dockerfile.ocb` | `telemetryflow/telemetryflow-collector-ocb` | OCB build with standard OTEL CLI |
 
 #### Build Images
 
 ```bash
 # Build standalone image
 docker build \
-  --build-arg VERSION=1.0.0 \
+  --build-arg VERSION=1.1.0 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
   --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/tfo-collector:1.0.0 .
+  -t telemetryflow/telemetryflow-collector:1.0.0 .
 
 # Build OCB image
 docker build \
   -f Dockerfile.ocb \
-  --build-arg VERSION=1.0.0 \
-  --build-arg OTEL_VERSION=0.114.0 \
-  -t telemetryflow/tfo-collector-ocb:1.0.0 .
+  --build-arg VERSION=1.1.0 \
+  --build-arg OTEL_VERSION=0.142.0 \
+  -t telemetryflow/telemetryflow-collector-ocb:1.0.0 .
 ```
 
 #### Run Containers
@@ -416,14 +424,14 @@ docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-  telemetryflow/tfo-collector:1.0.0
+  telemetryflow/telemetryflow-collector:1.0.0
 
 # OCB
 docker run -d \
   --name tfo-collector-ocb \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-  telemetryflow/tfo-collector-ocb:1.0.0
+  telemetryflow/telemetryflow-collector-ocb:1.0.0
 ```
 
 ### Kubernetes
@@ -442,7 +450,7 @@ spec:
     spec:
       containers:
       - name: collector
-        image: telemetryflow/tfo-collector:latest
+        image: telemetryflow/telemetryflow-collector:latest
         args: ["start", "--config", "/etc/tfo-collector/config.yaml"]
         ports:
         - containerPort: 4317

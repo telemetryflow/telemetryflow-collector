@@ -129,9 +129,20 @@ func (l *Loader) LoadFromFile(path string) (*Config, error) {
 func (l *Loader) setDefaults(v *viper.Viper) {
 	defaults := DefaultConfig()
 
+	// TelemetryFlow authentication
+	v.SetDefault("telemetryflow.api_key_id", defaults.TelemetryFlow.APIKeyID)
+	v.SetDefault("telemetryflow.api_key_secret", defaults.TelemetryFlow.APIKeySecret)
+	v.SetDefault("telemetryflow.endpoint", defaults.TelemetryFlow.Endpoint)
+	v.SetDefault("telemetryflow.enabled", defaults.TelemetryFlow.Enabled)
+	v.SetDefault("telemetryflow.tls.enabled", defaults.TelemetryFlow.TLS.Enabled)
+	v.SetDefault("telemetryflow.tls.insecure_skip_verify", defaults.TelemetryFlow.TLS.InsecureSkipVerify)
+
 	// Collector
 	v.SetDefault("collector.id", defaults.Collector.ID)
 	v.SetDefault("collector.hostname", defaults.Collector.Hostname)
+	v.SetDefault("collector.name", defaults.Collector.Name)
+	v.SetDefault("collector.description", defaults.Collector.Description)
+	v.SetDefault("collector.version", defaults.Collector.Version)
 
 	// Receivers - OTLP
 	v.SetDefault("receivers.otlp.enabled", defaults.Receivers.OTLP.Enabled)
@@ -151,7 +162,23 @@ func (l *Loader) setDefaults(v *viper.Viper) {
 	v.SetDefault("processors.memory_limiter.limit_percentage", defaults.Processors.Memory.LimitPercentage)
 	v.SetDefault("processors.memory_limiter.spike_limit_percentage", defaults.Processors.Memory.SpikeLimitPercentage)
 
-	// Exporters
+	// Exporters - OTLP
+	v.SetDefault("exporters.otlp.enabled", defaults.Exporters.OTLP.Enabled)
+	v.SetDefault("exporters.otlp.endpoint", defaults.Exporters.OTLP.Endpoint)
+	v.SetDefault("exporters.otlp.compression", defaults.Exporters.OTLP.Compression)
+	v.SetDefault("exporters.otlp.timeout", defaults.Exporters.OTLP.Timeout)
+	v.SetDefault("exporters.otlp.tls.enabled", defaults.Exporters.OTLP.TLS.Enabled)
+	v.SetDefault("exporters.otlp.tls.insecure_skip_verify", defaults.Exporters.OTLP.TLS.InsecureSkipVerify)
+
+	// Exporters - OTLP HTTP
+	v.SetDefault("exporters.otlphttp.enabled", defaults.Exporters.OTLPHTTP.Enabled)
+	v.SetDefault("exporters.otlphttp.endpoint", defaults.Exporters.OTLPHTTP.Endpoint)
+	v.SetDefault("exporters.otlphttp.compression", defaults.Exporters.OTLPHTTP.Compression)
+	v.SetDefault("exporters.otlphttp.timeout", defaults.Exporters.OTLPHTTP.Timeout)
+	v.SetDefault("exporters.otlphttp.tls.enabled", defaults.Exporters.OTLPHTTP.TLS.Enabled)
+	v.SetDefault("exporters.otlphttp.tls.insecure_skip_verify", defaults.Exporters.OTLPHTTP.TLS.InsecureSkipVerify)
+
+	// Exporters - Logging
 	v.SetDefault("exporters.logging.enabled", defaults.Exporters.Logging.Enabled)
 	v.SetDefault("exporters.logging.loglevel", defaults.Exporters.Logging.LogLevel)
 
@@ -177,13 +204,35 @@ func (l *Loader) setDefaults(v *viper.Viper) {
 func (l *Loader) bindEnvVars(v *viper.Viper) {
 	// Critical env vars that need explicit binding
 	envBindings := map[string]string{
-		// Collector
+		// TelemetryFlow authentication
+		"telemetryflow.api_key_id":               "TELEMETRYFLOW_API_KEY_ID",
+		"telemetryflow.api_key_secret":           "TELEMETRYFLOW_API_KEY_SECRET",
+		"telemetryflow.endpoint":                 "TELEMETRYFLOW_ENDPOINT",
+		"telemetryflow.enabled":                  "TELEMETRYFLOW_ENABLED",
+		"telemetryflow.tls.enabled":              "TELEMETRYFLOW_TLS_ENABLED",
+		"telemetryflow.tls.insecure_skip_verify": "TELEMETRYFLOW_TLS_INSECURE_SKIP_VERIFY",
+
+		// Collector identification
 		"collector.id":       "TELEMETRYFLOW_COLLECTOR_ID",
 		"collector.hostname": "TELEMETRYFLOW_HOSTNAME",
+		"collector.name":     "TELEMETRYFLOW_COLLECTOR_NAME",
+		"collector.version":  "TELEMETRYFLOW_COLLECTOR_VERSION",
+
+		// Collector tags
+		"collector.tags.environment": "TELEMETRYFLOW_ENVIRONMENT",
+		"collector.tags.datacenter":  "TELEMETRYFLOW_DATACENTER",
 
 		// OTLP Receiver
 		"receivers.otlp.protocols.grpc.endpoint": "TELEMETRYFLOW_OTLP_GRPC_ENDPOINT",
 		"receivers.otlp.protocols.http.endpoint": "TELEMETRYFLOW_OTLP_HTTP_ENDPOINT",
+
+		// OTLP Exporter
+		"exporters.otlp.enabled":  "TELEMETRYFLOW_OTLP_EXPORTER_ENABLED",
+		"exporters.otlp.endpoint": "TELEMETRYFLOW_OTLP_EXPORTER_ENDPOINT",
+
+		// OTLP HTTP Exporter
+		"exporters.otlphttp.enabled":  "TELEMETRYFLOW_OTLPHTTP_EXPORTER_ENABLED",
+		"exporters.otlphttp.endpoint": "TELEMETRYFLOW_OTLPHTTP_EXPORTER_ENDPOINT",
 
 		// Health check
 		"extensions.health_check.endpoint": "TELEMETRYFLOW_HEALTH_ENDPOINT",

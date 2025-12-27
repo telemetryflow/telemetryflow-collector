@@ -14,7 +14,8 @@
 # For Standalone build, see release-standalone.yml
 #
 # Triggers:
-# - Push tags matching v*.*.*-ocb
+# - Push tags matching v*.*.* (creates both standalone and OCB releases)
+# - Push tags matching v*.*.*-ocb (OCB only)
 # - Manual workflow dispatch
 #
 # =============================================================================
@@ -24,17 +25,18 @@ name: Release OCB
 on:
   push:
     tags:
+      - 'v*.*.*'
       - 'v*.*.*-ocb'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.0.0)'
+        description: 'Version to release (e.g., 1.1.0)'
         required: true
-        default: '1.0.0'
+        default: '1.1.0'
       otel_version:
-        description: 'OpenTelemetry version (e.g., 0.114.0)'
+        description: 'OpenTelemetry version (e.g., 0.142.0)'
         required: true
-        default: '0.114.0'
+        default: '0.142.0'
       prerelease:
         description: 'Mark as pre-release'
         required: false
@@ -46,7 +48,7 @@ env:
   BINARY_NAME: tfo-collector-ocb
   PRODUCT_NAME: TelemetryFlow Collector
   BUILD_TYPE: ocb
-  OTEL_VERSION: '0.114.0'
+  OTEL_VERSION: '0.142.0'
   VENDOR: DevOpsCorner Indonesia
   MAINTAINER: support@telemetryflow.id
   DESCRIPTION: Enterprise-grade OpenTelemetry Collector distribution built with OCB
@@ -64,6 +66,8 @@ jobs:
   prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
+    # Skip if tag ends with -standalone (those are handled by release-tfo.yml)
+    if: ${{ !endsWith(github.ref, '-standalone') }}
     outputs:
       version: ${{ steps.version.outputs.version }}
       otel_version: ${{ steps.version.outputs.otel_version }}
@@ -271,7 +275,7 @@ jobs:
 
           # Copy config
           mkdir -p rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs
-          cp configs/ocb-collector.yaml rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs/collector.yaml
+          cp configs/otel-collector.yaml rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs/collector.yaml
 
           # Create tarball
           cd rpmbuild/SOURCES
@@ -424,7 +428,7 @@ jobs:
           chmod 755 ${PKG_DIR}/usr/local/bin/tfo-collector
 
           # Copy config
-          cp configs/ocb-collector.yaml ${PKG_DIR}/etc/tfo-collector/collector.yaml
+          cp configs/otel-collector.yaml ${PKG_DIR}/etc/tfo-collector/collector.yaml
 
       - name: Create DEB control files
         env:
@@ -575,7 +579,7 @@ jobs:
           cp dist/${{ env.BINARY_NAME }}-windows-amd64.exe ${PKG_DIR}/tfo-collector.exe
 
           # Copy config
-          cp configs/ocb-collector.yaml ${PKG_DIR}/collector.yaml
+          cp configs/otel-collector.yaml ${PKG_DIR}/collector.yaml
 
           # Create install script
           cat > ${PKG_DIR}/install.ps1 << 'EOF'
@@ -740,7 +744,7 @@ jobs:
           chmod +x "${DMG_DIR}/tfo-collector"
 
           # Copy config
-          cp configs/ocb-collector.yaml "${DMG_DIR}/collector.yaml"
+          cp configs/otel-collector.yaml "${DMG_DIR}/collector.yaml"
 
           # Create install script
           cat > "${DMG_DIR}/install.sh" << 'EOF'
@@ -939,7 +943,7 @@ jobs:
           cp dist/${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }} \
              "${TAR_DIR}/tfo-collector"
           chmod +x "${TAR_DIR}/tfo-collector"
-          cp configs/ocb-collector.yaml "${TAR_DIR}/collector.yaml"
+          cp configs/otel-collector.yaml "${TAR_DIR}/collector.yaml"
           cp README.md "${TAR_DIR}/" 2>/dev/null || true
           cp LICENSE "${TAR_DIR}/" 2>/dev/null || true
 

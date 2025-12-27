@@ -9,8 +9,8 @@
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 BINARY_NAME_OCB := tfo-collector-ocb
-VERSION ?= 1.0.0
-OTEL_VERSION := 0.114.0
+VERSION ?= 1.1.0
+OTEL_VERSION := 0.142.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -30,7 +30,7 @@ endif
 ifeq ($(OCB),)
   OCB := $(HOME)/go/bin/builder
 endif
-OCB_VERSION := 0.114.0
+OCB_VERSION := 0.142.0
 
 # Go build flags (for main package variables)
 LDFLAGS := -s -w \
@@ -74,7 +74,7 @@ help:
 	@echo "  make build-all        - Build OCB for all platforms"
 	@echo "  make install-ocb      - Install OpenTelemetry Collector Builder"
 	@echo "  make generate         - Generate collector code using OCB"
-	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME_OCB) --config configs/ocb-collector.yaml"
+	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME_OCB) --config configs/otel-collector.yaml"
 	@echo ""
 	@echo "$(YELLOW)Platform Builds:$(NC)"
 	@echo "  make build-linux      - Build for Linux (amd64 and arm64)"
@@ -173,17 +173,17 @@ build-darwin:
 # Run the OCB collector locally
 run: build
 	@echo "$(GREEN)Starting $(BINARY_NAME_OCB)...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/ocb-collector.yaml
+	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml
 
 # Run OCB with debug output
 run-debug: build
 	@echo "$(GREEN)Starting $(BINARY_NAME_OCB) in debug mode...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/ocb-collector.yaml --set=service.telemetry.logs.level=debug
+	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml --set=service.telemetry.logs.level=debug
 
 # Validate OCB configuration
 validate-config-ocb: build
 	@echo "$(GREEN)Validating OCB configuration...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/ocb-collector.yaml
+	@$(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/otel-collector.yaml
 
 # Test targets
 test: test-unit test-integration
@@ -264,19 +264,19 @@ version:
 # Build Docker image
 docker:
 	@echo "$(GREEN)Building Docker image...$(NC)"
-	@docker build -t telemetryflow/tfo-collector:$(VERSION) \
+	@docker build -t telemetryflow/telemetryflow-collector:$(VERSION) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg BUILD_TIME=$(BUILD_TIME) \
 		.
-	@docker tag telemetryflow/tfo-collector:$(VERSION) telemetryflow/tfo-collector:latest
-	@echo "$(GREEN)Docker image built: telemetryflow/tfo-collector:$(VERSION)$(NC)"
+	@docker tag telemetryflow/telemetryflow-collector:$(VERSION) telemetryflow/telemetryflow-collector:latest
+	@echo "$(GREEN)Docker image built: telemetryflow/telemetryflow-collector:$(VERSION)$(NC)"
 
 # Push Docker image
 docker-push: docker
 	@echo "$(GREEN)Pushing Docker image...$(NC)"
-	@docker push telemetryflow/tfo-collector:$(VERSION)
-	@docker push telemetryflow/tfo-collector:latest
+	@docker push telemetryflow/telemetryflow-collector:$(VERSION)
+	@docker push telemetryflow/telemetryflow-collector:latest
 
 # Development: watch and rebuild
 dev:

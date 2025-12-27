@@ -85,7 +85,7 @@ go mod tidy
 make install-ocb
 
 # Or manually
-go install go.opentelemetry.io/collector/cmd/builder@v0.114.0
+go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
 ```
 
 ### Build the Collector
@@ -127,8 +127,8 @@ telemetryflow-collector/
 │   └── plugin/               # Component registry
 ├── configs/
 │   ├── tfo-collector.yaml        # Standalone config (custom format)
-│   ├── ocb-collector.yaml        # OCB config (standard OTel format)
-│   └── ocb-collector-minimal.yaml
+│   ├── otel-collector.yaml       # OCB config (standard OTel format)
+│   └── otel-collector-minimal.yaml
 ├── tests/
 │   ├── unit/                 # Unit tests
 │   ├── integration/          # Integration tests

@@ -36,7 +36,7 @@
 FROM golang:1.24-alpine AS builder
 
 # Build arguments
-ARG VERSION=1.0.0
+ARG VERSION=1.1.0
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
@@ -79,14 +79,14 @@ RUN /tfo-collector version
 FROM alpine:3.21
 
 # Build arguments for labels
-ARG VERSION=1.0.0
+ARG VERSION=1.1.0
 
 # =============================================================================
 # TelemetryFlow Metadata Labels (OCI Image Spec)
 # =============================================================================
 LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
       org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector - Community Enterprise Observability Platform (CEOP)" \
-      org.opencontainers.image.version="${VERSION:-1.0.0}" \
+      org.opencontainers.image.version="${VERSION:-1.1.0}" \
       org.opencontainers.image.vendor="TelemetryFlow" \
       org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
       org.opencontainers.image.url="https://telemetryflow.id" \
@@ -166,11 +166,11 @@ CMD ["start", "--config", "/etc/tfo-collector/tfo-collector.yaml"]
 # =============================================================================
 # Build with:
 #   docker build \
-#     --build-arg VERSION=1.0.0 \
+#     --build-arg VERSION=1.1.0 \
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-#     -t telemetryflow/tfo-collector:1.0.0 .
+#     -t telemetryflow/telemetryflow-collector:1.1.0 .
 #
 # Run with:
 #   docker run -d \
@@ -181,5 +181,5 @@ CMD ["start", "--config", "/etc/tfo-collector/tfo-collector.yaml"]
 #     -p 13133:13133 \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
 #     -v /var/lib/tfo-collector:/var/lib/tfo-collector \
-#     telemetryflow/tfo-collector:1.0.0
+#     telemetryflow/telemetryflow-collector:1.1.0
 # =============================================================================

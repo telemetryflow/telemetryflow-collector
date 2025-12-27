@@ -24,22 +24,23 @@ name: Docker Build (OCB)
 on:
   push:
     tags:
+      - 'v*.*.*'
       - 'v*.*.*-ocb'
     paths:
       - 'Dockerfile.ocb'
       - 'manifest.yaml'
-      - 'configs/ocb-collector.yaml'
+      - 'configs/otel-collector.yaml'
       - '.github/workflows/docker-ocb.yml'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.0.0)'
+        description: 'Version tag (e.g., 1.1.0)'
         required: false
         default: ''
       otel_version:
-        description: 'OpenTelemetry version (e.g., 0.114.0)'
+        description: 'OpenTelemetry version (e.g., 0.142.0)'
         required: false
-        default: '0.114.0'
+        default: '0.142.0'
       push:
         description: 'Push images to registry'
         required: false
@@ -53,9 +54,9 @@ on:
 env:
   REGISTRY_DOCKER: docker.io
   IMAGE_NAME: telemetryflow/telemetryflow-collector-ocb
-  PRODUCT_NAME: TelemetryFlow Collector
+  PRODUCT_NAME: TelemetryFlow Collector (OCB)
   BUILD_TYPE: ocb
-  OTEL_VERSION: '0.114.0'
+  OTEL_VERSION: '0.142.0'
 
 permissions:
   contents: read

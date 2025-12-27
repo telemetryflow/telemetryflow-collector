@@ -21,14 +21,55 @@ import (
 )
 
 // Config represents the complete collector configuration
+// This configuration supports both TelemetryFlow Standalone and OCB formats.
+// Standard OTEL components (receivers, processors, exporters, extensions, connectors)
+// are compatible with both build types. The telemetryflow and collector sections
+// are TelemetryFlow-specific extensions (ignored by OCB).
 type Config struct {
-	Collector  CollectorConfig  `mapstructure:"collector"`
+	// TelemetryFlow-specific extensions (Standalone only, ignored by OCB)
+	TelemetryFlow TelemetryFlowConfig `mapstructure:"telemetryflow"`
+	Collector     CollectorConfig     `mapstructure:"collector"`
+
+	// Standard OTEL Collector components
 	Receivers  ReceiversConfig  `mapstructure:"receivers"`
 	Processors ProcessorsConfig `mapstructure:"processors"`
 	Exporters  ExportersConfig  `mapstructure:"exporters"`
-	Pipelines  PipelinesConfig  `mapstructure:"pipelines"`
 	Extensions ExtensionsConfig `mapstructure:"extensions"`
-	Logging    LoggingConfig    `mapstructure:"logging"`
+	Connectors ConnectorsConfig `mapstructure:"connectors"`
+
+	// Service configuration (standard OTEL format)
+	Service ServiceConfig `mapstructure:"service"`
+
+	// Legacy fields (for backwards compatibility)
+	Pipelines PipelinesConfig `mapstructure:"pipelines"`
+	Logging   LoggingConfig   `mapstructure:"logging"`
+}
+
+// TelemetryFlowConfig contains TelemetryFlow backend authentication settings
+type TelemetryFlowConfig struct {
+	// APIKeyID is the API Key ID for authentication (format: tfk_xxx)
+	APIKeyID string `mapstructure:"api_key_id"`
+
+	// APIKeySecret is the API Key Secret for authentication (format: tfs_xxx)
+	APIKeySecret string `mapstructure:"api_key_secret"`
+
+	// Endpoint is the TelemetryFlow backend endpoint
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Enabled enables TelemetryFlow backend export
+	Enabled bool `mapstructure:"enabled"`
+
+	// TLS contains TLS settings for backend connection
+	TLS TelemetryFlowTLSConfig `mapstructure:"tls"`
+}
+
+// TelemetryFlowTLSConfig contains TLS settings for TelemetryFlow backend
+type TelemetryFlowTLSConfig struct {
+	// Enabled enables TLS for backend connection
+	Enabled bool `mapstructure:"enabled"`
+
+	// InsecureSkipVerify skips TLS certificate verification
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
 // CollectorConfig contains collector identification settings
@@ -39,8 +80,14 @@ type CollectorConfig struct {
 	// Hostname is the collector hostname (auto-detected if empty)
 	Hostname string `mapstructure:"hostname"`
 
+	// Name is a human-readable collector name
+	Name string `mapstructure:"name"`
+
 	// Description is a human-readable description
 	Description string `mapstructure:"description"`
+
+	// Version is the collector version (auto-populated at build time)
+	Version string `mapstructure:"version"`
 
 	// Tags are custom key-value labels for the collector
 	Tags map[string]string `mapstructure:"tags"`
@@ -125,6 +172,9 @@ type OTLPHTTPConfig struct {
 type TLSConfig struct {
 	// Enabled enables TLS
 	Enabled bool `mapstructure:"enabled"`
+
+	// InsecureSkipVerify skips TLS certificate verification (use with caution)
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 
 	// CertFile is the path to the TLS certificate
 	CertFile string `mapstructure:"cert_file"`
@@ -234,8 +284,17 @@ type ProcessorsConfig struct {
 	// Memory contains memory limiter settings
 	Memory MemoryLimiterConfig `mapstructure:"memory_limiter"`
 
+	// Resource contains resource processor settings (standard OTEL format)
+	Resource ResourceProcessorConfig `mapstructure:"resource"`
+
 	// Attributes contains attribute processor settings
 	Attributes AttributesProcessorConfig `mapstructure:"attributes"`
+}
+
+// ResourceProcessorConfig contains resource processor settings
+type ResourceProcessorConfig struct {
+	// Attributes contains resource attribute actions
+	Attributes []AttributeAction `mapstructure:"attributes"`
 }
 
 // BatchProcessorConfig contains batch processor settings
@@ -303,20 +362,38 @@ type AttributeAction struct {
 
 // ExportersConfig contains exporter settings
 type ExportersConfig struct {
-	// OTLP contains OTLP exporter settings
+	// OTLP contains OTLP gRPC exporter settings
 	OTLP OTLPExporterConfig `mapstructure:"otlp"`
+
+	// OTLPHTTP contains OTLP HTTP exporter settings
+	OTLPHTTP OTLPHTTPExporterConfig `mapstructure:"otlphttp"`
 
 	// Prometheus contains Prometheus exporter settings
 	Prometheus PrometheusExporterConfig `mapstructure:"prometheus"`
 
-	// Logging contains logging exporter settings (for debug)
+	// Debug contains debug exporter settings (standard OTEL format)
+	Debug DebugExporterConfig `mapstructure:"debug"`
+
+	// Logging contains logging exporter settings (legacy, use Debug for new configs)
 	Logging LoggingExporterConfig `mapstructure:"logging"`
 
 	// File contains file exporter settings
 	File FileExporterConfig `mapstructure:"file"`
 }
 
-// OTLPExporterConfig contains OTLP exporter settings
+// DebugExporterConfig contains debug exporter settings (standard OTEL format)
+type DebugExporterConfig struct {
+	// Verbosity is the output verbosity (basic, normal, detailed)
+	Verbosity string `mapstructure:"verbosity"`
+
+	// SamplingInitial is the initial sampling rate
+	SamplingInitial int `mapstructure:"sampling_initial"`
+
+	// SamplingThereafter is the subsequent sampling rate
+	SamplingThereafter int `mapstructure:"sampling_thereafter"`
+}
+
+// OTLPExporterConfig contains OTLP gRPC exporter settings
 type OTLPExporterConfig struct {
 	// Enabled enables the OTLP exporter
 	Enabled bool `mapstructure:"enabled"`
@@ -341,6 +418,27 @@ type OTLPExporterConfig struct {
 
 	// SendingQueue contains sending queue settings
 	SendingQueue QueueConfig `mapstructure:"sending_queue"`
+}
+
+// OTLPHTTPExporterConfig contains OTLP HTTP exporter settings
+type OTLPHTTPExporterConfig struct {
+	// Enabled enables the OTLP HTTP exporter
+	Enabled bool `mapstructure:"enabled"`
+
+	// Endpoint is the destination endpoint (e.g., https://host:4318)
+	Endpoint string `mapstructure:"endpoint"`
+
+	// TLS contains TLS settings
+	TLS TLSConfig `mapstructure:"tls"`
+
+	// Headers contains headers to send
+	Headers map[string]string `mapstructure:"headers"`
+
+	// Compression is the compression type (gzip, none)
+	Compression string `mapstructure:"compression"`
+
+	// Timeout is the export timeout
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 // RetryConfig contains retry settings
@@ -520,6 +618,183 @@ type PPROFConfig struct {
 	MutexProfileFraction int `mapstructure:"mutex_profile_fraction"`
 }
 
+// =============================================================================
+// Connectors Configuration (Standard OTEL format)
+// =============================================================================
+
+// ConnectorsConfig contains connector settings for pipeline bridging
+type ConnectorsConfig struct {
+	// SpanMetrics derives metrics from traces with exemplars support
+	SpanMetrics SpanMetricsConnectorConfig `mapstructure:"spanmetrics"`
+
+	// ServiceGraph builds service dependency graphs from traces
+	ServiceGraph ServiceGraphConnectorConfig `mapstructure:"servicegraph"`
+}
+
+// SpanMetricsConnectorConfig contains span metrics connector settings
+type SpanMetricsConnectorConfig struct {
+	// Histogram contains histogram configuration
+	Histogram HistogramConfig `mapstructure:"histogram"`
+
+	// Dimensions are additional dimensions to add to metrics
+	Dimensions []DimensionConfig `mapstructure:"dimensions"`
+
+	// Exemplars enables exemplars for metrics-to-traces correlation
+	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
+
+	// Namespace is the metric namespace prefix
+	Namespace string `mapstructure:"namespace"`
+
+	// MetricsFlushInterval is the interval to flush metrics
+	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+}
+
+// HistogramConfig contains histogram settings
+type HistogramConfig struct {
+	// Explicit contains explicit bucket configuration
+	Explicit ExplicitHistogramConfig `mapstructure:"explicit"`
+}
+
+// ExplicitHistogramConfig contains explicit histogram bucket settings
+type ExplicitHistogramConfig struct {
+	// Buckets are the histogram bucket boundaries
+	Buckets []time.Duration `mapstructure:"buckets"`
+}
+
+// DimensionConfig contains dimension configuration
+type DimensionConfig struct {
+	// Name is the dimension name
+	Name string `mapstructure:"name"`
+
+	// Default is the default value if not present
+	Default string `mapstructure:"default"`
+}
+
+// ExemplarsConfig contains exemplars settings
+type ExemplarsConfig struct {
+	// Enabled enables exemplars
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ServiceGraphConnectorConfig contains service graph connector settings
+type ServiceGraphConnectorConfig struct {
+	// LatencyHistogramBuckets are the latency histogram buckets
+	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
+
+	// Dimensions are dimensions to add to service graph metrics
+	Dimensions []string `mapstructure:"dimensions"`
+
+	// Store contains store configuration
+	Store ServiceGraphStoreConfig `mapstructure:"store"`
+
+	// CacheLoop is the cache loop interval
+	CacheLoop time.Duration `mapstructure:"cache_loop"`
+
+	// StoreExpirationLoop is the store expiration loop interval
+	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
+
+	// VirtualNodePeerAttributes are attributes for virtual node peers
+	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
+}
+
+// ServiceGraphStoreConfig contains service graph store settings
+type ServiceGraphStoreConfig struct {
+	// TTL is the time-to-live for store entries
+	TTL time.Duration `mapstructure:"ttl"`
+
+	// MaxItems is the maximum number of items in the store
+	MaxItems int `mapstructure:"max_items"`
+}
+
+// =============================================================================
+// Service Configuration (Standard OTEL format)
+// =============================================================================
+
+// ServiceConfig contains the service configuration (standard OTEL format)
+type ServiceConfig struct {
+	// Extensions is the list of enabled extensions
+	Extensions []string `mapstructure:"extensions"`
+
+	// Pipelines contains pipeline configurations
+	Pipelines ServicePipelinesConfig `mapstructure:"pipelines"`
+
+	// Telemetry contains internal telemetry configuration
+	Telemetry ServiceTelemetryConfig `mapstructure:"telemetry"`
+}
+
+// ServicePipelinesConfig contains service pipeline configurations
+// Uses map to support named pipelines like "metrics/spanmetrics"
+type ServicePipelinesConfig struct {
+	// Traces is the traces pipeline
+	Traces PipelineConfig `mapstructure:"traces"`
+
+	// Metrics is the metrics pipeline
+	Metrics PipelineConfig `mapstructure:"metrics"`
+
+	// MetricsSpanmetrics is the span metrics derived pipeline
+	MetricsSpanmetrics PipelineConfig `mapstructure:"metrics/spanmetrics"`
+
+	// MetricsServicegraph is the service graph derived pipeline
+	MetricsServicegraph PipelineConfig `mapstructure:"metrics/servicegraph"`
+
+	// Logs is the logs pipeline
+	Logs PipelineConfig `mapstructure:"logs"`
+}
+
+// ServiceTelemetryConfig contains internal telemetry configuration
+type ServiceTelemetryConfig struct {
+	// Logs contains log settings
+	Logs ServiceTelemetryLogsConfig `mapstructure:"logs"`
+
+	// Metrics contains metrics settings
+	Metrics ServiceTelemetryMetricsConfig `mapstructure:"metrics"`
+}
+
+// ServiceTelemetryLogsConfig contains internal logging configuration
+type ServiceTelemetryLogsConfig struct {
+	// Level is the log level (debug, info, warn, error)
+	Level string `mapstructure:"level"`
+
+	// Encoding is the log encoding (json, console)
+	Encoding string `mapstructure:"encoding"`
+}
+
+// ServiceTelemetryMetricsConfig contains internal metrics configuration
+type ServiceTelemetryMetricsConfig struct {
+	// Level is the metrics level (none, basic, normal, detailed)
+	Level string `mapstructure:"level"`
+
+	// Readers contains metric reader configurations
+	Readers []MetricReaderConfig `mapstructure:"readers"`
+}
+
+// MetricReaderConfig contains metric reader configuration
+type MetricReaderConfig struct {
+	// Pull contains pull-based reader configuration
+	Pull PullMetricReaderConfig `mapstructure:"pull"`
+}
+
+// PullMetricReaderConfig contains pull-based metric reader configuration
+type PullMetricReaderConfig struct {
+	// Exporter contains exporter configuration
+	Exporter MetricExporterConfig `mapstructure:"exporter"`
+}
+
+// MetricExporterConfig contains metric exporter configuration
+type MetricExporterConfig struct {
+	// Prometheus contains Prometheus exporter configuration
+	Prometheus PrometheusMetricExporterConfig `mapstructure:"prometheus"`
+}
+
+// PrometheusMetricExporterConfig contains Prometheus metric exporter configuration
+type PrometheusMetricExporterConfig struct {
+	// Host is the Prometheus exporter host
+	Host string `mapstructure:"host"`
+
+	// Port is the Prometheus exporter port
+	Port int `mapstructure:"port"`
+}
+
 // LoggingConfig contains logging settings
 type LoggingConfig struct {
 	// Level is the log level (debug, info, warn, error)
@@ -562,10 +837,26 @@ type LogSamplingConfig struct {
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	return &Config{
+		TelemetryFlow: TelemetryFlowConfig{
+			APIKeyID:     "",
+			APIKeySecret: "",
+			Endpoint:     "localhost:4317",
+			Enabled:      false,
+			TLS: TelemetryFlowTLSConfig{
+				Enabled:            true,
+				InsecureSkipVerify: false,
+			},
+		},
 		Collector: CollectorConfig{
-			ID:       "",
-			Hostname: "",
-			Tags:     make(map[string]string),
+			ID:          "",
+			Hostname:    "",
+			Name:        "TelemetryFlow Collector",
+			Description: "TelemetryFlow Collector - Community Enterprise Observability Platform",
+			Version:     "",
+			Tags: map[string]string{
+				"environment": "production",
+				"datacenter":  "default",
+			},
 		},
 		Receivers: ReceiversConfig{
 			OTLP: OTLPReceiverConfig{
@@ -622,6 +913,44 @@ func DefaultConfig() *Config {
 			},
 		},
 		Exporters: ExportersConfig{
+			OTLP: OTLPExporterConfig{
+				Enabled:     false,
+				Endpoint:    "localhost:4317",
+				Compression: "gzip",
+				Timeout:     30 * time.Second,
+				TLS: TLSConfig{
+					Enabled:            true,
+					InsecureSkipVerify: false,
+				},
+				Headers: make(map[string]string),
+				RetryOnFailure: RetryConfig{
+					Enabled:         true,
+					InitialInterval: 5 * time.Second,
+					MaxInterval:     30 * time.Second,
+					MaxElapsedTime:  300 * time.Second,
+				},
+				SendingQueue: QueueConfig{
+					Enabled:      true,
+					NumConsumers: 10,
+					QueueSize:    1000,
+				},
+			},
+			OTLPHTTP: OTLPHTTPExporterConfig{
+				Enabled:     false,
+				Endpoint:    "https://localhost:4318",
+				Compression: "gzip",
+				Timeout:     30 * time.Second,
+				TLS: TLSConfig{
+					Enabled:            true,
+					InsecureSkipVerify: false,
+				},
+				Headers: make(map[string]string),
+			},
+			Debug: DebugExporterConfig{
+				Verbosity:          "detailed",
+				SamplingInitial:    5,
+				SamplingThereafter: 200,
+			},
 			Logging: LoggingExporterConfig{
 				Enabled:            true,
 				LogLevel:           "info",
@@ -629,6 +958,63 @@ func DefaultConfig() *Config {
 				SamplingThereafter: 200,
 			},
 		},
+		Connectors: ConnectorsConfig{
+			SpanMetrics: SpanMetricsConnectorConfig{
+				Namespace:            "traces",
+				MetricsFlushInterval: 15 * time.Second,
+				Exemplars: ExemplarsConfig{
+					Enabled: true,
+				},
+			},
+			ServiceGraph: ServiceGraphConnectorConfig{
+				Store: ServiceGraphStoreConfig{
+					TTL:      2 * time.Second,
+					MaxItems: 1000,
+				},
+				CacheLoop:           1 * time.Second,
+				StoreExpirationLoop: 2 * time.Second,
+			},
+		},
+		Service: ServiceConfig{
+			Extensions: []string{"health_check", "zpages", "pprof"},
+			Pipelines: ServicePipelinesConfig{
+				Traces: PipelineConfig{
+					Receivers:  []string{"otlp"},
+					Processors: []string{"memory_limiter", "batch", "resource"},
+					Exporters:  []string{"debug", "spanmetrics", "servicegraph"},
+				},
+				Metrics: PipelineConfig{
+					Receivers:  []string{"otlp"},
+					Processors: []string{"memory_limiter", "batch", "resource"},
+					Exporters:  []string{"debug", "prometheus"},
+				},
+				MetricsSpanmetrics: PipelineConfig{
+					Receivers:  []string{"spanmetrics"},
+					Processors: []string{"memory_limiter", "batch"},
+					Exporters:  []string{"prometheus"},
+				},
+				MetricsServicegraph: PipelineConfig{
+					Receivers:  []string{"servicegraph"},
+					Processors: []string{"memory_limiter", "batch"},
+					Exporters:  []string{"prometheus"},
+				},
+				Logs: PipelineConfig{
+					Receivers:  []string{"otlp"},
+					Processors: []string{"memory_limiter", "batch", "resource"},
+					Exporters:  []string{"debug"},
+				},
+			},
+			Telemetry: ServiceTelemetryConfig{
+				Logs: ServiceTelemetryLogsConfig{
+					Level:    "info",
+					Encoding: "json",
+				},
+				Metrics: ServiceTelemetryMetricsConfig{
+					Level: "detailed",
+				},
+			},
+		},
+		// Legacy pipelines (for backwards compatibility)
 		Pipelines: PipelinesConfig{
 			Metrics: PipelineConfig{
 				Receivers:  []string{"otlp"},

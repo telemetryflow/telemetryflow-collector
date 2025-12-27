@@ -74,7 +74,7 @@ on:
 
 env:
   GO_VERSION: '1.24'
-  OCB_VERSION: '0.114.0'
+  OCB_VERSION: '0.142.0'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME_STANDALONE: tfo-collector
   BINARY_NAME_OCB: tfo-collector-ocb

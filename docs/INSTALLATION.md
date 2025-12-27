@@ -1,7 +1,7 @@
 # TelemetryFlow Collector Installation Guide
 
-- **Version:** 1.0.0
-- **OTEL Version:** 0.114.0
+- **Version:** 1.1.0
+- **OTEL Version:** 0.142.0
 - **Last Updated:** December 2025
 
 ---
@@ -107,9 +107,9 @@ docker-compose down
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VERSION` | Build version | `1.0.0` |
-| `OTEL_VERSION` | OpenTelemetry version (OCB) | `0.114.0` |
-| `IMAGE_NAME` | Docker image name | `telemetryflow/tfo-collector` |
+| `VERSION` | Build version | `1.1.0` |
+| `OTEL_VERSION` | OpenTelemetry version (OCB) | `0.142.0` |
+| `IMAGE_NAME` | Docker image name | `telemetryflow/telemetryflow-collector` |
 | `OTLP_GRPC_PORT` | OTLP gRPC port | `4317` |
 | `OTLP_HTTP_PORT` | OTLP HTTP port | `4318` |
 | `METRICS_PORT` | Prometheus metrics port | `8888` |
@@ -125,18 +125,18 @@ docker-compose down
 ```bash
 # Build standalone image
 docker build \
-  --build-arg VERSION=1.0.0 \
+  --build-arg VERSION=1.1.0 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
   --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/tfo-collector:1.0.0 .
+  -t telemetryflow/telemetryflow-collector:1.1.0 .
 
 # Build OCB image
 docker build \
   -f Dockerfile.ocb \
-  --build-arg VERSION=1.0.0 \
-  --build-arg OTEL_VERSION=0.114.0 \
-  -t telemetryflow/tfo-collector-ocb:1.0.0 .
+  --build-arg VERSION=1.1.0 \
+  --build-arg OTEL_VERSION=0.142.0 \
+  -t telemetryflow/telemetryflow-collector-ocb:1.1.0 .
 ```
 
 ---
@@ -171,7 +171,7 @@ make build-standalone
 #     ___________    .__                        __
 #     \__    ___/___ |  |   ____   _____   _____/  |________ ___.__. ...
 #
-# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.0.0"}
+# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.0"}
 ```
 
 ### OCB Collector
@@ -181,7 +181,7 @@ make build-standalone
 make build
 
 # Run
-./build/tfo-collector-ocb --config configs/ocb-collector.yaml
+./build/tfo-collector-ocb --config configs/otel-collector.yaml
 ```
 
 ---
@@ -208,7 +208,7 @@ docker run -d \
   -p 13133:13133 \
   -v /etc/tfo-collector/config.yaml:/etc/tfo-collector/config.yaml:ro \
   -v /var/lib/tfo-collector:/var/lib/tfo-collector \
-  telemetryflow/tfo-collector:latest \
+  telemetryflow/telemetryflow-collector:latest \
   start --config /etc/tfo-collector/config.yaml
 
 # Check logs
@@ -225,7 +225,7 @@ curl http://localhost:13133/
 mkdir -p /etc/otelcol
 
 # Copy configuration
-cp configs/ocb-collector.yaml /etc/otelcol/config.yaml
+cp configs/otel-collector.yaml /etc/otelcol/config.yaml
 
 # Run container
 docker run -d \
@@ -237,7 +237,7 @@ docker run -d \
   -p 8889:8889 \
   -p 13133:13133 \
   -v /etc/otelcol/config.yaml:/etc/otelcol/config.yaml:ro \
-  telemetryflow/tfo-collector-ocb:latest \
+  telemetryflow/telemetryflow-collector-ocb:latest \
   --config /etc/otelcol/config.yaml
 ```
 
@@ -249,7 +249,7 @@ version: '3.8'
 
 services:
   tfo-collector:
-    image: telemetryflow/tfo-collector:latest
+    image: telemetryflow/telemetryflow-collector:latest
     container_name: tfo-collector
     command: ["start", "--config", "/etc/tfo-collector/config.yaml"]
     ports:
@@ -434,58 +434,62 @@ metadata:
   namespace: observability
 data:
   tfo-collector.yaml: |
+    # TelemetryFlow-specific extensions (optional)
+    telemetryflow:
+      api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
+      api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
+
     collector:
       id: ""
-      description: "TelemetryFlow Collector - Kubernetes"
+      name: "TelemetryFlow Collector - Kubernetes"
+      tags:
+        environment: "kubernetes"
 
+    # Standard OTEL configuration
     receivers:
       otlp:
-        enabled: true
         protocols:
           grpc:
-            enabled: true
             endpoint: "0.0.0.0:4317"
           http:
-            enabled: true
             endpoint: "0.0.0.0:4318"
 
     processors:
       batch:
-        enabled: true
         send_batch_size: 8192
         timeout: 200ms
       memory_limiter:
-        enabled: true
+        check_interval: 1s
         limit_percentage: 80
+        spike_limit_percentage: 25
 
     exporters:
       otlp:
-        enabled: true
         endpoint: "${BACKEND_ENDPOINT}"
         headers:
           X-Tenant-Id: "${TENANT_ID}"
-      logging:
-        enabled: true
-        loglevel: "info"
-
-    pipelines:
-      metrics:
-        receivers: [otlp]
-        processors: [memory_limiter, batch]
-        exporters: [otlp, logging]
-      logs:
-        receivers: [otlp]
-        processors: [memory_limiter, batch]
-        exporters: [otlp, logging]
-      traces:
-        receivers: [otlp]
-        processors: [memory_limiter, batch]
-        exporters: [otlp, logging]
+      debug:
+        verbosity: basic
 
     extensions:
       health_check:
-        enabled: true
         endpoint: "0.0.0.0:13133"
+
+    service:
+      extensions: [health_check]
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp, debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp, debug]
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp, debug]
 ```
 
 ### Create Secret
@@ -514,7 +518,7 @@ metadata:
   namespace: observability
   labels:
     app: tfo-collector
-    version: "1.0.0"
+    version: "1.1.0"
 spec:
   replicas: 3
   selector:
@@ -524,13 +528,13 @@ spec:
     metadata:
       labels:
         app: tfo-collector
-        version: "1.0.0"
+        version: "1.1.0"
     spec:
       serviceAccountName: tfo-collector
 
       containers:
       - name: tfo-collector
-        image: telemetryflow/tfo-collector:1.0.0
+        image: telemetryflow/telemetryflow-collector:1.1.0
         args:
           - "start"
           - "--config"
@@ -727,14 +731,14 @@ tfo-collector version
 
 ```bash
 # Pull new image
-docker pull telemetryflow/tfo-collector:1.1.0
+docker pull telemetryflow/telemetryflow-collector:1.1.0
 
 # Stop and remove
 docker stop tfo-collector
 docker rm tfo-collector
 
 # Start with new image
-docker run -d --name tfo-collector ... telemetryflow/tfo-collector:1.1.0 ...
+docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.0 ...
 ```
 
 ### Kubernetes Upgrade
@@ -742,7 +746,7 @@ docker run -d --name tfo-collector ... telemetryflow/tfo-collector:1.1.0 ...
 ```bash
 # Update image
 kubectl set image deployment/tfo-collector \
-  tfo-collector=telemetryflow/tfo-collector:1.1.0 \
+  tfo-collector=telemetryflow/telemetryflow-collector:1.1.0 \
   -n observability
 
 # Watch rollout
@@ -771,7 +775,7 @@ sudo userdel telemetryflow
 ```bash
 docker stop tfo-collector
 docker rm tfo-collector
-docker rmi telemetryflow/tfo-collector:latest
+docker rmi telemetryflow/telemetryflow-collector:latest
 ```
 
 ### Kubernetes

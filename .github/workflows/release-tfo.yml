@@ -29,9 +29,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.0.0)'
+        description: 'Version to release (e.g., 1.1.0)'
         required: true
-        default: '1.0.0'
+        default: '1.1.0'
       prerelease:
         description: 'Mark as pre-release'
         required: false
@@ -60,6 +60,8 @@ jobs:
   prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
+    # Skip if tag ends with -ocb (those are handled by release-ocb.yml)
+    if: ${{ !endsWith(github.ref, '-ocb') }}
     outputs:
       version: ${{ steps.version.outputs.version }}
       commit: ${{ steps.version.outputs.commit }}

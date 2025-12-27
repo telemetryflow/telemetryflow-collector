@@ -1,6 +1,7 @@
 # TelemetryFlow Collector Build System
 
-- **Version:** 1.0.0
+- **Version:** 1.1.0
+- **OTEL Version:** 0.142.0
 - **Last Updated:** December 2025
 
 ---
@@ -51,11 +52,13 @@ graph LR
 |--------|------------------------------|---------------------------|
 | **Source** | `cmd/tfo-collector/main.go` | `manifest.yaml` → generated |
 | **CLI** | Cobra (`start`, `version`, `config`) | Standard OTEL (`--config`) |
-| **Config Format** | Custom with `enabled` flags | Standard OTEL YAML |
+| **Config Format** | Standard OTEL + TelemetryFlow extensions | Standard OTEL YAML |
 | **Banner** | Custom ASCII art | None |
 | **Build Command** | `make build-standalone` | `make build` |
 | **Default Target** | Yes (`make` or `make all`) | No |
 | **Binary Location** | `./build/tfo-collector` | `./build/tfo-collector-ocb` |
+
+> **Note:** Both builds now use **standard OpenTelemetry Collector YAML format**. The standalone config adds optional TelemetryFlow-specific sections (`telemetryflow:` and `collector:`) for authentication and collector identification, which are ignored by the OCB build.
 
 ---
 
@@ -111,17 +114,37 @@ LDFLAGS_STANDALONE := -s -w \
 
 ### Configuration Format
 
-Standalone uses a custom format with `enabled` flags:
+Standalone uses standard OTEL format with optional TelemetryFlow extensions:
 
 ```yaml
 # configs/tfo-collector.yaml
+
+# TelemetryFlow-specific extensions (optional, ignored by OCB)
+telemetryflow:
+  api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
+  api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
+  endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
+
+collector:
+  name: "${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
+  tags:
+    environment: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
+
+# Standard OTEL configuration (same format as OCB)
 receivers:
   otlp:
-    enabled: true  # <-- Custom flag
     protocols:
       grpc:
-        enabled: true
         endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
 ```
 
 ### CLI Commands
@@ -182,7 +205,7 @@ flowchart TD
 make install-ocb
 
 # This runs:
-go install go.opentelemetry.io/collector/cmd/builder@v0.114.0
+go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
 ```
 
 ### Build Command
@@ -211,20 +234,20 @@ dist:
   skip_compilation: true
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.114.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.142.0
   # ... more receivers
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.114.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.142.0
   # ... more processors
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.114.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.142.0
   # ... more exporters
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.142.0
   # ... more extensions
 ```
 
@@ -233,7 +256,7 @@ extensions:
 OCB uses standard OTEL configuration (no `enabled` flags):
 
 ```yaml
-# configs/ocb-collector.yaml
+# configs/otel-collector.yaml
 receivers:
   otlp:
     protocols:
@@ -255,10 +278,10 @@ service:
 ./build/tfo-collector-ocb --help
 
 # Run with config
-./build/tfo-collector-ocb --config configs/ocb-collector.yaml
+./build/tfo-collector-ocb --config configs/otel-collector.yaml
 
 # Validate config
-./build/tfo-collector-ocb validate --config configs/ocb-collector.yaml
+./build/tfo-collector-ocb validate --config configs/otel-collector.yaml
 ```
 
 ---
@@ -286,7 +309,7 @@ graph TD
     BUILD --> OCB[ocb/<br/>Generated]
 
     CONFIGS --> CFG1[tfo-collector.yaml]
-    CONFIGS --> CFG2[ocb-collector.yaml]
+    CONFIGS --> CFG2[otel-collector.yaml]
 
     style BIN1 fill:#81C784
     style BIN2 fill:#64B5F6
@@ -310,7 +333,7 @@ tfo-collector/
 │       └── go.mod              # Generated module
 ├── configs/
 │   ├── tfo-collector.yaml      # Standalone config (custom format)
-│   └── ocb-collector.yaml      # OCB config (standard OTEL)
+│   └── otel-collector.yaml     # OCB config (standard OTEL)
 ├── manifest.yaml               # OCB build manifest
 └── Makefile
 ```
@@ -325,8 +348,8 @@ tfo-collector/
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 BINARY_NAME_OCB := tfo-collector-ocb
-VERSION ?= 1.0.0
-OTEL_VERSION := 0.114.0
+VERSION ?= 1.1.0
+OTEL_VERSION := 0.142.0
 
 BUILD_DIR := ./build
 BUILD_DIR_OCB := ./build/ocb
@@ -369,11 +392,11 @@ build: generate
 
 # Run OCB
 run: build
-    $(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/ocb-collector.yaml
+    $(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml
 
 # Validate OCB config
 validate-config: build
-    $(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/ocb-collector.yaml
+    $(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/otel-collector.yaml
 ```
 
 ### Common Targets
@@ -426,26 +449,27 @@ tidy:
 make install-ocb
 
 # Or manually
-go install go.opentelemetry.io/collector/cmd/builder@v0.114.0
+go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
 ```
 
-### OCB Config Error: "has invalid keys: enabled"
+### OCB Config Error: "has invalid keys: telemetryflow"
 
-The OCB build doesn't support the custom `enabled` flags. Use the standard OTEL config format:
+The OCB build doesn't recognize the TelemetryFlow-specific extension sections. You have two options:
 
-```yaml
-# Wrong (standalone format)
-receivers:
-  otlp:
-    enabled: true  # <-- Invalid for OCB
+**Option 1:** Use `otel-collector.yaml` for OCB (recommended)
 
-# Correct (OCB format)
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"
+```bash
+./build/tfo-collector-ocb --config configs/otel-collector.yaml
 ```
+
+**Option 2:** Use `tfo-collector.yaml` - OCB will ignore the extension sections
+
+```bash
+# OCB ignores unknown top-level keys (telemetryflow, collector)
+./build/tfo-collector-ocb --config configs/tfo-collector.yaml
+```
+
+Both configuration files use standard OTEL format and are compatible with both builds.
 
 ### Both Binaries Show Same Output
 

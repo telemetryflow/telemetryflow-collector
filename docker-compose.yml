@@ -26,12 +26,12 @@
 services:
   tfo-collector:
     container_name: ${CONTAINER_NAME:-tfo-collector}
-    image: ${IMAGE_NAME:-telemetryflow/tfo-collector}:${IMAGE_TAG:-1.0.0}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.0}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.0.0}
+        VERSION: ${VERSION:-1.1.0}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}

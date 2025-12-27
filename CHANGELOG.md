@@ -9,7 +9,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.114.0-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
 
 </div>
 
@@ -21,6 +21,53 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.0] - 2024-12-27
+
+### Added
+
+- **OpenTelemetry Collector v0.142.0**: Upgraded from v0.114.0 to v0.142.0
+- **TelemetryFlow Configuration Section**: New `telemetryflow:` config section for platform authentication
+  - `api_key_id` and `api_key_secret` for TelemetryFlow authentication
+  - `endpoint` for backend connectivity
+  - Environment variable substitution support
+- **Standard OTEL Configuration**: Both Standalone and OCB builds now use standard OpenTelemetry Collector YAML format
+- **New Documentation**:
+  - [CONFIGURATION.md](docs/CONFIGURATION.md) - Comprehensive configuration guide
+  - [COMPONENTS.md](docs/COMPONENTS.md) - Available receivers, processors, exporters reference
+  - [EXEMPLARS.md](docs/EXEMPLARS.md) - Exemplars and metrics-to-traces correlation
+  - [OCB_BUILD.md](docs/OCB_BUILD.md) - OpenTelemetry Collector Builder guide
+- **Enhanced Connectors**: Added spanmetrics and servicegraph connectors for Exemplars support
+- **Cloud Provider Receivers**: AWS CloudWatch, Azure Monitor, Google Cloud Pub/Sub
+- **Database Receivers**: MySQL, PostgreSQL, MongoDB, Redis, Elasticsearch, OracleDB
+- **Message Queue Support**: Kafka, RabbitMQ, Pulsar receivers and exporters
+- **APM Exporters**: Datadog, Splunk HEC, SignalFx, Honeycomb, Coralogix, Logz.io
+
+### Changed
+
+- **Configuration Format**: Standalone config now uses standard OTEL format with optional TelemetryFlow extensions
+- **Build System**: Updated OCB builder to v0.142.0
+- **Environment Variables**: Standardized to use `TELEMETRYFLOW_*` prefix
+- **GitHub Workflows**:
+  - Updated CodeQL Action from v3 to v4
+  - Enhanced Docker workflow with disk cleanup, Go version tracking
+  - Renamed workflows from `docker-standalone.yml` to `docker-tfo.yml`
+  - Renamed workflows from `release-standalone.yml` to `release-tfo.yml`
+
+### Fixed
+
+- Config loader now properly handles both legacy and new TelemetryFlow config sections
+- OTEL Collector integration for standard config parsing
+
+### Dependencies
+
+- OpenTelemetry Collector: v0.142.0
+- Go: 1.24+
+
+### Breaking Changes
+
+- Removed `enabled` flags from configuration - now uses standard OTEL service pipelines
+- Renamed config files: `ocb-collector.yaml` → `otel-collector.yaml`
 
 ## [1.0.1] - 2024-12-17
 
@@ -127,6 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.0 | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
+| 1.0.1 | 2024-12-17 | Docker workflows, SBOM, multi-platform support |
 | 1.0.0 | 2024-12-17 | Initial release |
 
 ## Build Types

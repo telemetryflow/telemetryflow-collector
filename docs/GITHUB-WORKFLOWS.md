@@ -2,23 +2,166 @@
 
 This document describes the GitHub Actions workflows available for TelemetryFlow Collector.
 
-## Overview
+## Workflow Architecture
 
-TelemetryFlow Collector supports two build types, each with dedicated workflows:
+```mermaid
+flowchart TB
+    subgraph "GitHub Events"
+        E1[Push to Branch]
+        E2[Pull Request]
+        E3[Push Tag v*.*.*]
+        E4[Push Tag v*.*.*-ocb]
+        E5[Manual Dispatch]
+    end
 
-| Build Type | Description | CLI Command |
-|------------|-------------|-------------|
-| **Standalone** | Custom Cobra CLI with TelemetryFlow branding | `tfo-collector start --config config.yaml` |
-| **OCB** | Standard OpenTelemetry Collector Builder | `tfo-collector --config config.yaml` |
+    subgraph "Workflows"
+        CI[ci.yml<br/>CI - TFO Collector]
+        DT[docker-tfo.yml<br/>Docker Build Standalone]
+        DO[docker-ocb.yml<br/>Docker Build OCB]
+        RT[release-tfo.yml<br/>Release Standalone]
+        RO[release-ocb.yml<br/>Release OCB]
+    end
 
-### Workflow Summary
+    E1 --> CI
+    E1 --> DT
+    E2 --> CI
+    E2 --> DT
+    E3 --> DT
+    E3 --> DO
+    E3 --> RT
+    E3 --> RO
+    E4 --> DO
+    E4 --> RO
+    E5 --> CI
+    E5 --> DT
+    E5 --> DO
+    E5 --> RT
+    E5 --> RO
+```
+
+## Build Types
+
+```mermaid
+flowchart LR
+    subgraph "TelemetryFlow Collector"
+        subgraph "Standalone Build"
+            S1[Custom Cobra CLI]
+            S2[TelemetryFlow Branding]
+            S3[start --config]
+        end
+
+        subgraph "OCB Build"
+            O1[OTEL Collector Builder]
+            O2[Standard OTEL CLI]
+            O3[--config]
+        end
+    end
+
+    S1 --> S2 --> S3
+    O1 --> O2 --> O3
+```
+
+| Build Type | Description | CLI Command | Config File |
+|------------|-------------|-------------|-------------|
+| **Standalone** | Custom Cobra CLI with TelemetryFlow branding | `tfo-collector start --config config.yaml` | `tfo-collector.yaml` |
+| **OCB** | Standard OpenTelemetry Collector Builder | `tfo-collector --config config.yaml` | `otel-collector.yaml` |
+
+---
+
+## Workflow Files
 
 | Workflow | File | Build Type | Purpose |
 |----------|------|------------|---------|
-| Release Standalone | `release-standalone.yml` | Standalone | Release binaries |
-| Release OCB | `release-ocb.yml` | OCB | Release binaries |
-| Docker Standalone | `docker-standalone.yml` | Standalone | Build Docker images |
-| Docker OCB | `docker-ocb.yml` | OCB | Build Docker images |
+| CI | `ci.yml` | Both | Code quality, tests, build verification |
+| Release Standalone | `release-tfo.yml` | Standalone | Release binaries (RPM, DEB, DMG, ZIP) |
+| Release OCB | `release-ocb.yml` | OCB | Release binaries (RPM, DEB, DMG, ZIP) |
+| Docker Standalone | `docker-tfo.yml` | Standalone | Build & push Docker images |
+| Docker OCB | `docker-ocb.yml` | OCB | Build & push Docker images |
+
+---
+
+## CI Workflow
+
+**File:** `.github/workflows/ci.yml`
+
+```mermaid
+flowchart TD
+    subgraph "Triggers"
+        T1[Push: main, master, develop, feature/*, release/*]
+        T2[Pull Request: main, master, develop]
+        T3[Manual Dispatch]
+    end
+
+    subgraph "Lint & Code Quality"
+        L[lint<br/>golangci-lint, staticcheck, fmt, vet]
+    end
+
+    subgraph "Tests"
+        TU[test-unit<br/>Unit Tests]
+        TI[test-integration<br/>Integration Tests]
+        TE[test-e2e<br/>E2E Tests<br/>optional]
+    end
+
+    subgraph "Build Verification"
+        BS[build-standalone<br/>Linux, macOS, Windows<br/>amd64, arm64]
+        BO[build-ocb<br/>Linux<br/>amd64, arm64]
+    end
+
+    subgraph "Security & Reports"
+        SEC[security<br/>gosec, govulncheck]
+        COV[coverage<br/>Coverage Report]
+        SUM[summary<br/>CI Summary]
+    end
+
+    T1 --> L
+    T2 --> L
+    T3 --> L
+
+    L --> TU
+    L --> TI
+    L --> BS
+    L --> BO
+    L --> SEC
+
+    TU --> TE
+    TI --> TE
+    TU --> COV
+    TI --> COV
+
+    BS --> SUM
+    BO --> SUM
+    SEC --> SUM
+    COV --> SUM
+```
+
+### CI Job Matrix
+
+```mermaid
+flowchart LR
+    subgraph "build-standalone"
+        S1[linux/amd64<br/>ubuntu-latest]
+        S2[linux/arm64<br/>ubuntu-latest]
+        S3[darwin/amd64<br/>macos-latest]
+        S4[darwin/arm64<br/>macos-latest]
+        S5[windows/amd64<br/>windows-latest]
+    end
+
+    subgraph "build-ocb"
+        O1[linux/amd64<br/>ubuntu-latest]
+        O2[linux/arm64<br/>ubuntu-latest]
+    end
+```
+
+### CI Manual Dispatch Options
+
+```mermaid
+flowchart TD
+    MD[workflow_dispatch]
+
+    MD --> I1[run_e2e: boolean<br/>Run E2E tests]
+    MD --> I2[skip_lint: boolean<br/>Skip linting]
+    MD --> I3[build_type: choice<br/>all, standalone, ocb]
+```
 
 ---
 
@@ -26,263 +169,529 @@ TelemetryFlow Collector supports two build types, each with dedicated workflows:
 
 ### Release Standalone
 
-**File:** `.github/workflows/release-standalone.yml`
+**File:** `.github/workflows/release-tfo.yml`
 
-Builds and releases TelemetryFlow Collector (Standalone) for multiple platforms.
+```mermaid
+flowchart TD
+    subgraph "Triggers"
+        T1[Push Tag: v*.*.*]
+        T2[Push Tag: v*.*.*-standalone]
+        T3[Manual Dispatch]
+    end
 
-#### Triggers
+    subgraph "Prepare"
+        P[prepare<br/>Determine version, commit, branch]
+    end
 
-| Trigger | Description |
-|---------|-------------|
-| Push tag `v*.*.*` | Standard version tag |
-| Push tag `v*.*.*-standalone` | Explicit standalone tag |
-| Manual dispatch | Run with custom version |
+    subgraph "Build Binaries"
+        BL[build-linux<br/>amd64, arm64]
+        BW[build-windows<br/>amd64]
+        BM[build-macos<br/>amd64, arm64]
+    end
 
-#### Manual Trigger
+    subgraph "Package"
+        PR[package-rpm<br/>amd64, arm64]
+        PD[package-deb<br/>amd64, arm64]
+        PW[package-windows<br/>ZIP with installer]
+        PM[package-macos<br/>DMG amd64, arm64]
+        PT[package-tarball<br/>linux, darwin<br/>amd64, arm64]
+    end
 
-```yaml
-workflow_dispatch:
-  inputs:
-    version:
-      description: 'Version to release (e.g., 1.0.0)'
-      required: true
-      default: '1.0.0'
-    prerelease:
-      description: 'Mark as pre-release'
-      type: boolean
-      default: false
+    subgraph "Release"
+        R[release<br/>Create GitHub Release<br/>Upload all artifacts]
+    end
+
+    T1 --> P
+    T2 --> P
+    T3 --> P
+
+    P --> BL
+    P --> BW
+    P --> BM
+
+    BL --> PR
+    BL --> PD
+    BL --> PT
+    BW --> PW
+    BM --> PM
+    BM --> PT
+
+    PR --> R
+    PD --> R
+    PW --> R
+    PM --> R
+    PT --> R
 ```
-
----
 
 ### Release OCB
 
 **File:** `.github/workflows/release-ocb.yml`
 
-Builds and releases TelemetryFlow Collector (OCB) using OpenTelemetry Collector Builder.
+```mermaid
+flowchart TD
+    subgraph "Triggers"
+        T1[Push Tag: v*.*.*]
+        T2[Push Tag: v*.*.*-ocb]
+        T3[Manual Dispatch]
+    end
 
-#### Triggers
+    subgraph "Prepare"
+        P[prepare<br/>Determine version, OTEL version, commit]
+    end
 
-| Trigger | Description |
-|---------|-------------|
-| Push tag `v*.*.*-ocb` | OCB-specific version tag |
-| Manual dispatch | Run with custom version and OTEL version |
+    subgraph "Build with OCB"
+        BL[build-linux<br/>Install OCB + Build<br/>amd64, arm64]
+        BW[build-windows<br/>Install OCB + Build<br/>amd64]
+        BM[build-macos<br/>Install OCB + Build<br/>amd64, arm64]
+    end
 
-#### Manual Trigger
+    subgraph "Package"
+        PR[package-rpm<br/>amd64, arm64]
+        PD[package-deb<br/>amd64, arm64]
+        PW[package-windows<br/>ZIP with installer]
+        PM[package-macos<br/>DMG amd64, arm64]
+        PT[package-tarball<br/>linux, darwin<br/>amd64, arm64]
+    end
 
-```yaml
-workflow_dispatch:
-  inputs:
-    version:
-      description: 'Version to release (e.g., 1.0.0)'
-      required: true
-      default: '1.0.0'
-    otel_version:
-      description: 'OpenTelemetry version (e.g., 0.114.0)'
-      required: true
-      default: '0.114.0'
-    prerelease:
-      description: 'Mark as pre-release'
-      type: boolean
-      default: false
+    subgraph "Release"
+        R[release<br/>Create GitHub Release<br/>Upload all artifacts]
+    end
+
+    T1 --> P
+    T2 --> P
+    T3 --> P
+
+    P --> BL
+    P --> BW
+    P --> BM
+
+    BL --> PR
+    BL --> PD
+    BL --> PT
+    BW --> PW
+    BM --> PM
+    BM --> PT
+
+    PR --> R
+    PD --> R
+    PW --> R
+    PM --> R
+    PT --> R
+```
+
+### Release Artifact Flow
+
+```mermaid
+flowchart LR
+    subgraph "Linux"
+        L1[tfo-collector-VERSION-1.x86_64.rpm]
+        L2[tfo-collector-VERSION-1.aarch64.rpm]
+        L3[tfo-collector_VERSION_amd64.deb]
+        L4[tfo-collector_VERSION_arm64.deb]
+        L5[tfo-collector-VERSION-linux-amd64.tar.gz]
+        L6[tfo-collector-VERSION-linux-arm64.tar.gz]
+    end
+
+    subgraph "macOS"
+        M1[tfo-collector-VERSION-darwin-amd64.dmg]
+        M2[tfo-collector-VERSION-darwin-arm64.dmg]
+        M3[tfo-collector-VERSION-darwin-amd64.tar.gz]
+        M4[tfo-collector-VERSION-darwin-arm64.tar.gz]
+    end
+
+    subgraph "Windows"
+        W1[tfo-collector-VERSION-windows-amd64.zip]
+    end
+
+    subgraph "Checksums"
+        CS[checksums-sha256.txt]
+    end
+
+    L1 --> CS
+    L2 --> CS
+    L3 --> CS
+    L4 --> CS
+    L5 --> CS
+    L6 --> CS
+    M1 --> CS
+    M2 --> CS
+    M3 --> CS
+    M4 --> CS
+    W1 --> CS
 ```
 
 ---
 
-### Supported Platforms (Both Release Workflows)
-
-| Platform | Architecture | Package Format |
-|----------|--------------|----------------|
-| Linux | amd64, arm64 | RPM, DEB, tar.gz |
-| Windows | amd64 | ZIP (with installer) |
-| macOS | amd64 (Intel), arm64 (Apple Silicon) | DMG, tar.gz |
-
-### Release Usage
-
-#### Automatic Release
-
-```bash
-# Standalone release
-git tag v1.0.0
-git push origin v1.0.0
-
-# Or with explicit suffix
-git tag v1.0.0-standalone
-git push origin v1.0.0-standalone
-
-# OCB release
-git tag v1.0.0-ocb
-git push origin v1.0.0-ocb
-```
-
-#### Manual Release
-
-1. Go to **Actions** > **Release Standalone** or **Release OCB**
-2. Click **Run workflow**
-3. Enter version (e.g., `1.0.0`)
-4. For OCB: Enter OTEL version (e.g., `0.114.0`)
-5. Click **Run workflow**
-
-### Release Artifacts
-
-#### Standalone
-
-- `tfo-collector_{version}_{arch}.deb`
-- `tfo-collector-{version}-1.{rpm_arch}.rpm`
-- `tfo-collector-{version}-standalone-{os}-{arch}.tar.gz`
-- `tfo-collector-{version}-standalone-darwin-{arch}.dmg`
-- `tfo-collector-{version}-standalone-windows-amd64.zip`
-
-#### OCB
-
-- `tfo-collector-ocb_{version}_{arch}.deb`
-- `tfo-collector-ocb-{version}-1.{rpm_arch}.rpm`
-- `tfo-collector-ocb-{version}-{os}-{arch}.tar.gz`
-- `tfo-collector-ocb-{version}-darwin-{arch}.dmg`
-- `tfo-collector-ocb-{version}-windows-amd64.zip`
-
----
-
-## Docker Build Workflows
+## Docker Workflows
 
 ### Docker Standalone
 
-**File:** `.github/workflows/docker-standalone.yml`
+**File:** `.github/workflows/docker-tfo.yml`
 
-Builds and publishes Docker images for TelemetryFlow Collector (Standalone).
+```mermaid
+flowchart TD
+    subgraph "Triggers"
+        T1[Push: main, master]
+        T2[Push Tag: v*.*.*]
+        T3[Pull Request]
+        T4[Manual Dispatch]
+    end
 
-#### Triggers
+    subgraph "Prepare"
+        P[prepare<br/>Docker metadata<br/>Tags & Labels]
+    end
 
-| Trigger | Description |
-|---------|-------------|
-| Push to `main`/`master` | Build `latest` and `standalone` tags |
-| Push tag `v*.*.*` | Build version tags |
-| Push tag `v*.*.*-standalone` | Build version tags |
-| Pull request | Build only (no push) |
-| Manual dispatch | Run with custom options |
+    subgraph "Build"
+        B[build<br/>Multi-platform<br/>linux/amd64, linux/arm64<br/>SBOM generation]
+    end
 
-#### Path Filters
+    subgraph "Security"
+        S[scan<br/>Trivy vulnerability scanner]
+    end
 
-- `Dockerfile`
-- `cmd/**`, `internal/**`, `pkg/**`
-- `go.mod`, `go.sum`
-- `configs/tfo-collector.yaml`
-- `.github/workflows/docker-standalone.yml`
+    subgraph "Report"
+        R[summary<br/>Build Summary]
+    end
 
----
+    T1 --> P
+    T2 --> P
+    T3 --> P
+    T4 --> P
+
+    P --> B
+    B --> S
+    B --> R
+```
 
 ### Docker OCB
 
 **File:** `.github/workflows/docker-ocb.yml`
 
-Builds and publishes Docker images for TelemetryFlow Collector (OCB).
+```mermaid
+flowchart TD
+    subgraph "Triggers"
+        T1[Push Tag: v*.*.*]
+        T2[Manual Dispatch]
+    end
 
-#### Triggers
+    subgraph "Prepare"
+        P[prepare<br/>Docker metadata<br/>OTEL version]
+    end
 
-| Trigger | Description |
-|---------|-------------|
-| Push tag `v*.*.*-ocb` | Build version tags |
-| Manual dispatch | Run with custom options |
+    subgraph "Build"
+        B[build<br/>Multi-platform<br/>linux/amd64, linux/arm64<br/>OCB inside Docker]
+    end
 
-#### Path Filters
+    subgraph "Security"
+        S[scan<br/>Trivy vulnerability scanner]
+    end
 
-- `Dockerfile.ocb`
-- `manifest.yaml`
-- `configs/ocb-collector.yaml`
-- `.github/workflows/docker-ocb.yml`
+    subgraph "Report"
+        R[summary<br/>Build Summary]
+    end
 
----
+    T1 --> P
+    T2 --> P
 
-### Docker Registries
-
-| Registry | Standalone Image | OCB Image |
-|----------|------------------|-----------|
-| GitHub Container Registry | `ghcr.io/{owner}/telemetryflow-collector` | `ghcr.io/{owner}/telemetryflow-collector-ocb` |
-| Docker Hub | `telemetryflow/telemetryflow-collector` | `telemetryflow/telemetryflow-collector-ocb` |
+    P --> B
+    B --> S
+    B --> R
+```
 
 ### Docker Image Tags
 
-#### Standalone Tags
+```mermaid
+flowchart TD
+    subgraph "Git Tag v1.2.3"
+        GT[v1.2.3]
+    end
 
-| Tag Pattern | Description | Example |
-|-------------|-------------|---------|
-| `{version}` | Full semantic version | `1.0.0` |
-| `{major}.{minor}` | Major.minor version | `1.0` |
-| `{major}` | Major version only | `1` |
-| `latest` | Latest from main branch | `latest` |
-| `standalone` | Standalone build marker | `standalone` |
-| `sha-{commit}-standalone` | Git commit SHA | `sha-abc1234-standalone` |
+    subgraph "Standalone Tags"
+        ST1[1.2.3]
+        ST2[1.2]
+        ST3[1]
+        ST4[latest]
+        ST5[standalone]
+        ST6[sha-abc1234-standalone]
+    end
 
-#### OCB Tags
+    subgraph "OCB Tags"
+        OT1[1.2.3-ocb]
+        OT2[1.2-ocb]
+        OT3[1-ocb]
+        OT4[latest]
+        OT5[ocb]
+        OT6[sha-abc1234-ocb]
+    end
 
-| Tag Pattern | Description | Example |
-|-------------|-------------|---------|
-| `{version}` | Full semantic version | `1.0.0` |
-| `{version}-ocb` | Version with OCB suffix | `1.0.0-ocb` |
-| `latest` | Latest OCB build | `latest` |
-| `ocb` | OCB build marker | `ocb` |
-| `sha-{commit}-ocb` | Git commit SHA | `sha-abc1234-ocb` |
+    GT --> ST1
+    GT --> ST2
+    GT --> ST3
+    GT --> ST4
+    GT --> ST5
+    GT --> ST6
 
-### Docker Platforms
+    GT --> OT1
+    GT --> OT2
+    GT --> OT3
+    GT --> OT4
+    GT --> OT5
+    GT --> OT6
+```
 
-- `linux/amd64`
-- `linux/arm64`
+### Docker Registry Flow
 
-### Manual Docker Trigger
+```mermaid
+flowchart LR
+    subgraph "Build"
+        B[Docker Build<br/>Multi-platform]
+    end
 
-```yaml
+    subgraph "Registries"
+        DH[Docker Hub<br/>telemetryflow/telemetryflow-collector]
+    end
+
+    subgraph "Security"
+        SBOM[SBOM<br/>SPDX format]
+        TRIVY[Trivy Scan<br/>CRITICAL, HIGH]
+        PROV[Provenance<br/>Attestation]
+    end
+
+    B --> DH
+    B --> SBOM
+    B --> TRIVY
+    B --> PROV
+```
+
+---
+
+## Tag Routing
+
+```mermaid
+flowchart TD
+    subgraph "Git Tags"
+        V1[v1.1.0]
+        V2[v1.1.0-standalone]
+        V3[v1.1.0-ocb]
+    end
+
+    subgraph "Standalone Workflows"
+        RST[release-tfo.yml]
+        DST[docker-tfo.yml]
+    end
+
+    subgraph "OCB Workflows"
+        ROCB[release-ocb.yml]
+        DOCB[docker-ocb.yml]
+    end
+
+    subgraph "CI Workflow"
+        CIW[ci.yml]
+    end
+
+    V1 --> RST
+    V1 --> DST
+    V1 --> ROCB
+    V1 --> DOCB
+    V2 --> RST
+    V2 --> DST
+    V3 --> ROCB
+    V3 --> DOCB
+
+    V1 -.-> CIW
+    V2 -.-> CIW
+    V3 -.-> CIW
+```
+
+---
+
+## Version Handling
+
+```mermaid
+flowchart LR
+    subgraph "Input"
+        I1[Tag: v1.1.0-standalone]
+        I2[Tag: v1.1.0-ocb]
+        I3[Tag: v1.1.0]
+        I4[Manual: 1.1.0]
+    end
+
+    subgraph "Processing"
+        P[Strip suffixes<br/>-standalone, -ocb]
+    end
+
+    subgraph "Output"
+        O[Clean Version: 1.1.0]
+    end
+
+    I1 --> P
+    I2 --> P
+    I3 --> P
+    I4 --> P
+    P --> O
+```
+
+---
+
+## Supported Platforms
+
+```mermaid
+flowchart TB
+    subgraph "Linux"
+        LA[amd64<br/>x86_64]
+        LR[arm64<br/>aarch64]
+    end
+
+    subgraph "macOS"
+        MI[Intel<br/>amd64]
+        MA[Apple Silicon<br/>arm64]
+    end
+
+    subgraph "Windows"
+        WA[amd64<br/>64-bit]
+    end
+
+    subgraph "Packages"
+        RPM[RPM<br/>RHEL, CentOS, Fedora]
+        DEB[DEB<br/>Debian, Ubuntu]
+        DMG[DMG<br/>macOS Installer]
+        ZIP[ZIP<br/>Windows Portable]
+        TAR[tar.gz<br/>Universal]
+    end
+
+    LA --> RPM
+    LA --> DEB
+    LA --> TAR
+    LR --> RPM
+    LR --> DEB
+    LR --> TAR
+    MI --> DMG
+    MI --> TAR
+    MA --> DMG
+    MA --> TAR
+    WA --> ZIP
+```
+
+---
+
+## Environment & Secrets
+
+```mermaid
+flowchart LR
+    subgraph "Secrets"
+        GH[GITHUB_TOKEN<br/>Auto-provided]
+        DH[DOCKERHUB_TOKEN<br/>Docker Hub push]
+    end
+
+    subgraph "Variables"
+        DHU[DOCKERHUB_USERNAME<br/>Docker Hub username]
+    end
+
+    subgraph "Environment"
+        GO[GO_VERSION: 1.24]
+        OCB[OCB_VERSION: 0.114.0]
+        OTEL[OTEL_VERSION: 0.114.0]
+    end
+
+    GH --> |Required| ALL[All Workflows]
+    DH --> |Optional| DOCKER[Docker Workflows]
+    DHU --> |Optional| DOCKER
+    GO --> ALL
+    OCB --> |OCB Build| OCB_WF[OCB Workflows]
+    OTEL --> |OCB Build| OCB_WF
+```
+
+---
+
+## Security Features
+
+```mermaid
+flowchart TD
+    subgraph "CI Security"
+        GS[gosec<br/>Go Security Scanner]
+        GV[govulncheck<br/>Vulnerability Check]
+        CQL[CodeQL<br/>SARIF Upload]
+    end
+
+    subgraph "Docker Security"
+        TRIVY[Trivy<br/>Container Scanning]
+        SBOM[SBOM<br/>Software Bill of Materials]
+        PROV[Provenance<br/>Build Attestation]
+    end
+
+    subgraph "Release Security"
+        CS[SHA256 Checksums]
+    end
+
+    GS --> CQL
+    GV --> CQL
+    TRIVY --> CQL
+```
+
+---
+
+## Exposed Ports
+
+```mermaid
+flowchart LR
+    subgraph "OTLP Receivers"
+        P1[4317<br/>gRPC]
+        P2[4318<br/>HTTP]
+    end
+
+    subgraph "Metrics"
+        P3[8888<br/>Self Metrics]
+        P4[8889<br/>Prometheus Export]
+    end
+
+    subgraph "Extensions"
+        P5[13133<br/>Health Check]
+        P6[55679<br/>zPages]
+        P7[1777<br/>pprof]
+    end
+```
+
+---
+
+## Quick Reference
+
+### Tag Conventions
+
+```mermaid
+flowchart LR
+    subgraph "Tagging"
+        T1[v1.1.0 → Both builds]
+        T2[v1.1.0-standalone → Standalone only]
+        T3[v1.1.0-ocb → OCB only]
+    end
+```
+
+### Release Commands
+
+```bash
+# Standalone release
+git tag v1.1.0
+git push origin v1.1.0
+
+# Or explicit standalone
+git tag v1.1.0-standalone
+git push origin v1.1.0-standalone
+
+# OCB-only release
+git tag v1.1.0-ocb
+git push origin v1.1.0-ocb
+```
+
+### Docker Pull Commands
+
+```bash
 # Standalone
-workflow_dispatch:
-  inputs:
-    version:
-      description: 'Version tag (e.g., 1.0.0)'
-    push:
-      description: 'Push images to registry'
-      type: boolean
-      default: true
-    platforms:
-      description: 'Target platforms'
-      default: 'linux/amd64,linux/arm64'
-
-# OCB (additional input)
-    otel_version:
-      description: 'OpenTelemetry version (e.g., 0.114.0)'
-      default: '0.114.0'
-```
-
-### Docker Usage
-
-#### Automatic Build
-
-```bash
-# Standalone - push to main
-git push origin main
-
-# Standalone - version tag
-git tag v1.0.0
-git push origin v1.0.0
-
-# OCB - version tag
-git tag v1.0.0-ocb
-git push origin v1.0.0-ocb
-```
-
-#### Pull Commands
-
-```bash
-# Standalone - GitHub Container Registry
-docker pull ghcr.io/{owner}/telemetryflow-collector:latest
-docker pull ghcr.io/{owner}/telemetryflow-collector:1.0.0
-
-# Standalone - Docker Hub
 docker pull telemetryflow/telemetryflow-collector:latest
+docker pull telemetryflow/telemetryflow-collector:1.1.0
 
-# OCB - GitHub Container Registry
-docker pull ghcr.io/{owner}/telemetryflow-collector-ocb:latest
-docker pull ghcr.io/{owner}/telemetryflow-collector-ocb:1.0.0-ocb
-
-# OCB - Docker Hub
+# OCB
 docker pull telemetryflow/telemetryflow-collector-ocb:latest
+docker pull telemetryflow/telemetryflow-collector-ocb:1.1.0-ocb
 ```
 
 ### Run Commands
@@ -303,298 +712,40 @@ docker run -d \
 
 ---
 
-## Security Features
-
-All Docker workflows include:
-
-| Feature | Description |
-|---------|-------------|
-| **SBOM Generation** | Software Bill of Materials in SPDX format |
-| **Trivy Scanning** | Vulnerability scanning (CRITICAL, HIGH) |
-| **Provenance** | Build provenance attestation |
-| **Layer Caching** | GitHub Actions cache for faster builds |
-
----
-
-## Environment Variables
-
-### Required Secrets
-
-| Secret | Description | Required For |
-|--------|-------------|--------------|
-| `GITHUB_TOKEN` | Auto-provided by GitHub | All workflows |
-| `DOCKERHUB_TOKEN` | Docker Hub access token | Docker Hub push |
-
-### Required Variables
-
-| Variable | Description | Required For |
-|----------|-------------|--------------|
-| `DOCKERHUB_USERNAME` | Docker Hub username | Docker Hub push |
-
-### Setting Up Docker Hub (Optional)
-
-1. Go to **Settings** > **Secrets and variables** > **Actions**
-2. Add secret: `DOCKERHUB_TOKEN`
-3. Add variable: `DOCKERHUB_USERNAME`
-
----
-
-## Build Information
-
-### Standalone Build Variables
-
-| Variable | Description |
-|----------|-------------|
-| `VERSION` | Semantic version |
-| `GIT_COMMIT` | Short commit SHA |
-| `GIT_BRANCH` | Git branch name |
-| `BUILD_TIME` | UTC build timestamp |
-| `BuildType` | `standalone` |
-
-### OCB Build Variables
-
-| Variable | Description |
-|----------|-------------|
-| `VERSION` | Semantic version |
-| `GIT_COMMIT` | Short commit SHA |
-| `BUILD_TIME` | UTC build timestamp |
-| `OtelVersion` | OpenTelemetry version |
-
-Access via CLI:
-
-```bash
-# Standalone
-tfo-collector version
-
-# OCB
-tfo-collector --version
-```
-
----
-
-## Workflow Jobs
-
-### Release Workflow Jobs
-
-```mermaid
-flowchart LR
-    subgraph Prepare
-        A[prepare]
-    end
-
-    subgraph Build
-        B1[build-linux<br/>amd64, arm64]
-        B2[build-windows<br/>amd64]
-        B3[build-macos<br/>amd64, arm64]
-    end
-
-    subgraph Package
-        P1[package-rpm]
-        P2[package-deb]
-        P3[package-windows]
-        P4[package-macos]
-        P5[package-tarball]
-    end
-
-    subgraph Release
-        R[release]
-    end
-
-    A --> B1
-    A --> B2
-    A --> B3
-
-    B1 --> P1
-    B1 --> P2
-    B1 --> P5
-    B2 --> P3
-    B3 --> P4
-    B3 --> P5
-
-    P1 --> R
-    P2 --> R
-    P3 --> R
-    P4 --> R
-    P5 --> R
-```
-
-### Docker Workflow Jobs
-
-```mermaid
-flowchart LR
-    subgraph Prepare
-        A[prepare]
-    end
-
-    subgraph Build
-        B[build<br/>linux/amd64, linux/arm64]
-    end
-
-    subgraph Security
-        S[scan<br/>Trivy]
-    end
-
-    subgraph Report
-        R[summary]
-    end
-
-    A --> B
-    B --> S
-    B --> R
-```
-
-### Build Type Selection
-
-```mermaid
-flowchart TD
-    subgraph "Git Tags"
-        T1[v1.0.0]
-        T2[v1.0.0-standalone]
-        T3[v1.0.0-ocb]
-    end
-
-    subgraph "Workflows Triggered"
-        W1[release-standalone.yml<br/>docker-standalone.yml]
-        W2[release-ocb.yml<br/>docker-ocb.yml]
-    end
-
-    subgraph "Docker Images"
-        D1[telemetryflow-collector:1.0.0]
-        D2[telemetryflow-collector-ocb:1.0.0]
-    end
-
-    T1 --> W1
-    T2 --> W1
-    T3 --> W2
-
-    W1 --> D1
-    W2 --> D2
-```
-
-### Semantic Versioning Tags
-
-```mermaid
-flowchart TD
-    subgraph "Standalone Tag"
-        ST[v1.2.3]
-    end
-
-    subgraph "OCB Tag"
-        OT[v1.2.3-ocb]
-    end
-
-    subgraph "Standalone Docker Tags"
-        SD1[1.2.3]
-        SD2[1.2]
-        SD3[1]
-        SD4[latest]
-        SD5[standalone]
-    end
-
-    subgraph "OCB Docker Tags"
-        OD1[1.2.3-ocb]
-        OD2[1.2-ocb]
-        OD3[1-ocb]
-        OD4[latest]
-        OD5[ocb]
-    end
-
-    ST --> SD1
-    ST --> SD2
-    ST --> SD3
-    ST --> SD4
-    ST --> SD5
-
-    OT --> OD1
-    OT --> OD2
-    OT --> OD3
-    OT --> OD4
-    OT --> OD5
-```
-
----
-
 ## Configuration Files
 
-### Standalone
+```mermaid
+flowchart TD
+    subgraph "Standalone Build"
+        DF1[Dockerfile]
+        CF1[configs/tfo-collector.yaml]
+    end
 
-| File | Purpose |
-|------|---------|
-| `Dockerfile` | Standalone Docker build |
-| `configs/tfo-collector.yaml` | Custom format with `enabled` flags |
-
-### OCB
-
-| File | Purpose |
-|------|---------|
-| `Dockerfile.ocb` | OCB Docker build |
-| `manifest.yaml` | OCB component manifest |
-| `configs/ocb-collector.yaml` | Standard OTEL format |
+    subgraph "OCB Build"
+        DF2[Dockerfile.ocb]
+        MF[manifest.yaml]
+        CF2[configs/otel-collector.yaml]
+    end
+```
 
 ---
 
 ## CLI Differences
 
-| Feature | Standalone | OCB |
-|---------|------------|-----|
-| Start command | `start --config` | `--config` |
-| Version command | `version` | `--version` |
-| Config validate | `config validate` | `validate --config` |
-| Banner | TelemetryFlow ASCII | Standard OTEL |
+```mermaid
+flowchart LR
+    subgraph "Standalone CLI"
+        SC1[tfo-collector start --config config.yaml]
+        SC2[tfo-collector version]
+        SC3[tfo-collector config validate]
+    end
 
----
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. OCB Build Fails
-
-**Cause**: OCB version mismatch
-
-**Solution**: Ensure `manifest.yaml` components match the OTEL version
-
-#### 2. Standalone Config Error
-
-**Cause**: Invalid `enabled` flags in config
-
-**Solution**: Use `configs/tfo-collector.yaml` format for standalone
-
-#### 3. Docker Hub Push Fails
-
-**Cause**: Missing credentials
-
-**Solution**: Configure `DOCKERHUB_TOKEN` and `DOCKERHUB_USERNAME`
-
-#### 4. Multi-arch Build Slow
-
-**Cause**: No cache on first build
-
-**Solution**: Subsequent builds will use GitHub Actions cache
-
----
-
-## Quick Reference
-
-### Tag Conventions
-
-| Tag | Triggers | Build Type |
-|-----|----------|------------|
-| `v1.0.0` | Standalone release + Docker | Standalone |
-| `v1.0.0-standalone` | Standalone release + Docker | Standalone |
-| `v1.0.0-ocb` | OCB release + Docker | OCB |
-
-### Exposed Ports
-
-| Port | Protocol | Description |
-|------|----------|-------------|
-| 4317 | gRPC | OTLP gRPC receiver |
-| 4318 | HTTP | OTLP HTTP receiver |
-| 8888 | HTTP | Prometheus metrics (self) |
-| 8889 | HTTP | Prometheus exporter |
-| 13133 | HTTP | Health check |
-| 55679 | HTTP | zPages |
-| 1777 | HTTP | pprof |
+    subgraph "OCB CLI"
+        OC1[tfo-collector --config config.yaml]
+        OC2[tfo-collector --version]
+        OC3[tfo-collector validate --config config.yaml]
+    end
+```
 
 ---
 
