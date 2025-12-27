@@ -26,7 +26,7 @@ require (
 	// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter
 	// -------------------------------------------------------------------------
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.142.0 // File exporter
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.130.0 // Loki logs exporter
+	// lokiexporter deprecated July 2024 - Loki now supports OTLP natively
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.142.0 // Prometheus scrape endpoint
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.142.0 // Prometheus remote write
 
@@ -202,7 +202,6 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.8.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
-	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/hashicorp/consul/api v1.32.1 // indirect
@@ -280,7 +279,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.130.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.142.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.142.0 // indirect

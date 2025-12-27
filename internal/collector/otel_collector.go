@@ -42,34 +42,34 @@ import (
 	"go.opentelemetry.io/collector/connector/forwardconnector"
 
 	// Contrib receivers
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 
 	// Contrib processors
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 	// Contrib exporters
+	// Note: lokiexporter deprecated July 2024 - Loki now supports OTLP natively
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 
 	// Contrib extensions
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 
 	// Contrib connectors - Exemplars support
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 )
 
 // OTELCollector wraps the OpenTelemetry Collector service
@@ -103,7 +103,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 	// ==========================================================================
 	// EXTENSIONS
 	// ==========================================================================
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		zpagesextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		pprofextension.NewFactory(),
@@ -115,7 +115,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 	// ==========================================================================
 	// RECEIVERS - Metrics, Logs, Traces
 	// ==========================================================================
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		// Core OTLP
 		otlpreceiver.NewFactory(),
 		// Traces
@@ -134,7 +134,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 	// ==========================================================================
 	// PROCESSORS - Transform, Sample, Enrich
 	// ==========================================================================
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		// Core
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
@@ -155,7 +155,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 	// ==========================================================================
 	// EXPORTERS - Send to Backends
 	// ==========================================================================
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		// Core OTLP
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
@@ -163,8 +163,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 		// Metrics
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
-		// Logs
-		lokiexporter.NewFactory(),
+		// Files
 		fileexporter.NewFactory(),
 	)
 	if err != nil {
@@ -174,7 +173,7 @@ func (c *OTELCollector) components() (otelcol.Factories, error) {
 	// ==========================================================================
 	// CONNECTORS - Pipeline Bridging & Exemplars
 	// ==========================================================================
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		forwardconnector.NewFactory(),
 		// Exemplars support
 		spanmetricsconnector.NewFactory(),
