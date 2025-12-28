@@ -36,7 +36,7 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'manifest.yaml'
-      - '.github/workflows/ci-collector.yml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
@@ -174,8 +174,16 @@ jobs:
       - name: Download dependencies
         run: make deps
 
+      - name: Build collector binary standalone
+        run: make build-standalone
+
+      - name: Build collector binary ocb
+        run: make build-ocb
+
       - name: Run integration tests
         run: make test-integration-ci
+        env:
+          BUILD_DIR: ./build
 
       - name: Upload integration test coverage
         uses: actions/upload-artifact@v4
@@ -205,8 +213,11 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Build collector (standalone)
+      - name: Build collector binary standalone
         run: make build-standalone
+
+      - name: Build collector binary ocb
+        run: make build-ocb
 
       - name: Run E2E tests
         run: make test-e2e-ci
@@ -269,6 +280,14 @@ jobs:
       - name: Build standalone binary
         shell: bash
         run: make ci-build-standalone
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Build ocb binary
+        shell: bash
+        run: make ci-build-ocb
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}

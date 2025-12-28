@@ -70,7 +70,7 @@ help:
 	@echo "  make tidy             - Tidy go modules"
 	@echo ""
 	@echo "$(YELLOW)OCB Build ($(BUILD_DIR)/$(BINARY_NAME_OCB)):$(NC)"
-	@echo "  make build            - Build OCB collector"
+	@echo "  make build-ocb        - Build OCB collector"
 	@echo "  make build-all        - Build OCB for all platforms"
 	@echo "  make install-ocb      - Install OpenTelemetry Collector Builder"
 	@echo "  make generate         - Generate collector code using OCB"
@@ -136,7 +136,7 @@ generate: check-ocb
 	@echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
 
 # Build the collector using OCB (uses OCB-generated main.go)
-build: generate
+build-ocb: generate
 	@echo "$(GREEN)Building $(BINARY_NAME_OCB) v$(VERSION) with OCB...$(NC)"
 	@cd $(BUILD_DIR_OCB) && go build -ldflags "$(LDFLAGS)" -o ../$(BINARY_NAME_OCB) .
 	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME_OCB)$(NC)"
