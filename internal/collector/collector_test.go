@@ -41,7 +41,7 @@ func getFreePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
@@ -367,7 +367,7 @@ func TestHealthServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to check health endpoint: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
@@ -379,7 +379,7 @@ func TestHealthServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to check stats endpoint: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200 for stats, got %d", resp.StatusCode)

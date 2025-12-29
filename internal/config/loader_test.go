@@ -151,11 +151,11 @@ receivers:
 // TestLoadWithEnvOverrides tests environment variable overrides
 func TestLoadWithEnvOverrides(t *testing.T) {
 	// Set environment variables
-	os.Setenv("TELEMETRYFLOW_LOG_LEVEL", "debug")
-	os.Setenv("TELEMETRYFLOW_COLLECTOR_NAME", "Env Collector")
+	_ = os.Setenv("TELEMETRYFLOW_LOG_LEVEL", "debug")
+	_ = os.Setenv("TELEMETRYFLOW_COLLECTOR_NAME", "Env Collector")
 	defer func() {
-		os.Unsetenv("TELEMETRYFLOW_LOG_LEVEL")
-		os.Unsetenv("TELEMETRYFLOW_COLLECTOR_NAME")
+		_ = os.Unsetenv("TELEMETRYFLOW_LOG_LEVEL")
+		_ = os.Unsetenv("TELEMETRYFLOW_COLLECTOR_NAME")
 	}()
 
 	tmpDir := t.TempDir()
@@ -263,7 +263,7 @@ collector:
 		if err := os.WriteFile(relativeFile, []byte(configContent), 0644); err != nil {
 			t.Fatalf("Failed to write config file: %v", err)
 		}
-		defer os.Remove(relativeFile)
+		defer func() { _ = os.Remove(relativeFile) }()
 
 		cfg, err := loader.LoadFromFile("test_config_temp.yaml")
 		if err != nil {

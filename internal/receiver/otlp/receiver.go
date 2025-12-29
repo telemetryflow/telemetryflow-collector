@@ -46,9 +46,9 @@ type Consumer interface {
 // Config holds the OTLP receiver configuration
 type Config struct {
 	// gRPC configuration
-	GRPCEnabled   bool
-	GRPCEndpoint  string
-	GRPCMaxRecvMsgSizeMiB   int
+	GRPCEnabled              bool
+	GRPCEndpoint             string
+	GRPCMaxRecvMsgSizeMiB    int
 	GRPCMaxConcurrentStreams uint32
 
 	// HTTP configuration
@@ -324,7 +324,7 @@ func (r *Receiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer req.Body.Close()
+	defer func() { _ = req.Body.Close() }()
 
 	// Determine content type and unmarshal accordingly
 	contentType := req.Header.Get("Content-Type")
@@ -379,7 +379,7 @@ func (r *Receiver) handleMetrics(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer req.Body.Close()
+	defer func() { _ = req.Body.Close() }()
 
 	contentType := req.Header.Get("Content-Type")
 	exportReq := pmetricotlp.NewExportRequest()
@@ -432,7 +432,7 @@ func (r *Receiver) handleLogs(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer req.Body.Close()
+	defer func() { _ = req.Body.Close() }()
 
 	contentType := req.Header.Get("Content-Type")
 	exportReq := plogotlp.NewExportRequest()

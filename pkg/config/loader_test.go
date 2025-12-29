@@ -110,8 +110,8 @@ func TestGetEnv(t *testing.T) {
 	loader := NewLoader(WithEnvPrefix("TEST_LOADER"))
 
 	// Set test env var
-	os.Setenv("TEST_LOADER_MY_VAR", "test_value")
-	defer os.Unsetenv("TEST_LOADER_MY_VAR")
+	_ = os.Setenv("TEST_LOADER_MY_VAR", "test_value")
+	defer func() { _ = os.Unsetenv("TEST_LOADER_MY_VAR") }()
 
 	value := loader.GetEnv("MY_VAR")
 	if value != "test_value" {
@@ -130,8 +130,8 @@ func TestGetEnvOrDefault(t *testing.T) {
 	loader := NewLoader(WithEnvPrefix("TEST_LOADER"))
 
 	// Set test env var
-	os.Setenv("TEST_LOADER_EXISTS", "exists_value")
-	defer os.Unsetenv("TEST_LOADER_EXISTS")
+	_ = os.Setenv("TEST_LOADER_EXISTS", "exists_value")
+	defer func() { _ = os.Unsetenv("TEST_LOADER_EXISTS") }()
 
 	// Should return env value when set
 	value := loader.GetEnvOrDefault("EXISTS", "default")
@@ -212,8 +212,8 @@ func TestLoadWithEnvExpansion(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 
-	os.Setenv("TEST_DB_HOST", "db.example.com")
-	defer os.Unsetenv("TEST_DB_HOST")
+	_ = os.Setenv("TEST_DB_HOST", "db.example.com")
+	defer func() { _ = os.Unsetenv("TEST_DB_HOST") }()
 
 	configContent := `
 database:
@@ -395,8 +395,8 @@ func BenchmarkNewLoaderWithOptions(b *testing.B) {
 
 func BenchmarkGetEnv(b *testing.B) {
 	loader := NewLoader(WithEnvPrefix("BENCH"))
-	os.Setenv("BENCH_TEST_KEY", "test_value")
-	defer os.Unsetenv("BENCH_TEST_KEY")
+	_ = os.Setenv("BENCH_TEST_KEY", "test_value")
+	defer func() { _ = os.Unsetenv("BENCH_TEST_KEY") }()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

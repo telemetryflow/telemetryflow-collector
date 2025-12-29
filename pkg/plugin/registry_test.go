@@ -538,11 +538,9 @@ func TestMockComponentInterface(t *testing.T) {
 
 // Benchmark tests
 func BenchmarkRegister(b *testing.B) {
-	r := NewRegistry()
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r = NewRegistry() // Reset to avoid duplicate errors
+		r := NewRegistry() // Reset to avoid duplicate errors
 		_ = r.Register("test", newMockComponent("test", TypeReceiver))
 	}
 }
