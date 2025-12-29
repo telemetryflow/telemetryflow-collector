@@ -162,6 +162,19 @@ jobs:
     needs: lint
     if: always() && (needs.lint.result == 'success' || needs.lint.result == 'skipped')
     steps:
+      - name: Free disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          # Remove unnecessary packages to free space for OCB build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -201,6 +214,19 @@ jobs:
     needs: [test-unit, test-integration]
     if: ${{ inputs.run_e2e == true || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
+      - name: Free disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          # Remove unnecessary packages to free space for OCB build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -255,6 +281,20 @@ jobs:
             arch: amd64
             runner: windows-latest
     steps:
+      - name: Free disk space (Ubuntu only)
+        if: runner.os == 'Linux'
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          # Remove unnecessary packages to free space for OCB build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
