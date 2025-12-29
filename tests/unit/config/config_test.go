@@ -81,6 +81,110 @@ func TestDefaultConfig(t *testing.T) {
 	})
 }
 
+func TestDefaultConfigTelemetryFlow(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.False(t, cfg.TelemetryFlow.Enabled)
+	assert.Equal(t, "localhost:4317", cfg.TelemetryFlow.Endpoint)
+	assert.True(t, cfg.TelemetryFlow.TLS.Enabled)
+	assert.False(t, cfg.TelemetryFlow.TLS.InsecureSkipVerify)
+}
+
+func TestDefaultConfigCollector(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.Empty(t, cfg.Collector.ID)
+	assert.Equal(t, "TelemetryFlow Collector", cfg.Collector.Name)
+	require.NotNil(t, cfg.Collector.Tags)
+	assert.Equal(t, "production", cfg.Collector.Tags["environment"])
+}
+
+func TestDefaultConfigOTLPReceiver(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.True(t, cfg.Receivers.OTLP.Enabled)
+
+	// gRPC settings
+	assert.True(t, cfg.Receivers.OTLP.Protocols.GRPC.Enabled)
+	assert.Equal(t, "0.0.0.0:4317", cfg.Receivers.OTLP.Protocols.GRPC.Endpoint)
+	assert.Equal(t, 4, cfg.Receivers.OTLP.Protocols.GRPC.MaxRecvMsgSizeMiB)
+	assert.Equal(t, uint32(100), cfg.Receivers.OTLP.Protocols.GRPC.MaxConcurrentStreams)
+
+	// HTTP settings
+	assert.True(t, cfg.Receivers.OTLP.Protocols.HTTP.Enabled)
+	assert.Equal(t, "0.0.0.0:4318", cfg.Receivers.OTLP.Protocols.HTTP.Endpoint)
+	assert.Equal(t, int64(10*1024*1024), cfg.Receivers.OTLP.Protocols.HTTP.MaxRequestBodySize)
+}
+
+func TestDefaultConfigPrometheusReceiver(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.False(t, cfg.Receivers.Prometheus.Enabled)
+}
+
+func TestDefaultConfigProcessors(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	// Batch processor
+	assert.True(t, cfg.Processors.Batch.Enabled)
+	assert.Equal(t, uint32(8192), cfg.Processors.Batch.SendBatchSize)
+	assert.Equal(t, 200*time.Millisecond, cfg.Processors.Batch.Timeout)
+
+	// Memory limiter
+	assert.True(t, cfg.Processors.Memory.Enabled)
+	assert.Equal(t, 1*time.Second, cfg.Processors.Memory.CheckInterval)
+	assert.Equal(t, uint32(80), cfg.Processors.Memory.LimitPercentage)
+}
+
+func TestDefaultConfigExporters(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	// OTLP exporter
+	assert.False(t, cfg.Exporters.OTLP.Enabled)
+	assert.Equal(t, "localhost:4317", cfg.Exporters.OTLP.Endpoint)
+	assert.Equal(t, "gzip", cfg.Exporters.OTLP.Compression)
+
+	// Debug exporter
+	assert.Equal(t, "detailed", cfg.Exporters.Debug.Verbosity)
+
+	// Logging exporter (legacy)
+	assert.True(t, cfg.Exporters.Logging.Enabled)
+}
+
+func TestDefaultConfigExtensions(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	// Health check
+	assert.True(t, cfg.Extensions.Health.Enabled)
+	assert.Equal(t, "0.0.0.0:13133", cfg.Extensions.Health.Endpoint)
+	assert.Equal(t, "/", cfg.Extensions.Health.Path)
+
+	// zPages
+	assert.False(t, cfg.Extensions.ZPages.Enabled)
+
+	// pprof
+	assert.False(t, cfg.Extensions.PPROF.Enabled)
+}
+
+func TestDefaultConfigLogging(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.Equal(t, "info", cfg.Logging.Level)
+	assert.Equal(t, "json", cfg.Logging.Format)
+	assert.Equal(t, 100, cfg.Logging.MaxSizeMB)
+}
+
+func TestDefaultConfigService(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	assert.Len(t, cfg.Service.Extensions, 3)
+
+	// Check traces pipeline
+	assert.NotEmpty(t, cfg.Service.Pipelines.Traces.Receivers)
+	assert.NotEmpty(t, cfg.Service.Pipelines.Traces.Processors)
+	assert.NotEmpty(t, cfg.Service.Pipelines.Traces.Exporters)
+}
+
 func TestConfigValidation(t *testing.T) {
 	t.Run("should pass validation with valid config", func(t *testing.T) {
 		cfg := config.DefaultConfig()
@@ -189,6 +293,23 @@ func TestTLSConfig(t *testing.T) {
 		assert.Equal(t, "/etc/ssl/cert.pem", cfg.Receivers.OTLP.Protocols.GRPC.TLS.CertFile)
 		assert.Equal(t, "1.3", cfg.Receivers.OTLP.Protocols.GRPC.TLS.MinVersion)
 	})
+
+	t.Run("TLS struct values", func(t *testing.T) {
+		cfg := config.TLSConfig{
+			Enabled:            true,
+			InsecureSkipVerify: false,
+			CertFile:           "/path/to/cert.pem",
+			KeyFile:            "/path/to/key.pem",
+			CAFile:             "/path/to/ca.pem",
+			ClientAuthType:     "require",
+			MinVersion:         "1.3",
+		}
+
+		assert.True(t, cfg.Enabled)
+		assert.False(t, cfg.InsecureSkipVerify)
+		assert.Equal(t, "/path/to/cert.pem", cfg.CertFile)
+		assert.Equal(t, "1.3", cfg.MinVersion)
+	})
 }
 
 func TestLoggingConfig(t *testing.T) {
@@ -272,4 +393,165 @@ func TestCORSConfig(t *testing.T) {
 		assert.Contains(t, cors.AllowedHeaders, "*")
 		assert.Equal(t, 7200, cors.MaxAge)
 	})
+}
+
+func TestConfigError(t *testing.T) {
+	err := config.ErrNoReceiversEnabled
+	assert.Equal(t, "at least one receiver must be enabled", err.Error())
+
+	err2 := config.ErrNoOTLPProtocolsEnabled
+	assert.Equal(t, "OTLP receiver is enabled but no protocols are configured", err2.Error())
+}
+
+func TestKeepaliveConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	keepalive := cfg.Receivers.OTLP.Protocols.GRPC.Keepalive
+
+	assert.Equal(t, 15*time.Second, keepalive.ServerParameters.MaxConnectionIdle)
+	assert.Equal(t, 30*time.Second, keepalive.ServerParameters.MaxConnectionAge)
+}
+
+func TestRetryConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	retry := cfg.Exporters.OTLP.RetryOnFailure
+
+	assert.True(t, retry.Enabled)
+	assert.Equal(t, 5*time.Second, retry.InitialInterval)
+	assert.Equal(t, 30*time.Second, retry.MaxInterval)
+	assert.Equal(t, 300*time.Second, retry.MaxElapsedTime)
+}
+
+func TestQueueConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	queue := cfg.Exporters.OTLP.SendingQueue
+
+	assert.True(t, queue.Enabled)
+	assert.Equal(t, 10, queue.NumConsumers)
+	assert.Equal(t, 1000, queue.QueueSize)
+}
+
+func TestPipelineConfig(t *testing.T) {
+	cfg := config.PipelineConfig{
+		Receivers:  []string{"otlp"},
+		Processors: []string{"batch", "memory_limiter"},
+		Exporters:  []string{"debug", "prometheus"},
+	}
+
+	assert.Len(t, cfg.Receivers, 1)
+	assert.Len(t, cfg.Processors, 2)
+	assert.Len(t, cfg.Exporters, 2)
+}
+
+func TestSpanMetricsConnectorConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	spanMetrics := cfg.Connectors.SpanMetrics
+
+	assert.Equal(t, "traces", spanMetrics.Namespace)
+	assert.Equal(t, 15*time.Second, spanMetrics.MetricsFlushInterval)
+	assert.True(t, spanMetrics.Exemplars.Enabled)
+}
+
+func TestServiceGraphConnectorConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	serviceGraph := cfg.Connectors.ServiceGraph
+
+	assert.Equal(t, 2*time.Second, serviceGraph.Store.TTL)
+	assert.Equal(t, 1000, serviceGraph.Store.MaxItems)
+	assert.Equal(t, 1*time.Second, serviceGraph.CacheLoop)
+}
+
+func TestServiceTelemetryConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	telemetry := cfg.Service.Telemetry
+
+	assert.Equal(t, "info", telemetry.Logs.Level)
+	assert.Equal(t, "json", telemetry.Logs.Encoding)
+	assert.Equal(t, "detailed", telemetry.Metrics.Level)
+}
+
+func TestLogSamplingConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+
+	sampling := cfg.Logging.Sampling
+
+	assert.True(t, sampling.Enabled)
+	assert.Equal(t, 100, sampling.Initial)
+	assert.Equal(t, 100, sampling.Thereafter)
+}
+
+func TestFileExporterConfig(t *testing.T) {
+	cfg := config.FileExporterConfig{
+		Enabled:     true,
+		Path:        "/var/log/otel/traces.json",
+		Format:      "json",
+		Compression: "gzip",
+		Rotation: config.FileRotationConfig{
+			MaxMegabytes: 100,
+			MaxDays:      7,
+			MaxBackups:   3,
+			LocalTime:    true,
+		},
+		FlushInterval: 5 * time.Second,
+	}
+
+	assert.True(t, cfg.Enabled)
+	assert.Equal(t, "/var/log/otel/traces.json", cfg.Path)
+	assert.Equal(t, 100, cfg.Rotation.MaxMegabytes)
+	assert.Equal(t, 5*time.Second, cfg.FlushInterval)
+}
+
+func TestAttributeAction(t *testing.T) {
+	action := config.AttributeAction{
+		Key:           "environment",
+		Action:        "upsert",
+		Value:         "production",
+		FromAttribute: "",
+		Pattern:       "",
+	}
+
+	assert.Equal(t, "environment", action.Key)
+	assert.Equal(t, "upsert", action.Action)
+	assert.Equal(t, "production", action.Value)
+}
+
+func TestScrapeConfig(t *testing.T) {
+	cfg := config.ScrapeConfig{
+		JobName:        "my-app",
+		ScrapeInterval: 15 * time.Second,
+		ScrapeTimeout:  10 * time.Second,
+		MetricsPath:    "/metrics",
+		StaticConfigs: []config.StaticTargetConfig{
+			{
+				Targets: []string{"localhost:8080", "localhost:8081"},
+				Labels:  map[string]string{"env": "dev"},
+			},
+		},
+	}
+
+	assert.Equal(t, "my-app", cfg.JobName)
+	assert.Equal(t, 15*time.Second, cfg.ScrapeInterval)
+	assert.Len(t, cfg.StaticConfigs, 1)
+	assert.Len(t, cfg.StaticConfigs[0].Targets, 2)
+}
+
+// Benchmark tests
+func BenchmarkDefaultConfig(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = config.DefaultConfig()
+	}
+}
+
+func BenchmarkValidate(b *testing.B) {
+	cfg := config.DefaultConfig()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = cfg.Validate()
+	}
 }
