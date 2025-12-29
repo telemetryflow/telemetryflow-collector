@@ -1,10 +1,10 @@
-// Package main is the entry point for the TelemetryFlow Collector.
+// Package cmd_test provides unit tests for the CLI commands.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 // Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 //
 // LEGO Building Block - Self-contained within tfo-collector project.
-package main
+package cmd_test
 
 import (
 	"bytes"
@@ -13,12 +13,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telemetryflow/telemetryflow-collector/internal/cli"
 	"github.com/telemetryflow/telemetryflow-collector/internal/config"
 )
 
-// TestStartCmd tests the start command creation
-func TestStartCmd(t *testing.T) {
-	cmd := startCmd()
+// TestNewStartCmd tests the start command creation
+func TestNewStartCmd(t *testing.T) {
+	opts := &cli.Options{}
+	cmd := cli.NewStartCmd(opts)
 
 	if cmd == nil {
 		t.Fatal("Expected non-nil start command")
@@ -39,9 +41,9 @@ func TestStartCmd(t *testing.T) {
 	}
 }
 
-// TestVersionCmd tests the version command creation
-func TestVersionCmd(t *testing.T) {
-	cmd := versionCmd()
+// TestNewVersionCmd tests the version command creation
+func TestNewVersionCmd(t *testing.T) {
+	cmd := cli.NewVersionCmd()
 
 	if cmd == nil {
 		t.Fatal("Expected non-nil version command")
@@ -68,9 +70,10 @@ func TestVersionCmd(t *testing.T) {
 	}
 }
 
-// TestConfigCmd tests the config command creation
-func TestConfigCmd(t *testing.T) {
-	cmd := configCmd()
+// TestNewConfigCmd tests the config command creation
+func TestNewConfigCmd(t *testing.T) {
+	opts := &cli.Options{}
+	cmd := cli.NewConfigCmd(opts)
 
 	if cmd == nil {
 		t.Fatal("Expected non-nil config command")
@@ -108,9 +111,10 @@ func TestConfigCmd(t *testing.T) {
 	}
 }
 
-// TestValidateCmd tests the validate command creation
-func TestValidateCmd(t *testing.T) {
-	cmd := validateCmd()
+// TestNewValidateCmd tests the validate command creation
+func TestNewValidateCmd(t *testing.T) {
+	opts := &cli.Options{}
+	cmd := cli.NewValidateCmd(opts)
 
 	if cmd == nil {
 		t.Fatal("Expected non-nil validate command")
@@ -125,7 +129,7 @@ func TestValidateCmd(t *testing.T) {
 	}
 }
 
-// TestInitLogger tests the initLogger function
+// TestInitLogger tests the InitLogger function
 func TestInitLogger(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -184,7 +188,7 @@ func TestInitLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, err := initLogger(tt.cfg)
+			logger, err := cli.InitLogger(tt.cfg)
 
 			if tt.wantOK {
 				if err != nil {
@@ -204,7 +208,7 @@ func TestInitLogger(t *testing.T) {
 	}
 }
 
-// TestPrintConfig tests the printConfig function
+// TestPrintConfig tests the PrintConfig function
 func TestPrintConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Collector.ID = "test-collector-id"
@@ -215,7 +219,7 @@ func TestPrintConfig(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	printConfig(cfg)
+	cli.PrintConfig(cfg)
 
 	_ = w.Close()
 	os.Stdout = oldStdout
@@ -249,7 +253,7 @@ func TestPrintConfig(t *testing.T) {
 // TestVersionCmdExecution tests version command execution
 func TestVersionCmdExecution(t *testing.T) {
 	t.Run("default output", func(t *testing.T) {
-		cmd := versionCmd()
+		cmd := cli.NewVersionCmd()
 
 		// Capture output
 		oldStdout := os.Stdout
@@ -271,7 +275,7 @@ func TestVersionCmdExecution(t *testing.T) {
 	})
 
 	t.Run("short output", func(t *testing.T) {
-		cmd := versionCmd()
+		cmd := cli.NewVersionCmd()
 		_ = cmd.Flags().Set("short", "true")
 
 		// Capture output
@@ -294,7 +298,7 @@ func TestVersionCmdExecution(t *testing.T) {
 	})
 
 	t.Run("json output", func(t *testing.T) {
-		cmd := versionCmd()
+		cmd := cli.NewVersionCmd()
 		_ = cmd.Flags().Set("json", "true")
 
 		// Capture output
@@ -320,34 +324,36 @@ func TestVersionCmdExecution(t *testing.T) {
 	})
 }
 
-// TestGlobalVariables tests global variable defaults
-func TestGlobalVariables(t *testing.T) {
-	// cfgFile should be empty by default
-	if cfgFile != "" {
-		// Reset for clean test state
-		cfgFile = ""
+// TestOptionsDefaults tests Options defaults
+func TestOptionsDefaults(t *testing.T) {
+	opts := &cli.Options{}
+
+	// CfgFile should be empty by default
+	if opts.CfgFile != "" {
+		t.Error("Expected CfgFile to be empty by default")
 	}
 
-	// logLevel should be empty by default
-	if logLevel != "" {
-		logLevel = ""
+	// LogLevel should be empty by default
+	if opts.LogLevel != "" {
+		t.Error("Expected LogLevel to be empty by default")
 	}
 
-	// logFormat should be empty by default
-	if logFormat != "" {
-		logFormat = ""
+	// LogFormat should be empty by default
+	if opts.LogFormat != "" {
+		t.Error("Expected LogFormat to be empty by default")
 	}
 
-	// useOTEL should be false by default
-	if useOTEL != false {
-		useOTEL = false
+	// UseOTEL should be false by default
+	if opts.UseOTEL != false {
+		t.Error("Expected UseOTEL to be false by default")
 	}
 }
 
 // TestCommandLongDescriptions tests that commands have proper long descriptions
 func TestCommandLongDescriptions(t *testing.T) {
 	t.Run("start command has long description", func(t *testing.T) {
-		cmd := startCmd()
+		opts := &cli.Options{}
+		cmd := cli.NewStartCmd(opts)
 		if cmd.Long == "" {
 			t.Error("Expected start command to have Long description")
 		}
@@ -357,14 +363,15 @@ func TestCommandLongDescriptions(t *testing.T) {
 	})
 
 	t.Run("config command subcommands", func(t *testing.T) {
-		cmd := configCmd()
+		opts := &cli.Options{}
+		cmd := cli.NewConfigCmd(opts)
 		if !cmd.HasSubCommands() {
 			t.Error("Expected config command to have subcommands")
 		}
 	})
 }
 
-// TestInitLoggerWithFile tests initLogger with file output
+// TestInitLoggerWithFile tests InitLogger with file output
 func TestInitLoggerWithFile(t *testing.T) {
 	tmpFile := t.TempDir() + "/test.log"
 
@@ -374,7 +381,7 @@ func TestInitLoggerWithFile(t *testing.T) {
 		File:   tmpFile,
 	}
 
-	logger, err := initLogger(cfg)
+	logger, err := cli.InitLogger(cfg)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -402,27 +409,29 @@ func BenchmarkInitLogger(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		logger, _ := initLogger(cfg)
+		logger, _ := cli.InitLogger(cfg)
 		if logger != nil {
 			_ = logger.Sync()
 		}
 	}
 }
 
-func BenchmarkStartCmd(b *testing.B) {
+func BenchmarkNewStartCmd(b *testing.B) {
+	opts := &cli.Options{}
 	for i := 0; i < b.N; i++ {
-		_ = startCmd()
+		_ = cli.NewStartCmd(opts)
 	}
 }
 
-func BenchmarkVersionCmd(b *testing.B) {
+func BenchmarkNewVersionCmd(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = versionCmd()
+		_ = cli.NewVersionCmd()
 	}
 }
 
-func BenchmarkConfigCmd(b *testing.B) {
+func BenchmarkNewConfigCmd(b *testing.B) {
+	opts := &cli.Options{}
 	for i := 0; i < b.N; i++ {
-		_ = configCmd()
+		_ = cli.NewConfigCmd(opts)
 	}
 }
