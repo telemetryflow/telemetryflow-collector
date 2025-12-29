@@ -37,7 +37,7 @@
 FROM golang:1.24-alpine AS builder
 
 # Build arguments
-ARG VERSION=1.1.0
+ARG VERSION=1.1.1
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
@@ -78,7 +78,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 FROM alpine:3.21
 
 # Build arguments for labels
-ARG VERSION=1.1.0
+ARG VERSION=1.1.1
 ARG OTEL_VERSION=0.142.0
 
 # =============================================================================
@@ -168,9 +168,9 @@ CMD ["--config", "/etc/tfo-collector/otel-collector.yaml"]
 # Build with:
 #   docker build \
 #     -f Dockerfile.ocb \
-#     --build-arg VERSION=1.1.0 \
+#     --build-arg VERSION=1.1.1 \
 #     --build-arg OTEL_VERSION=0.142.0 \
-#     -t telemetryflow/telemetryflow-collector-ocb:1.1.0 .
+#     -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 #
 # Run with:
 #   docker run -d \
@@ -180,11 +180,11 @@ CMD ["--config", "/etc/tfo-collector/otel-collector.yaml"]
 #     -p 8888:8888 \
 #     -p 13133:13133 \
 #     -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector-ocb:1.1.0
+#     telemetryflow/telemetryflow-collector-ocb:1.1.1
 #
 # Validate config:
 #   docker run --rm \
 #     -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector-ocb:1.1.0 \
+#     telemetryflow/telemetryflow-collector-ocb:1.1.1 \
 #     validate --config /etc/tfo-collector/collector.yaml
 # =============================================================================

@@ -18,7 +18,7 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := banner.DefaultConfig()
 
 	assert.Equal(t, "TelemetryFlow Collector", cfg.ProductName)
-	assert.Equal(t, "1.1.0", cfg.Version)
+	assert.Equal(t, "1.1.1", cfg.Version)
 	assert.Equal(t, "OTEL Collector 0.142.0", cfg.BasedOn)
 	assert.Equal(t, "Community Enterprise Observability Platform (CEOP)", cfg.Motto)
 	assert.Equal(t, "unknown", cfg.GitCommit)

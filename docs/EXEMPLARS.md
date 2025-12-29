@@ -10,53 +10,57 @@ Exemplars are references from aggregated metric data points to individual trace 
 - Understand which specific requests contributed to a latency percentile
 - Debug issues by correlating metrics anomalies with trace data
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Prometheus/Grafana                       │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Latency Histogram (p99 = 250ms)                     │   │
-│  │     ▲                                                │   │
-│  │     │    *  ← Click exemplar                         │   │
-│  │     │   * *                                          │   │
-│  │     │  *   *                                         │   │
-│  │     └──────────────────────────────────► time        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                           │                                  │
-│                           ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Trace: service-a → service-b → database             │   │
-│  │  Duration: 247ms                                     │   │
-│  │  Trace ID: abc123...                                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Grafana["Prometheus/Grafana Dashboard"]
+        subgraph Chart["Latency Histogram (p99 = 250ms)"]
+            EXEMPLAR["* Exemplar Point<br/>Click to view trace"]
+        end
+
+        EXEMPLAR -->|Click| TRACE
+
+        subgraph TraceView["Trace Details"]
+            TRACE["Trace: service-a → service-b → database<br/>Duration: 247ms<br/>Trace ID: abc123..."]
+        end
+    end
+
+    style Chart fill:#E3F2FD,stroke:#1565C0
+    style TraceView fill:#E8F5E9,stroke:#388E3C
+    style EXEMPLAR fill:#FFF9C4,stroke:#F9A825
 ```
 
 ## Architecture Overview
 
-```
-┌─────────────┐     ┌──────────────────────────────────────────────┐
-│ Application │────▶│              TelemetryFlow Collector         │
-│  (traces)   │     │                                              │
-└─────────────┘     │  ┌────────────┐    ┌─────────────────────┐  │
-                    │  │   OTLP     │───▶│   spanmetrics       │  │
-                    │  │  Receiver  │    │   connector         │  │
-                    │  └────────────┘    │  (derives metrics   │  │
-                    │        │           │   with exemplars)   │  │
-                    │        │           └──────────┬──────────┘  │
-                    │        │                      │              │
-                    │        ▼                      ▼              │
-                    │  ┌─────────────┐    ┌─────────────────────┐  │
-                    │  │   Trace     │    │  Prometheus         │  │
-                    │  │  Exporter   │    │  Exporter           │  │
-                    │  │  (Jaeger)   │    │  (OpenMetrics)      │  │
-                    │  └──────┬──────┘    └──────────┬──────────┘  │
-                    └─────────┼─────────────────────┼──────────────┘
-                              │                     │
-                              ▼                     ▼
-                    ┌─────────────────┐   ┌─────────────────────┐
-                    │     Jaeger      │   │    Prometheus       │
-                    │  (trace store)  │   │  (metrics store)    │
-                    └─────────────────┘   └─────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Source["Data Source"]
+        APP[Application<br/>Traces]
+    end
+
+    subgraph Collector["TelemetryFlow Collector"]
+        OTLP[OTLP Receiver]
+        SPAN[spanmetrics connector<br/>derives metrics with exemplars]
+        TRACE_EXP[Trace Exporter<br/>Jaeger/OTLP]
+        PROM_EXP[Prometheus Exporter<br/>OpenMetrics]
+
+        OTLP --> SPAN
+        OTLP --> TRACE_EXP
+        SPAN --> PROM_EXP
+    end
+
+    subgraph Backends["Observability Backends"]
+        JAEGER[Jaeger<br/>Trace Store]
+        PROMETHEUS[Prometheus<br/>Metrics Store]
+    end
+
+    APP --> OTLP
+    TRACE_EXP --> JAEGER
+    PROM_EXP --> PROMETHEUS
+
+    style Source fill:#E3F2FD,stroke:#1565C0
+    style Collector fill:#FFF3E0,stroke:#F57C00
+    style Backends fill:#E8F5E9,stroke:#388E3C
+    style SPAN fill:#FFF9C4,stroke:#F9A825
 ```
 
 ## Configuration

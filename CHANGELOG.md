@@ -22,6 +22,29 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2024-12-29
+
+### Changed
+
+- **Version Bump**: Updated version from 1.1.0 to 1.1.1 across all files
+- **Documentation**: Added Mermaid diagrams to all documentation files
+  - COMPONENTS.md - Component overview and data flow diagrams
+  - CONFIGURATION.md - Config structure and file lookup flowcharts
+  - OCB_BUILD.md - Build process and component workflow diagrams
+  - EXEMPLARS.md - Converted ASCII art to Mermaid diagrams
+- **Testing**: Reorganized unit tests following DDD (Domain-Driven Design) pattern
+  - domain/ - Collector, pipeline, plugin tests
+  - application/ - OTEL collector, config tests
+  - infrastructure/ - Exporter, receiver, config loader tests
+  - presentation/ - Banner, version tests
+- **Documentation**: Added ARCHITECTURE.md and TESTING.md guides
+- **Fixtures**: Added test fixtures for configuration and telemetry data
+
+### Fixed
+
+- Removed duplicate entries in Makefile
+- Fixed markdown lint warnings in documentation files
+
 ## [1.1.0] - 2024-12-27
 
 ### Added
@@ -174,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.1 | 2024-12-29 | Documentation improvements, DDD test reorganization |
 | 1.1.0 | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
 | 1.0.1 | 2024-12-17 | Docker workflows, SBOM, multi-platform support |
 | 1.0.0 | 2024-12-17 | Initial release |

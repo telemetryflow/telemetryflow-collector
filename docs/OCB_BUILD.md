@@ -6,7 +6,65 @@ This guide explains how to build and use the TelemetryFlow Collector using the O
 
 The OCB (OpenTelemetry Collector Builder) is the official tool for building custom OpenTelemetry Collector distributions. It generates Go code from a manifest file (`manifest.yaml`) that defines which components to include.
 
+```mermaid
+flowchart LR
+    subgraph Input["Input"]
+        MANIFEST[manifest.yaml]
+    end
+
+    subgraph OCB["OCB Builder"]
+        GEN[Code Generator]
+    end
+
+    subgraph Output["Generated Output"]
+        MAIN[main.go]
+        COMP[components.go]
+        MOD[go.mod]
+    end
+
+    subgraph Binary["Final Binary"]
+        BIN[tfo-collector-ocb]
+    end
+
+    MANIFEST --> GEN
+    GEN --> MAIN
+    GEN --> COMP
+    GEN --> MOD
+    MAIN --> BIN
+    COMP --> BIN
+    MOD --> BIN
+
+    style OCB fill:#E3F2FD,stroke:#1565C0
+    style Binary fill:#C8E6C9,stroke:#388E3C
+```
+
 ### Two Build Approaches
+
+```mermaid
+graph TB
+    subgraph Approaches["Build Approaches"]
+        subgraph OCB_Build["OCB Build"]
+            O1[manifest.yaml]
+            O2[OCB generates code]
+            O3[go build]
+            O4[tfo-collector-ocb]
+            O1 --> O2 --> O3 --> O4
+        end
+
+        subgraph Standalone["Standalone Build"]
+            S1[cmd/tfo-collector/main.go]
+            S2[internal packages]
+            S3[go build]
+            S4[tfo-collector]
+            S1 --> S3
+            S2 --> S3
+            S3 --> S4
+        end
+    end
+
+    style OCB_Build fill:#E3F2FD,stroke:#1565C0
+    style Standalone fill:#E8F5E9,stroke:#388E3C
+```
 
 | Approach | CLI Command | Config Format | Use Case |
 |----------|-------------|---------------|----------|
@@ -41,6 +99,36 @@ sudo mv ocb /usr/local/bin/
 ```
 
 ## Building the Collector
+
+```mermaid
+flowchart TD
+    subgraph Step1["Step 1: Generate Code"]
+        A1[Run: builder --config manifest.yaml]
+        A2[OCB reads manifest]
+        A3[Generates ./build/ocb/]
+        A1 --> A2 --> A3
+    end
+
+    subgraph Step2["Step 2: Compile"]
+        B1[cd build/ocb]
+        B2[go build -o tfo-collector-ocb]
+        B3[Binary created]
+        B1 --> B2 --> B3
+    end
+
+    subgraph Step3["Step 3: Run"]
+        C1[./tfo-collector-ocb]
+        C2[--config config.yaml]
+        C3[Collector Running]
+        C1 --> C2 --> C3
+    end
+
+    Step1 --> Step2 --> Step3
+
+    style Step1 fill:#BBDEFB,stroke:#1976D2
+    style Step2 fill:#C8E6C9,stroke:#388E3C
+    style Step3 fill:#FFE0B2,stroke:#F57C00
+```
 
 ### Step 1: Generate Collector Code
 
@@ -117,9 +205,28 @@ connectors:
 
 ## Adding New Components
 
+```mermaid
+flowchart TD
+    FIND[1. Find Component] --> CHECK{In Core<br/>or Contrib?}
+    CHECK -->|Core| CORE[go.opentelemetry.io/collector/...]
+    CHECK -->|Contrib| CONTRIB[github.com/open-telemetry/opentelemetry-collector-contrib/...]
+
+    CORE --> ADD[2. Add to manifest.yaml]
+    CONTRIB --> ADD
+
+    ADD --> REBUILD[3. Rebuild: builder --config manifest.yaml]
+    REBUILD --> COMPILE[4. go build]
+    COMPILE --> CONFIG[5. Configure in YAML]
+    CONFIG --> USE[Component Ready]
+
+    style FIND fill:#BBDEFB,stroke:#1976D2
+    style USE fill:#C8E6C9,stroke:#388E3C
+```
+
 ### 1. Find the Component
 
 Browse available components:
+
 - **Core**: https://github.com/open-telemetry/opentelemetry-collector
 - **Contrib**: https://github.com/open-telemetry/opentelemetry-collector-contrib
 

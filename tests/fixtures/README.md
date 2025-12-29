@@ -1,91 +1,148 @@
 # Test Fixtures
 
-Test fixtures and sample data for TelemetryFlow Collector tests.
+Test fixtures and sample data for the TelemetryFlow Collector.
 
 ## Overview
 
-This directory contains test fixtures, sample configurations, and test data for use in unit, integration, and E2E tests.
+This directory contains test fixtures - predefined data files used in unit and integration tests. Fixtures provide consistent, reproducible test data across test runs.
 
-## Available Fixtures
+## Directory Structure
 
 ```text
 fixtures/
-├── configs/           # Sample configuration files
-│   ├── valid.yaml     # Valid minimal configuration
-│   ├── full.yaml      # Complete configuration with all options
-│   └── invalid.yaml   # Invalid configuration for error testing
-├── otlp/              # Sample OTLP data
-│   ├── metrics.json   # Sample metrics in OTLP format
-│   ├── logs.json      # Sample logs in OTLP format
-│   └── traces.json    # Sample traces in OTLP format
-└── responses/         # Mock API responses
-    ├── health.json    # Health check response
-    └── error.json     # Error response
+├── config/                 # Configuration fixtures
+│   ├── valid-config.yaml   # Valid configuration
+│   ├── invalid-config.yaml # Invalid configuration for error tests
+│   └── minimal-config.yaml # Minimal required configuration
+│
+├── telemetry/              # Telemetry data fixtures
+│   ├── traces/             # Sample trace data
+│   ├── metrics/            # Sample metrics data
+│   └── logs/               # Sample log data
+│
+└── README.md               # This file
 ```
 
 ## Usage
+
+### Loading Fixtures in Tests
 
 ```go
 package mytest
 
 import (
     "os"
-    "testing"
     "path/filepath"
+    "testing"
+
+    "github.com/stretchr/testify/require"
+    "gopkg.in/yaml.v3"
 )
 
-func TestWithFixture(t *testing.T) {
-    // Load fixture file
-    fixturePath := filepath.Join("testdata", "fixtures", "configs", "valid.yaml")
-    data, err := os.ReadFile(fixturePath)
-    if err != nil {
-        t.Fatalf("failed to load fixture: %v", err)
-    }
+// LoadConfigFixture loads a YAML config fixture
+func LoadConfigFixture(t *testing.T, name string) *Config {
+    t.Helper()
 
-    // Use fixture data in test
-    // ...
+    path := filepath.Join("../../fixtures/config", name)
+    data, err := os.ReadFile(path)
+    require.NoError(t, err, "failed to read fixture: %s", name)
+
+    var cfg Config
+    err = yaml.Unmarshal(data, &cfg)
+    require.NoError(t, err, "failed to parse fixture: %s", name)
+
+    return &cfg
+}
+
+// LoadJSONFixture loads a JSON fixture
+func LoadJSONFixture(t *testing.T, path string) []byte {
+    t.Helper()
+
+    fullPath := filepath.Join("../../fixtures", path)
+    data, err := os.ReadFile(fullPath)
+    require.NoError(t, err, "failed to read fixture: %s", path)
+
+    return data
 }
 ```
 
-## Fixture Categories
+### Example Test with Fixtures
+
+```go
+func TestConfigValidation(t *testing.T) {
+    t.Run("should accept valid config", func(t *testing.T) {
+        cfg := LoadConfigFixture(t, "valid-config.yaml")
+
+        err := cfg.Validate()
+        require.NoError(t, err)
+    })
+
+    t.Run("should reject invalid config", func(t *testing.T) {
+        cfg := LoadConfigFixture(t, "invalid-config.yaml")
+
+        err := cfg.Validate()
+        require.Error(t, err)
+    })
+}
+```
+
+## Creating Fixtures
 
 ### Configuration Fixtures
 
-Sample YAML configuration files for testing config loading:
+Configuration fixtures should be valid YAML files:
 
 ```yaml
-# fixtures/configs/valid.yaml
-collector:
-  id: "test-collector"
+# fixtures/config/valid-config.yaml
 receivers:
   otlp:
-    enabled: true
     protocols:
       grpc:
-        enabled: true
         endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch:
+    send_batch_size: 8192
+    timeout: 200ms
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
 ```
 
-### OTLP Fixtures
+### Telemetry Fixtures
 
-Sample OTLP data for testing receivers and processors:
+Telemetry fixtures should follow OTLP JSON format:
 
 ```json
 {
-  "resourceMetrics": [
+  "resourceSpans": [
     {
       "resource": {
         "attributes": [
-          {"key": "host.name", "value": {"stringValue": "test-host"}}
+          {
+            "key": "service.name",
+            "value": { "stringValue": "test-service" }
+          }
         ]
       },
-      "scopeMetrics": [
+      "scopeSpans": [
         {
-          "metrics": [
+          "spans": [
             {
-              "name": "system.cpu.usage",
-              "unit": "percent",
-              "gauge": {"dataPoints": [{"asDouble": 45.5}]}
+              "traceId": "5B8EFFF798038103D269B633813FC60C",
+              "spanId": "EEE19B7EC3C1B174",
+              "name": "test-span",
+              "kind": 1
             }
           ]
         }
@@ -95,30 +152,20 @@ Sample OTLP data for testing receivers and processors:
 }
 ```
 
-### Response Fixtures
-
-Mock API responses for testing:
-
-```json
-{
-  "status": "healthy",
-  "components": {
-    "receiver": "ok",
-    "processor": "ok",
-    "exporter": "ok"
-  }
-}
-```
-
 ## Best Practices
 
-1. **Keep fixtures minimal**: Include only necessary data
-2. **Version fixtures**: Update fixtures when API changes
-3. **Document fixtures**: Explain what each fixture tests
-4. **Use realistic data**: Use production-like values where possible
-5. **Separate by type**: Organize fixtures by their purpose
+1. **Keep fixtures minimal**: Only include data needed for the test
+2. **Name descriptively**: Use names that describe the fixture's purpose
+3. **Version control**: Commit fixtures with tests
+4. **Document fixtures**: Add comments explaining special cases
+5. **Avoid duplication**: Reuse fixtures across tests when appropriate
 
 ## References
 
-- [Go Testing](https://golang.org/pkg/testing/)
-- [OTLP Specification](https://opentelemetry.io/docs/specs/otlp/)
+- [OTLP Protocol Specification](https://opentelemetry.io/docs/specs/otlp/)
+- [Test Mocks](../mocks/)
+- [Testing Documentation](../../docs/TESTING.md)
+
+---
+
+**Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.**

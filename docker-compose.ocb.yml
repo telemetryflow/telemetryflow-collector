@@ -26,12 +26,12 @@
 services:
   tfo-collector-ocb:
     container_name: ${CONTAINER_NAME_OCB:-tfo-collector-ocb}
-    image: ${IMAGE_NAME_OCB:-telemetryflow/telemetryflow-collector-ocb}:${IMAGE_TAG_OCB:-1.1.0}
+    image: ${IMAGE_NAME_OCB:-telemetryflow/telemetryflow-collector-ocb}:${IMAGE_TAG_OCB:-1.1.1}
     build:
       context: .
       dockerfile: Dockerfile.ocb
       args:
-        VERSION: ${VERSION:-1.1.0}
+        VERSION: ${VERSION:-1.1.1}
         OTEL_VERSION: ${OTEL_VERSION:-0.142.0}
     hostname: ${COLLECTOR_ID:-tfo-collector-ocb}
     restart: unless-stopped

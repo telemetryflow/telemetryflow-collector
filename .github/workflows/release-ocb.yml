@@ -30,9 +30,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.1.0)'
+        description: 'Version to release (e.g., 1.1.1)'
         required: true
-        default: '1.1.0'
+        default: '1.1.1'
       otel_version:
         description: 'OpenTelemetry version (e.g., 0.142.0)'
         required: true

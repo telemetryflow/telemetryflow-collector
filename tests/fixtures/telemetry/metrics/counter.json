@@ -1,0 +1,50 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": { "stringValue": "test-service" }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "test-scope",
+            "version": "1.0.0"
+          },
+          "metrics": [
+            {
+              "name": "http.requests.total",
+              "description": "Total number of HTTP requests",
+              "unit": "1",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "http.method",
+                        "value": { "stringValue": "GET" }
+                      },
+                      {
+                        "key": "http.status_code",
+                        "value": { "intValue": "200" }
+                      }
+                    ],
+                    "startTimeUnixNano": "1544712660000000000",
+                    "timeUnixNano": "1544712661000000000",
+                    "asInt": "100"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

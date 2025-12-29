@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"sync"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -27,6 +28,7 @@ type ExportResponse struct {
 // MockExporter is a mock implementation of the Exporter interface
 type MockExporter struct {
 	mock.Mock
+	mu      sync.RWMutex
 	name    string
 	running bool
 }
@@ -46,14 +48,18 @@ func (m *MockExporter) Name() string {
 // Start mocks starting the exporter
 func (m *MockExporter) Start(ctx context.Context) error {
 	args := m.Called(ctx)
+	m.mu.Lock()
 	m.running = true
+	m.mu.Unlock()
 	return args.Error(0)
 }
 
 // Stop mocks stopping the exporter
 func (m *MockExporter) Stop() error {
 	args := m.Called()
+	m.mu.Lock()
 	m.running = false
+	m.mu.Unlock()
 	return args.Error(0)
 }
 
@@ -92,6 +98,8 @@ func (m *MockExporter) ExportTraces(ctx context.Context, data []byte) (*ExportRe
 
 // IsRunning returns whether the exporter is running
 func (m *MockExporter) IsRunning() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.running
 }
 

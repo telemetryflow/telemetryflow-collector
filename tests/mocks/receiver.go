@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -23,6 +24,7 @@ type TelemetryData struct {
 // MockReceiver is a mock implementation of the Receiver interface
 type MockReceiver struct {
 	mock.Mock
+	mu       sync.RWMutex
 	name     string
 	running  bool
 	dataChan chan *TelemetryData
@@ -44,20 +46,26 @@ func (m *MockReceiver) Name() string {
 // Start mocks starting the receiver
 func (m *MockReceiver) Start(ctx context.Context) error {
 	args := m.Called(ctx)
+	m.mu.Lock()
 	m.running = true
+	m.mu.Unlock()
 	return args.Error(0)
 }
 
 // Stop mocks stopping the receiver
 func (m *MockReceiver) Stop() error {
 	args := m.Called()
+	m.mu.Lock()
 	m.running = false
+	m.mu.Unlock()
 	close(m.dataChan)
 	return args.Error(0)
 }
 
 // IsRunning returns whether the receiver is running
 func (m *MockReceiver) IsRunning() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.running
 }
 
@@ -68,7 +76,10 @@ func (m *MockReceiver) DataChannel() <-chan *TelemetryData {
 
 // SimulateReceive simulates receiving telemetry data
 func (m *MockReceiver) SimulateReceive(data *TelemetryData) {
-	if m.running {
+	m.mu.RLock()
+	running := m.running
+	m.mu.RUnlock()
+	if running {
 		data.ReceivedAt = time.Now()
 		m.dataChan <- data
 	}

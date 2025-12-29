@@ -4,6 +4,94 @@ This document provides a comprehensive reference of all OpenTelemetry Collector 
 
 ## Component Overview
 
+```mermaid
+graph TB
+    subgraph Components["TelemetryFlow Collector Components"]
+        subgraph EXT["Extensions (12)"]
+            E1[Health Check]
+            E2[Authentication]
+            E3[Debugging]
+        end
+
+        subgraph RCV["Receivers (55+)"]
+            R1[OTLP]
+            R2[Prometheus]
+            R3[Logs]
+            R4[Infrastructure]
+        end
+
+        subgraph PRC["Processors (22+)"]
+            P1[Batch]
+            P2[Transform]
+            P3[Filter]
+            P4[Sampling]
+        end
+
+        subgraph EXP["Exporters (45+)"]
+            X1[OTLP]
+            X2[Prometheus]
+            X3[Cloud]
+            X4[APM]
+        end
+
+        subgraph CON["Connectors (8)"]
+            C1[spanmetrics]
+            C2[servicegraph]
+            C3[routing]
+        end
+    end
+
+    RCV --> PRC
+    PRC --> EXP
+    PRC --> CON
+    CON --> EXP
+
+    style EXT fill:#E1BEE7,stroke:#7B1FA2
+    style RCV fill:#BBDEFB,stroke:#1976D2
+    style PRC fill:#C8E6C9,stroke:#388E3C
+    style EXP fill:#FFE0B2,stroke:#F57C00
+    style CON fill:#B2EBF2,stroke:#0097A7
+```
+
+### Component Data Flow
+
+```mermaid
+flowchart LR
+    subgraph Sources["Data Sources"]
+        S1[Applications]
+        S2[Infrastructure]
+        S3[Cloud Services]
+    end
+
+    subgraph Collector["TelemetryFlow Collector"]
+        R[Receivers]
+        P[Processors]
+        E[Exporters]
+        C[Connectors]
+    end
+
+    subgraph Backends["Observability Backends"]
+        B1[Prometheus]
+        B2[Jaeger/Tempo]
+        B3[Loki]
+        B4[Cloud APM]
+    end
+
+    S1 --> R
+    S2 --> R
+    S3 --> R
+    R --> P
+    P --> E
+    P --> C
+    C --> E
+    E --> B1
+    E --> B2
+    E --> B3
+    E --> B4
+
+    style Collector fill:#E3F2FD,stroke:#1565C0
+```
+
 | Category | Count | Purpose |
 |----------|-------|---------|
 | Extensions | 12 | Authentication, health checks, debugging |

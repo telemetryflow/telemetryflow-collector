@@ -10,6 +10,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
+[![Version](https://img.shields.io/badge/Version-1.1.1-green.svg)](CHANGELOG.md)
 
 </div>
 
@@ -254,11 +255,11 @@ docker-compose down
 
 ```bash
 docker build \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
   --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/telemetryflow-collector:1.1.0 .
+  -t telemetryflow/telemetryflow-collector:1.1.1 .
 
 docker run -d --name tfo-collector \
   -p 4317:4317 \
@@ -266,7 +267,7 @@ docker run -d --name tfo-collector \
   -p 8888:8888 \
   -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.1.0
+  telemetryflow/telemetryflow-collector:1.1.1
 ```
 
 **Build OCB Image:**
@@ -274,9 +275,9 @@ docker run -d --name tfo-collector \
 ```bash
 docker build \
   -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.1.0 .
+  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 
 docker run -d --name tfo-collector-ocb \
   -p 4317:4317 \
@@ -284,7 +285,7 @@ docker run -d --name tfo-collector-ocb \
   -p 8888:8888 \
   -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:1.1.0
+  telemetryflow/telemetryflow-collector-ocb:1.1.1
 ```
 
 ## Configuration

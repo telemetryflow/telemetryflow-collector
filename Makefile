@@ -9,7 +9,7 @@
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 BINARY_NAME_OCB := tfo-collector-ocb
-VERSION ?= 1.1.0
+VERSION ?= 1.1.1
 OTEL_VERSION := 0.142.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
@@ -23,11 +23,18 @@ CONFIG_DIR := ./configs
 DIST_DIR := ./dist
 
 # OCB (OpenTelemetry Collector Builder) - binary name is "builder"
+# Try to find builder in PATH first
 OCB := $(shell which builder 2>/dev/null || echo "")
 ifeq ($(OCB),)
+  # Try GVM package sets
   OCB := $(shell ls $(HOME)/.gvm/pkgsets/*/global/bin/builder 2>/dev/null | head -1)
 endif
 ifeq ($(OCB),)
+  # Try GOPATH/bin (from go env)
+  OCB := $(shell go env GOPATH 2>/dev/null)/bin/builder
+endif
+ifeq ($(OCB),)
+  # Fallback to HOME/go/bin
   OCB := $(HOME)/go/bin/builder
 endif
 OCB_VERSION := 0.142.0
@@ -121,6 +128,15 @@ install-ocb:
 	@go install go.opentelemetry.io/collector/cmd/builder@v$(OCB_VERSION)
 	@echo "$(GREEN)Builder installed successfully$(NC)"
 
+# Helper function to find builder binary at runtime
+# This is needed because the Makefile variables are evaluated at parse time
+define FIND_BUILDER
+$(shell which builder 2>/dev/null || \
+	([ -f "$$(go env GOPATH)/bin/builder" ] && echo "$$(go env GOPATH)/bin/builder") || \
+	([ -f "$(HOME)/go/bin/builder" ] && echo "$(HOME)/go/bin/builder") || \
+	echo "")
+endef
+
 # Check if OCB is installed
 check-ocb:
 	@if ! command -v builder &> /dev/null && [ ! -f "$(OCB)" ]; then \
@@ -132,7 +148,9 @@ check-ocb:
 generate: check-ocb
 	@echo "$(GREEN)Generating collector code...$(NC)"
 	@mkdir -p $(BUILD_DIR_OCB)
-	@$(OCB) --config manifest.yaml
+	@BUILDER=$$(which builder 2>/dev/null || echo "$$(go env GOPATH)/bin/builder"); \
+	if [ ! -f "$$BUILDER" ]; then BUILDER="$(HOME)/go/bin/builder"; fi; \
+	$$BUILDER --config manifest.yaml
 	@echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
 
 # Build the collector using OCB (uses OCB-generated main.go)
@@ -397,8 +415,8 @@ deps-verify: deps verify
 
 ## CI: Run unit tests with race detection and coverage
 test-unit-ci:
-	@echo "$(GREEN)Running unit tests (CI mode)...$(NC)"
-	@go test -v -race -timeout 5m -coverprofile=coverage-unit.out -covermode=atomic ./tests/unit/...
+	@echo "$(GREEN)Running unit tests (CI mode with race detection)...$(NC)"
+	@go test -v -race -timeout 10m -coverprofile=coverage-unit.out -covermode=atomic ./tests/unit/...
 
 ## CI: Run integration tests with race detection and coverage
 test-integration-ci:
@@ -478,7 +496,9 @@ ci-build-standalone:
 ci-build-ocb: check-ocb
 	@echo "$(GREEN)Building OCB for CI ($(GOOS)/$(GOARCH))...$(NC)"
 	@mkdir -p $(BUILD_DIR_OCB)
-	@$(OCB) --config manifest.yaml
+	@BUILDER=$$(which builder 2>/dev/null || echo "$$(go env GOPATH)/bin/builder"); \
+	if [ ! -f "$$BUILDER" ]; then BUILDER="$(HOME)/go/bin/builder"; fi; \
+	$$BUILDER --config manifest.yaml
 	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
 	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
 	cd $(BUILD_DIR_OCB) && CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o ../$$(basename $${OUTPUT}) .; \

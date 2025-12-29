@@ -2,7 +2,62 @@
 
 This guide provides configuration examples and best practices for the TelemetryFlow Collector.
 
+## Configuration Overview
+
+```mermaid
+graph TB
+    subgraph ConfigFile["Configuration File Structure"]
+        EXT[extensions:]
+        RCV[receivers:]
+        PRC[processors:]
+        EXP[exporters:]
+        CON[connectors:]
+        SVC[service:]
+    end
+
+    subgraph Service["service: section"]
+        SEXT[extensions list]
+        PIPE[pipelines:]
+        TELE[telemetry:]
+    end
+
+    subgraph Pipelines["Pipeline Types"]
+        TRC[traces:]
+        MTR[metrics:]
+        LOG[logs:]
+    end
+
+    SVC --> SEXT
+    SVC --> PIPE
+    SVC --> TELE
+    PIPE --> TRC
+    PIPE --> MTR
+    PIPE --> LOG
+
+    style ConfigFile fill:#E3F2FD,stroke:#1565C0
+    style Service fill:#E8F5E9,stroke:#388E3C
+    style Pipelines fill:#FFF3E0,stroke:#F57C00
+```
+
 ## Configuration File Location
+
+```mermaid
+flowchart TD
+    START[Collector Startup] --> CHECK1{--config flag?}
+    CHECK1 -->|Yes| USE1[Use specified path]
+    CHECK1 -->|No| CHECK2{./configs/otel-collector.yaml?}
+    CHECK2 -->|Exists| USE2[Use otel-collector.yaml]
+    CHECK2 -->|No| CHECK3{./configs/tfo-collector.yaml?}
+    CHECK3 -->|Exists| USE3[Use tfo-collector.yaml]
+    CHECK3 -->|No| CHECK4{/etc/tfo-collector/collector.yaml?}
+    CHECK4 -->|Exists| USE4[Use system config]
+    CHECK4 -->|No| CHECK5{$HOME/.tfo-collector/config.yaml?}
+    CHECK5 -->|Exists| USE5[Use user config]
+    CHECK5 -->|No| ERROR[Error: No config found]
+
+    style START fill:#BBDEFB,stroke:#1976D2
+    style ERROR fill:#FFCDD2,stroke:#D32F2F
+```
 
 The collector looks for configuration files in the following order:
 
@@ -60,6 +115,42 @@ service:
 ---
 
 ## Common Configuration Patterns
+
+### Pipeline Architecture
+
+```mermaid
+flowchart LR
+    subgraph Receivers["Receivers"]
+        OTLP[otlp]
+        PROM[prometheus]
+        HOST[hostmetrics]
+    end
+
+    subgraph Processors["Processors"]
+        MEM[memory_limiter]
+        BATCH[batch]
+        RES[resource]
+    end
+
+    subgraph Exporters["Exporters"]
+        OTLPE[otlp]
+        PROME[prometheus]
+        LOKI[loki]
+    end
+
+    OTLP --> MEM
+    PROM --> MEM
+    HOST --> MEM
+    MEM --> BATCH
+    BATCH --> RES
+    RES --> OTLPE
+    RES --> PROME
+    RES --> LOKI
+
+    style Receivers fill:#BBDEFB,stroke:#1976D2
+    style Processors fill:#C8E6C9,stroke:#388E3C
+    style Exporters fill:#FFE0B2,stroke:#F57C00
+```
 
 ### 1. Production-Ready Basic Setup
 
