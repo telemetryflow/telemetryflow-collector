@@ -27,6 +27,144 @@ Enterprise-grade OpenTelemetry Collector distribution for the **TelemetryFlow Pl
 - **Enterprise Ready**: Health checks, metrics, profiling endpoints
 - **Dual Build System**: Standalone CLI and OCB (OpenTelemetry Collector Builder)
 
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Clients["Telemetry Sources"]
+        APP1["Application 1<br/>(OTEL SDK)"]
+        APP2["Application 2<br/>(OTEL SDK)"]
+        APP3["Prometheus<br/>Exporters"]
+    end
+
+    subgraph TFO["TelemetryFlow Collector"]
+        subgraph Receivers["Receivers"]
+            OTLP_GRPC["OTLP gRPC<br/>:4317"]
+            OTLP_HTTP["OTLP HTTP<br/>:4318"]
+            PROM_RCV["Prometheus<br/>Scraper"]
+        end
+
+        subgraph Pipeline["Pipeline"]
+            BATCH["Batch<br/>Processor"]
+            MEMLIM["Memory<br/>Limiter"]
+            RESOURCE["Resource<br/>Processor"]
+        end
+
+        subgraph Connectors["Connectors"]
+            SPANMET["SpanMetrics<br/>(Exemplars)"]
+            SVCGRAPH["ServiceGraph"]
+        end
+
+        subgraph Exporters["Exporters"]
+            DEBUG["Debug"]
+            PROM_EXP["Prometheus<br/>:8889"]
+            OTLP_EXP["OTLP<br/>Exporter"]
+        end
+
+        subgraph Extensions["Extensions"]
+            HEALTH["Health Check<br/>:13133"]
+            ZPAGES["zPages<br/>:55679"]
+            PPROF["pprof<br/>:1777"]
+        end
+    end
+
+    subgraph Backends["Backends"]
+        JAEGER["Jaeger<br/>Tracing"]
+        PROMETHEUS["Prometheus<br/>Metrics"]
+        TFO_BACKEND["TelemetryFlow<br/>Platform"]
+    end
+
+    APP1 -->|"traces/metrics/logs"| OTLP_GRPC
+    APP2 -->|"traces/metrics/logs"| OTLP_HTTP
+    APP3 -->|"scrape"| PROM_RCV
+
+    OTLP_GRPC --> MEMLIM
+    OTLP_HTTP --> MEMLIM
+    PROM_RCV --> MEMLIM
+
+    MEMLIM --> BATCH
+    BATCH --> RESOURCE
+    RESOURCE --> SPANMET
+    RESOURCE --> SVCGRAPH
+    RESOURCE --> DEBUG
+    RESOURCE --> PROM_EXP
+    RESOURCE --> OTLP_EXP
+
+    SPANMET --> PROM_EXP
+    SVCGRAPH --> PROM_EXP
+
+    OTLP_EXP --> JAEGER
+    OTLP_EXP --> TFO_BACKEND
+    PROM_EXP --> PROMETHEUS
+```
+
+### Standalone vs OCB Architecture
+
+```mermaid
+flowchart LR
+    subgraph Standalone["TFO-Standalone"]
+        direction TB
+        S_MAIN["main.go<br/>(Cobra CLI)"]
+        S_COLLECTOR["collector.go"]
+        S_RECEIVER["OTLP Receiver<br/>(internal/receiver/otlp)"]
+        S_PIPELINE["Pipeline<br/>(internal/pipeline)"]
+        S_EXPORTER["Debug Exporter<br/>(internal/exporter/debug)"]
+
+        S_MAIN --> S_COLLECTOR
+        S_COLLECTOR --> S_RECEIVER
+        S_RECEIVER --> S_PIPELINE
+        S_PIPELINE --> S_EXPORTER
+    end
+
+    subgraph OCB["TFO-Collector-OCB"]
+        direction TB
+        O_MAIN["OCB Generated<br/>main.go"]
+        O_SERVICE["OTEL Service"]
+        O_RECEIVER["OTEL Receivers<br/>(20+ components)"]
+        O_PROCESSOR["OTEL Processors<br/>(10+ components)"]
+        O_EXPORTER["OTEL Exporters<br/>(15+ components)"]
+
+        O_MAIN --> O_SERVICE
+        O_SERVICE --> O_RECEIVER
+        O_RECEIVER --> O_PROCESSOR
+        O_PROCESSOR --> O_EXPORTER
+    end
+
+    CONFIG_TFO["tfo-collector.yaml<br/>(Custom Format)"] --> Standalone
+    CONFIG_OTEL["otel-collector.yaml<br/>(Standard OTEL)"] --> OCB
+```
+
+### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Receiver as OTLP Receiver
+    participant Pipeline as Pipeline
+    participant Exporter as Exporter
+    participant Backend as Backend
+
+    App->>Receiver: ExportTraceServiceRequest (gRPC/HTTP)
+    activate Receiver
+    Receiver->>Receiver: Unmarshal pdata.Traces
+    Receiver->>Pipeline: ConsumeTraces(ctx, traces)
+    deactivate Receiver
+
+    activate Pipeline
+    Pipeline->>Pipeline: Apply Processors
+    Pipeline->>Exporter: ExportTraces(ctx, traces)
+    deactivate Pipeline
+
+    activate Exporter
+    Exporter->>Backend: Forward to Backend
+    Backend-->>Exporter: Ack
+    Exporter-->>Pipeline: Success
+    deactivate Exporter
+
+    Pipeline-->>Receiver: Success
+    Receiver-->>App: ExportTraceServiceResponse
+```
+
 ## Build Options
 
 TelemetryFlow Collector supports two build modes:
@@ -296,7 +434,7 @@ tfo-collector/
 │   ├── config/               # Config loader utilities
 │   └── plugin/               # Component registry
 ├── configs/
-│   ├── tfo-collector.yaml        # Standalone config (custom format)
+│   ├── tfo-collector.yaml         # Standalone config (custom format)
 │   ├── otel-collector.yaml        # OCB config (standard OTel format)
 │   └── ocb-collector-minimal.yaml
 ├── tests/

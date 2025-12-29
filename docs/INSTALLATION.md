@@ -222,10 +222,10 @@ curl http://localhost:13133/
 
 ```bash
 # Create config directory
-mkdir -p /etc/otelcol
+mkdir -p /etc/tfo-collector
 
 # Copy configuration
-cp configs/otel-collector.yaml /etc/otelcol/config.yaml
+cp configs/otel-collector.yaml /etc/tfo-collector/config.yaml
 
 # Run container
 docker run -d \
@@ -236,7 +236,7 @@ docker run -d \
   -p 8888:8888 \
   -p 8889:8889 \
   -p 13133:13133 \
-  -v /etc/otelcol/config.yaml:/etc/otelcol/config.yaml:ro \
+  -v /etc/tfo-collector/config.yaml:/etc/tfo-collector/config.yaml:ro \
   telemetryflow/telemetryflow-collector-ocb:latest \
   --config /etc/otelcol/config.yaml
 ```
@@ -679,8 +679,8 @@ curl http://localhost:8888/metrics | head -30
 ### Send Test Data
 
 ```bash
-# Send test metrics via OTLP HTTP
-curl -X POST http://localhost:4318/v1/metrics \
+# Send test metrics via OTLP HTTP (TelemetryFlow Platform v2)
+curl -X POST http://localhost:4318/v2/metrics \
   -H "Content-Type: application/json" \
   -d '{
     "resourceMetrics": [{

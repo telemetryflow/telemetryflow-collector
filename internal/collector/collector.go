@@ -19,16 +19,17 @@ package collector
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 
 	"github.com/telemetryflow/telemetryflow-collector/internal/config"
+	"github.com/telemetryflow/telemetryflow-collector/internal/exporter/debug"
+	"github.com/telemetryflow/telemetryflow-collector/internal/pipeline"
+	"github.com/telemetryflow/telemetryflow-collector/internal/receiver/otlp"
 )
 
 // Collector is the main telemetry collector
@@ -37,22 +38,18 @@ type Collector struct {
 	config *config.Config
 	logger *zap.Logger
 
-	// Servers
-	grpcServer *grpc.Server
-	httpServer *http.Server
+	// Components
+	otlpReceiver  *otlp.Receiver
+	pipeline      *pipeline.Pipeline
+	debugExporter *debug.Exporter
+
+	// Health server
+	healthServer *http.Server
 
 	// State
 	mu      sync.RWMutex
 	running bool
 	started time.Time
-
-	// Metrics
-	metricsReceived int64
-	logsReceived    int64
-	tracesReceived  int64
-	metricsExported int64
-	logsExported    int64
-	tracesExported  int64
 }
 
 // New creates a new collector instance
@@ -70,76 +67,44 @@ func New(cfg *config.Config, logger *zap.Logger) (*Collector, error) {
 		logger: logger,
 	}
 
-	// Initialize gRPC server if enabled
-	if cfg.Receivers.OTLP.Enabled && cfg.Receivers.OTLP.Protocols.GRPC.Enabled {
-		if err := c.initGRPCServer(); err != nil {
-			return nil, fmt.Errorf("failed to initialize gRPC server: %w", err)
-		}
+	// Initialize pipeline
+	c.pipeline = pipeline.New(logger.Named("pipeline"))
+
+	// Initialize debug exporter if verbosity is configured
+	if cfg.Exporters.Debug.Verbosity != "" {
+		c.debugExporter = debug.New(debug.Config{
+			Verbosity: cfg.Exporters.Debug.Verbosity,
+		}, logger.Named("debug-exporter"))
+
+		// Add debug exporter to pipeline
+		c.pipeline.AddTraceExporter(c.debugExporter)
+		c.pipeline.AddMetricsExporter(c.debugExporter)
+		c.pipeline.AddLogsExporter(c.debugExporter)
+
+		logger.Info("Debug exporter enabled", zap.String("verbosity", cfg.Exporters.Debug.Verbosity))
 	}
 
-	// Initialize HTTP server if enabled
-	if cfg.Receivers.OTLP.Enabled && cfg.Receivers.OTLP.Protocols.HTTP.Enabled {
-		if err := c.initHTTPServer(); err != nil {
-			return nil, fmt.Errorf("failed to initialize HTTP server: %w", err)
+	// Initialize OTLP receiver if enabled
+	if cfg.Receivers.OTLP.Enabled {
+		otlpCfg := otlp.Config{
+			GRPCEnabled:              cfg.Receivers.OTLP.Protocols.GRPC.Enabled,
+			GRPCEndpoint:             cfg.Receivers.OTLP.Protocols.GRPC.Endpoint,
+			GRPCMaxRecvMsgSizeMiB:    cfg.Receivers.OTLP.Protocols.GRPC.MaxRecvMsgSizeMiB,
+			GRPCMaxConcurrentStreams: cfg.Receivers.OTLP.Protocols.GRPC.MaxConcurrentStreams,
+			HTTPEnabled:              cfg.Receivers.OTLP.Protocols.HTTP.Enabled,
+			HTTPEndpoint:             cfg.Receivers.OTLP.Protocols.HTTP.Endpoint,
 		}
+
+		c.otlpReceiver = otlp.New(otlpCfg, c.pipeline, logger.Named("otlp-receiver"))
+		logger.Info("OTLP receiver configured",
+			zap.Bool("grpc_enabled", otlpCfg.GRPCEnabled),
+			zap.String("grpc_endpoint", otlpCfg.GRPCEndpoint),
+			zap.Bool("http_enabled", otlpCfg.HTTPEnabled),
+			zap.String("http_endpoint", otlpCfg.HTTPEndpoint),
+		)
 	}
 
 	return c, nil
-}
-
-// initGRPCServer initializes the gRPC OTLP receiver
-func (c *Collector) initGRPCServer() error {
-	grpcCfg := c.config.Receivers.OTLP.Protocols.GRPC
-
-	opts := []grpc.ServerOption{
-		grpc.MaxRecvMsgSize(grpcCfg.MaxRecvMsgSizeMiB * 1024 * 1024),
-		grpc.MaxConcurrentStreams(grpcCfg.MaxConcurrentStreams),
-	}
-
-	// TODO: Add TLS configuration if enabled
-	// TODO: Add keepalive configuration
-
-	c.grpcServer = grpc.NewServer(opts...)
-
-	// TODO: Register OTLP services
-	// ptraceotlp.RegisterGRPCServer(c.grpcServer, c)
-	// pmetricotlp.RegisterGRPCServer(c.grpcServer, c)
-	// plogotlp.RegisterGRPCServer(c.grpcServer, c)
-
-	c.logger.Info("gRPC server initialized",
-		zap.String("endpoint", grpcCfg.Endpoint),
-	)
-
-	return nil
-}
-
-// initHTTPServer initializes the HTTP OTLP receiver
-func (c *Collector) initHTTPServer() error {
-	httpCfg := c.config.Receivers.OTLP.Protocols.HTTP
-
-	mux := http.NewServeMux()
-
-	// OTLP endpoints
-	mux.HandleFunc("/v1/metrics", c.handleMetrics)
-	mux.HandleFunc("/v1/logs", c.handleLogs)
-	mux.HandleFunc("/v1/traces", c.handleTraces)
-
-	// Health endpoint
-	mux.HandleFunc("/health", c.handleHealth)
-
-	c.httpServer = &http.Server{
-		Addr:           httpCfg.Endpoint,
-		Handler:        mux,
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1MB
-	}
-
-	c.logger.Info("HTTP server initialized",
-		zap.String("endpoint", httpCfg.Endpoint),
-	)
-
-	return nil
 }
 
 // ID returns the collector ID
@@ -167,39 +132,14 @@ func (c *Collector) Run(ctx context.Context) error {
 	c.logger.Info("Collector starting",
 		zap.String("id", c.id),
 		zap.String("hostname", c.config.Collector.Hostname),
+		zap.String("name", c.config.Collector.Name),
 	)
 
-	// Create error channel for component errors
-	errChan := make(chan error, 2)
-
-	// Start gRPC server if configured
-	if c.grpcServer != nil {
-		go func() {
-			grpcEndpoint := c.config.Receivers.OTLP.Protocols.GRPC.Endpoint
-			lis, err := net.Listen("tcp", grpcEndpoint)
-			if err != nil {
-				errChan <- fmt.Errorf("failed to listen on %s: %w", grpcEndpoint, err)
-				return
-			}
-			c.logger.Info("gRPC server listening",
-				zap.String("endpoint", grpcEndpoint),
-			)
-			if err := c.grpcServer.Serve(lis); err != nil {
-				errChan <- fmt.Errorf("gRPC server error: %w", err)
-			}
-		}()
-	}
-
-	// Start HTTP server if configured
-	if c.httpServer != nil {
-		go func() {
-			c.logger.Info("HTTP server listening",
-				zap.String("endpoint", c.httpServer.Addr),
-			)
-			if err := c.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				errChan <- fmt.Errorf("HTTP server error: %w", err)
-			}
-		}()
+	// Start OTLP receiver
+	if c.otlpReceiver != nil {
+		if err := c.otlpReceiver.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start OTLP receiver: %w", err)
+		}
 	}
 
 	// Start health check server if enabled
@@ -207,17 +147,14 @@ func (c *Collector) Run(ctx context.Context) error {
 		go c.startHealthServer(ctx)
 	}
 
-	c.logger.Info("Collector started successfully")
+	c.logger.Info("Collector started successfully",
+		zap.String("id", c.id),
+	)
 
-	// Wait for context cancellation or error
-	select {
-	case <-ctx.Done():
-		c.logger.Info("Collector shutdown requested")
-		return c.shutdown()
-	case err := <-errChan:
-		c.logger.Error("Component error, initiating shutdown", zap.Error(err))
-		return err
-	}
+	// Wait for context cancellation
+	<-ctx.Done()
+	c.logger.Info("Collector shutdown requested")
+	return c.shutdown(context.Background())
 }
 
 // startHealthServer starts the health check server
@@ -230,6 +167,7 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 		running := c.running
 		c.mu.RUnlock()
 
+		w.Header().Set("Content-Type", "application/json")
 		if running {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"status":"healthy"}`))
@@ -239,7 +177,41 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 		}
 	})
 
-	server := &http.Server{
+	// Add stats endpoint
+	mux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		stats := c.Stats()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `{
+  "id": "%s",
+  "hostname": "%s",
+  "running": %t,
+  "uptime_seconds": %.0f,
+  "receiver": {
+    "traces_received": %d,
+    "metrics_received": %d,
+    "logs_received": %d
+  },
+  "pipeline": {
+    "traces_processed": %d,
+    "metrics_processed": %d,
+    "logs_processed": %d
+  }
+}`,
+			stats.ID,
+			stats.Hostname,
+			stats.Running,
+			stats.Uptime.Seconds(),
+			stats.ReceiverStats.TracesReceived,
+			stats.ReceiverStats.MetricsReceived,
+			stats.ReceiverStats.LogsReceived,
+			stats.PipelineStats.TracesProcessed,
+			stats.PipelineStats.MetricsProcessed,
+			stats.PipelineStats.LogsProcessed,
+		)
+	})
+
+	c.healthServer = &http.Server{
 		Addr:              healthCfg.Endpoint,
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
@@ -257,45 +229,46 @@ func (c *Collector) startHealthServer(ctx context.Context) {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = server.Shutdown(shutdownCtx)
+		_ = c.healthServer.Shutdown(shutdownCtx)
 	}()
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := c.healthServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		c.logger.Error("Health check server error", zap.Error(err))
 	}
 }
 
 // shutdown gracefully stops all components
-func (c *Collector) shutdown() error {
+func (c *Collector) shutdown(ctx context.Context) error {
 	c.logger.Info("Shutting down collector components")
 
 	var wg sync.WaitGroup
 	var errs []error
 	var errMu sync.Mutex
 
-	// Stop gRPC server
-	if c.grpcServer != nil {
+	// Stop OTLP receiver
+	if c.otlpReceiver != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			c.grpcServer.GracefulStop()
-			c.logger.Info("gRPC server stopped")
+			if err := c.otlpReceiver.Stop(ctx); err != nil {
+				errMu.Lock()
+				errs = append(errs, fmt.Errorf("OTLP receiver shutdown: %w", err))
+				errMu.Unlock()
+			}
 		}()
 	}
 
-	// Stop HTTP server
-	if c.httpServer != nil {
+	// Stop health server
+	if c.healthServer != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()
-			if err := c.httpServer.Shutdown(shutdownCtx); err != nil {
+			if err := c.healthServer.Shutdown(shutdownCtx); err != nil {
 				errMu.Lock()
-				errs = append(errs, fmt.Errorf("HTTP server shutdown: %w", err))
+				errs = append(errs, fmt.Errorf("health server shutdown: %w", err))
 				errMu.Unlock()
-			} else {
-				c.logger.Info("HTTP server stopped")
 			}
 		}()
 	}
@@ -323,77 +296,6 @@ func (c *Collector) shutdown() error {
 	return nil
 }
 
-// HTTP Handlers
-
-// handleMetrics handles OTLP metrics requests
-func (c *Collector) handleMetrics(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// TODO: Parse and process OTLP metrics
-	c.mu.Lock()
-	c.metricsReceived++
-	c.mu.Unlock()
-
-	c.logger.Debug("Received metrics", zap.String("content_type", r.Header.Get("Content-Type")))
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{}`))
-}
-
-// handleLogs handles OTLP logs requests
-func (c *Collector) handleLogs(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// TODO: Parse and process OTLP logs
-	c.mu.Lock()
-	c.logsReceived++
-	c.mu.Unlock()
-
-	c.logger.Debug("Received logs", zap.String("content_type", r.Header.Get("Content-Type")))
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{}`))
-}
-
-// handleTraces handles OTLP traces requests
-func (c *Collector) handleTraces(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// TODO: Parse and process OTLP traces
-	c.mu.Lock()
-	c.tracesReceived++
-	c.mu.Unlock()
-
-	c.logger.Debug("Received traces", zap.String("content_type", r.Header.Get("Content-Type")))
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{}`))
-}
-
-// handleHealth handles health check requests
-func (c *Collector) handleHealth(w http.ResponseWriter, r *http.Request) {
-	c.mu.RLock()
-	running := c.running
-	c.mu.RUnlock()
-
-	if running {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"healthy"}`))
-	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		_, _ = w.Write([]byte(`{"status":"unhealthy"}`))
-	}
-}
-
 // IsRunning returns whether the collector is running
 func (c *Collector) IsRunning() bool {
 	c.mu.RLock()
@@ -416,32 +318,56 @@ func (c *Collector) Stats() CollectorStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	return CollectorStats{
-		ID:              c.id,
-		Hostname:        c.config.Collector.Hostname,
-		Running:         c.running,
-		Started:         c.started,
-		Uptime:          time.Since(c.started),
-		MetricsReceived: c.metricsReceived,
-		LogsReceived:    c.logsReceived,
-		TracesReceived:  c.tracesReceived,
-		MetricsExported: c.metricsExported,
-		LogsExported:    c.logsExported,
-		TracesExported:  c.tracesExported,
+	stats := CollectorStats{
+		ID:       c.id,
+		Hostname: c.config.Collector.Hostname,
+		Running:  c.running,
+		Started:  c.started,
+		Uptime:   time.Since(c.started),
 	}
+
+	if c.otlpReceiver != nil {
+		receiverStats := c.otlpReceiver.Stats()
+		stats.ReceiverStats = ReceiverStats{
+			TracesReceived:  receiverStats.TracesReceived,
+			MetricsReceived: receiverStats.MetricsReceived,
+			LogsReceived:    receiverStats.LogsReceived,
+		}
+	}
+
+	if c.pipeline != nil {
+		pipelineStats := c.pipeline.Stats()
+		stats.PipelineStats = PipelineStats{
+			TracesProcessed:  pipelineStats.TracesProcessed,
+			MetricsProcessed: pipelineStats.MetricsProcessed,
+			LogsProcessed:    pipelineStats.LogsProcessed,
+		}
+	}
+
+	return stats
 }
 
 // CollectorStats contains collector statistics
 type CollectorStats struct {
-	ID              string        `json:"id"`
-	Hostname        string        `json:"hostname"`
-	Running         bool          `json:"running"`
-	Started         time.Time     `json:"started"`
-	Uptime          time.Duration `json:"uptime"`
-	MetricsReceived int64         `json:"metrics_received"`
-	LogsReceived    int64         `json:"logs_received"`
-	TracesReceived  int64         `json:"traces_received"`
-	MetricsExported int64         `json:"metrics_exported"`
-	LogsExported    int64         `json:"logs_exported"`
-	TracesExported  int64         `json:"traces_exported"`
+	ID            string        `json:"id"`
+	Hostname      string        `json:"hostname"`
+	Running       bool          `json:"running"`
+	Started       time.Time     `json:"started"`
+	Uptime        time.Duration `json:"uptime"`
+	ReceiverStats ReceiverStats `json:"receiver"`
+	PipelineStats PipelineStats `json:"pipeline"`
+}
+
+// ReceiverStats contains receiver statistics
+type ReceiverStats struct {
+	TracesReceived  int64 `json:"traces_received"`
+	MetricsReceived int64 `json:"metrics_received"`
+	LogsReceived    int64 `json:"logs_received"`
+}
+
+// PipelineStats contains pipeline statistics
+type PipelineStats struct {
+	TracesProcessed  int64 `json:"traces_processed"`
+	MetricsProcessed int64 `json:"metrics_processed"`
+	LogsProcessed    int64 `json:"logs_processed"`
 }

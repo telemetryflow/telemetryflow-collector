@@ -60,7 +60,7 @@ func TestOTLPReceiver(t *testing.T) {
 		}
 
 		jsonData, _ := json.Marshal(metricsData)
-		resp, err := http.Post("http://localhost:4318/v1/metrics", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := http.Post("http://localhost:4318/v2/metrics", "application/json", bytes.NewBuffer(jsonData))
 		if err == nil {
 			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)

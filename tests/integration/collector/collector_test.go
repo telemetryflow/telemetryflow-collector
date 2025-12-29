@@ -2,6 +2,8 @@ package collector_test
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"testing"
 	"time"
 
@@ -13,9 +15,29 @@ import (
 	"github.com/telemetryflow/telemetryflow-collector/internal/config"
 )
 
+// getFreePort returns a free port by letting OS assign one
+func getFreePort() (int, error) {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+	return listener.Addr().(*net.TCPAddr).Port, nil
+}
+
 func TestCollectorLifecycle(t *testing.T) {
 	t.Run("should start and stop gracefully", func(t *testing.T) {
 		cfg := config.DefaultConfig()
+
+		// Use dynamic ports to avoid conflicts
+		grpcPort, err := getFreePort()
+		require.NoError(t, err)
+		httpPort, err := getFreePort()
+		require.NoError(t, err)
+
+		cfg.Receivers.OTLP.Protocols.GRPC.Endpoint = fmt.Sprintf("0.0.0.0:%d", grpcPort)
+		cfg.Receivers.OTLP.Protocols.HTTP.Endpoint = fmt.Sprintf("0.0.0.0:%d", httpPort)
+
 		logger, _ := zap.NewDevelopment()
 
 		c, err := collector.New(cfg, logger)
