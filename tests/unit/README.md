@@ -6,14 +6,21 @@ Unit tests for the TelemetryFlow Collector.
 
 This directory contains unit tests for core packages, configuration, version information, and business logic. Unit tests should be isolated from external dependencies using mocks.
 
+All tests use external test packages (`package <name>_test`) to ensure proper encapsulation and test the public API surface.
+
 ## Test Structure
 
 ```text
 unit/
-├── config/        # Tests for configuration loading and validation
-├── version/       # Tests for version package
-├── collector/     # Tests for collector core logic
-└── receiver/      # Tests for OTLP receivers
+├── banner/        # Tests for banner generation and display
+├── collector/     # Tests for collector core logic and OTel integration
+├── config/        # Tests for internal configuration loading and validation
+├── exporter/      # Tests for telemetry exporters (OTLP, etc.)
+├── pipeline/      # Tests for data processing pipelines
+├── pkg_config/    # Tests for pkg/config loader
+├── plugin/        # Tests for plugin registry and management
+├── receiver/      # Tests for OTLP receivers (gRPC/HTTP)
+└── version/       # Tests for version package
 ```
 
 ## Running Tests
@@ -38,10 +45,17 @@ go tool cover -html=coverage.out -o coverage.html
 
 ## Coverage Targets
 
-- **Config**: 95% coverage
-- **Version**: 100% coverage
-- **Collector**: 90% coverage
-- **Receiver**: 90% coverage
+| Package     | Target | Description                              |
+|-------------|--------|------------------------------------------|
+| banner      | 90%    | Banner generation and formatting         |
+| collector   | 90%    | Core collector logic and OTel wrapper    |
+| config      | 95%    | Configuration loading and validation     |
+| exporter    | 90%    | OTLP and other exporters                 |
+| pipeline    | 85%    | Data processing pipelines                |
+| pkg_config  | 90%    | Public config loader                     |
+| plugin      | 85%    | Plugin registry and lifecycle            |
+| receiver    | 90%    | OTLP gRPC/HTTP receivers                 |
+| version     | 100%   | Version information                      |
 
 ## Test Naming Convention
 
@@ -52,30 +66,35 @@ go tool cover -html=coverage.out -o coverage.html
 ## Example Test
 
 ```go
-package config_test
+package receiver_test
 
 import (
     "testing"
+
     "github.com/stretchr/testify/assert"
-    "github.com/telemetryflow/telemetryflow-collector/internal/config"
+    "github.com/stretchr/testify/require"
+
+    "github.com/telemetryflow/telemetryflow-collector/internal/receiver/otlp"
 )
 
-func TestReceiverConfig(t *testing.T) {
-    t.Run("should have OTLP enabled by default", func(t *testing.T) {
-        cfg := config.DefaultConfig()
+func TestOTLPReceiverConfig(t *testing.T) {
+    t.Run("should create receiver with default config", func(t *testing.T) {
+        cfg := otlp.DefaultConfig()
 
-        assert.True(t, cfg.Receivers.OTLP.Enabled)
-        assert.True(t, cfg.Receivers.OTLP.Protocols.GRPC.Enabled)
-        assert.True(t, cfg.Receivers.OTLP.Protocols.HTTP.Enabled)
+        require.NotNil(t, cfg)
+        assert.True(t, cfg.GRPC.Enabled)
+        assert.Equal(t, ":4317", cfg.GRPC.Endpoint)
+        assert.True(t, cfg.HTTP.Enabled)
+        assert.Equal(t, ":4318", cfg.HTTP.Endpoint)
     })
 
-    t.Run("should fail validation with no receivers", func(t *testing.T) {
-        cfg := config.DefaultConfig()
-        cfg.Receivers.OTLP.Enabled = false
-        cfg.Receivers.Prometheus.Enabled = false
+    t.Run("should validate config", func(t *testing.T) {
+        cfg := otlp.DefaultConfig()
+        cfg.GRPC.Enabled = false
+        cfg.HTTP.Enabled = false
 
         err := cfg.Validate()
-        assert.Error(t, err)
+        assert.Error(t, err, "at least one protocol must be enabled")
     })
 }
 ```
