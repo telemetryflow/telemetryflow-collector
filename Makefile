@@ -125,12 +125,26 @@ help:
 # Install OCB (OpenTelemetry Collector Builder)
 install-ocb:
 	@echo "$(GREEN)Installing OpenTelemetry Collector Builder v$(OCB_VERSION)...$(NC)"
+	@echo "$(YELLOW)GOPATH: $$(go env GOPATH)$(NC)"
+	@echo "$(YELLOW)GOBIN: $$(go env GOBIN)$(NC)"
+	@echo "$(YELLOW)HOME: $(HOME)$(NC)"
 	@go install go.opentelemetry.io/collector/cmd/builder@v$(OCB_VERSION)
-	@GOBIN=$$(go env GOPATH)/bin; \
-	if [ -f "$$GOBIN/builder" ]; then \
+	@GOPATH_BIN="$$(go env GOPATH)/bin"; \
+	GOBIN="$$(go env GOBIN)"; \
+	if [ -n "$$GOBIN" ] && [ -f "$$GOBIN/builder" ]; then \
 		echo "$(GREEN)Builder installed successfully at $$GOBIN/builder$(NC)"; \
+	elif [ -f "$$GOPATH_BIN/builder" ]; then \
+		echo "$(GREEN)Builder installed successfully at $$GOPATH_BIN/builder$(NC)"; \
+	elif [ -f "$(HOME)/go/bin/builder" ]; then \
+		echo "$(GREEN)Builder installed successfully at $(HOME)/go/bin/builder$(NC)"; \
 	else \
-		echo "$(RED)Builder installation failed - binary not found at $$GOBIN/builder$(NC)"; \
+		echo "$(RED)Builder installation failed - binary not found$(NC)"; \
+		echo "$(RED)Checked locations:$(NC)"; \
+		echo "$(RED)  - $$GOBIN/builder$(NC)"; \
+		echo "$(RED)  - $$GOPATH_BIN/builder$(NC)"; \
+		echo "$(RED)  - $(HOME)/go/bin/builder$(NC)"; \
+		echo "$(YELLOW)Searching for builder binary...$(NC)"; \
+		find $(HOME) -name "builder" -type f 2>/dev/null | head -5 || true; \
 		exit 1; \
 	fi
 
@@ -163,9 +177,10 @@ check-ocb:
 # Generate collector code using OCB
 generate: check-ocb
 	@echo "$(GREEN)Generating collector code...$(NC)"
-	@mkdir -p $(BUILD_DIR_OCB)
-	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
-	BUILDER=$$(which builder 2>/dev/null); \
+	@set -e; \
+	mkdir -p $(BUILD_DIR_OCB); \
+	export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
+	BUILDER=$$(which builder 2>/dev/null || true); \
 	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
 		BUILDER="$$(go env GOPATH)/bin/builder"; \
 	fi; \
@@ -177,8 +192,12 @@ generate: check-ocb
 		exit 1; \
 	fi; \
 	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
-	$$BUILDER --config manifest.yaml
-	@echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
+	$$BUILDER --config manifest.yaml; \
+	if [ ! -d "$(BUILD_DIR_OCB)" ] || [ -z "$$(ls -A $(BUILD_DIR_OCB) 2>/dev/null)" ]; then \
+		echo "$(RED)Builder did not generate code in $(BUILD_DIR_OCB)$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
 
 # Build the collector using OCB (uses OCB-generated main.go)
 build-ocb: generate
@@ -522,9 +541,10 @@ ci-build-standalone:
 ## CI: Build OCB for a specific platform (requires OCB to be installed and code generated)
 ci-build-ocb: check-ocb
 	@echo "$(GREEN)Building OCB for CI ($(GOOS)/$(GOARCH))...$(NC)"
-	@mkdir -p $(BUILD_DIR_OCB)
-	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
-	BUILDER=$$(which builder 2>/dev/null); \
+	@set -e; \
+	mkdir -p $(BUILD_DIR_OCB); \
+	export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
+	BUILDER=$$(which builder 2>/dev/null || true); \
 	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
 		BUILDER="$$(go env GOPATH)/bin/builder"; \
 	fi; \
@@ -536,8 +556,19 @@ ci-build-ocb: check-ocb
 		exit 1; \
 	fi; \
 	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
-	$$BUILDER --config manifest.yaml
-	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
+	$$BUILDER --config manifest.yaml; \
+	echo "$(GREEN)Builder completed, checking generated code...$(NC)"; \
+	if [ ! -d "$(BUILD_DIR_OCB)" ] || [ -z "$$(ls -A $(BUILD_DIR_OCB) 2>/dev/null)" ]; then \
+		echo "$(RED)Builder did not generate code in $(BUILD_DIR_OCB)$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)Generated code found, building binary...$(NC)"; \
+	OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
 	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
 	cd $(BUILD_DIR_OCB) && CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o ../$$(basename $${OUTPUT}) .; \
-	echo "$(GREEN)Built: $${OUTPUT}$(NC)"
+	if [ ! -f "$(BUILD_DIR)/$$(basename $${OUTPUT})" ]; then \
+		echo "$(RED)Build failed: $(BUILD_DIR)/$$(basename $${OUTPUT}) not created$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)Built: $${OUTPUT}$(NC)"; \
+	ls -la "$(BUILD_DIR)/$$(basename $${OUTPUT})"
