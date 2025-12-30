@@ -126,7 +126,13 @@ help:
 install-ocb:
 	@echo "$(GREEN)Installing OpenTelemetry Collector Builder v$(OCB_VERSION)...$(NC)"
 	@go install go.opentelemetry.io/collector/cmd/builder@v$(OCB_VERSION)
-	@echo "$(GREEN)Builder installed successfully$(NC)"
+	@GOBIN=$$(go env GOPATH)/bin; \
+	if [ -f "$$GOBIN/builder" ]; then \
+		echo "$(GREEN)Builder installed successfully at $$GOBIN/builder$(NC)"; \
+	else \
+		echo "$(RED)Builder installation failed - binary not found at $$GOBIN/builder$(NC)"; \
+		exit 1; \
+	fi
 
 # Helper function to find builder binary at runtime
 # This is needed because the Makefile variables are evaluated at parse time
@@ -139,17 +145,38 @@ endef
 
 # Check if OCB is installed
 check-ocb:
-	@if ! command -v builder &> /dev/null && [ ! -f "$(OCB)" ]; then \
-		echo "$(RED)Builder not found. Installing...$(NC)"; \
+	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
+	BUILDER=$$(which builder 2>/dev/null); \
+	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$$(go env GOPATH)/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$(HOME)/go/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		echo "$(YELLOW)Builder not found. Installing...$(NC)"; \
 		$(MAKE) install-ocb; \
+	else \
+		echo "$(GREEN)Builder found at: $$BUILDER$(NC)"; \
 	fi
 
 # Generate collector code using OCB
 generate: check-ocb
 	@echo "$(GREEN)Generating collector code...$(NC)"
 	@mkdir -p $(BUILD_DIR_OCB)
-	@BUILDER=$$(which builder 2>/dev/null || echo "$$(go env GOPATH)/bin/builder"); \
-	if [ ! -f "$$BUILDER" ]; then BUILDER="$(HOME)/go/bin/builder"; fi; \
+	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
+	BUILDER=$$(which builder 2>/dev/null); \
+	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$$(go env GOPATH)/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$(HOME)/go/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		echo "$(RED)Builder not found. Please run 'make install-ocb' first.$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
 	$$BUILDER --config manifest.yaml
 	@echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
 
@@ -496,8 +523,19 @@ ci-build-standalone:
 ci-build-ocb: check-ocb
 	@echo "$(GREEN)Building OCB for CI ($(GOOS)/$(GOARCH))...$(NC)"
 	@mkdir -p $(BUILD_DIR_OCB)
-	@BUILDER=$$(which builder 2>/dev/null || echo "$$(go env GOPATH)/bin/builder"); \
-	if [ ! -f "$$BUILDER" ]; then BUILDER="$(HOME)/go/bin/builder"; fi; \
+	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
+	BUILDER=$$(which builder 2>/dev/null); \
+	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$$(go env GOPATH)/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		BUILDER="$(HOME)/go/bin/builder"; \
+	fi; \
+	if [ ! -f "$$BUILDER" ]; then \
+		echo "$(RED)Builder not found. Please run 'make install-ocb' first.$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
 	$$BUILDER --config manifest.yaml
 	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
 	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
