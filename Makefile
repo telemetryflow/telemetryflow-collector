@@ -562,13 +562,28 @@ ci-build-ocb: check-ocb
 		echo "$(RED)Builder did not generate code in $(BUILD_DIR_OCB)$(NC)"; \
 		exit 1; \
 	fi; \
-	echo "$(GREEN)Generated code found, building binary...$(NC)"; \
-	OUTPUT="$(BUILD_DIR)/$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
-	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
-	cd $(BUILD_DIR_OCB) && CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS)" -o ../$$(basename $${OUTPUT}) .; \
-	if [ ! -f "$(BUILD_DIR)/$$(basename $${OUTPUT})" ]; then \
-		echo "$(RED)Build failed: $(BUILD_DIR)/$$(basename $${OUTPUT}) not created$(NC)"; \
+	echo "$(GREEN)Generated code found in $(BUILD_DIR_OCB)$(NC)"; \
+	ls -la $(BUILD_DIR_OCB)/; \
+	BINARY_OUTPUT="$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
+	if [ "$(GOOS)" = "windows" ]; then BINARY_OUTPUT="$${BINARY_OUTPUT}.exe"; fi; \
+	echo "$(GREEN)Building binary: $(BUILD_DIR)/$${BINARY_OUTPUT}$(NC)"; \
+	echo "$(GREEN)Target OS/Arch: $(GOOS)/$(GOARCH)$(NC)"; \
+	echo "$(GREEN)Working directory: $$(pwd)$(NC)"; \
+	echo "$(GREEN)Go version: $$(go version)$(NC)"; \
+	echo "$(GREEN)Running go build from $(BUILD_DIR_OCB)...$(NC)"; \
+	cd $(BUILD_DIR_OCB) && \
+		CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) \
+		go build -v -ldflags "$(LDFLAGS)" -o "../$${BINARY_OUTPUT}" . || \
+		{ echo "$(RED)go build failed with exit code $$?$(NC)"; exit 1; }; \
+	echo "$(GREEN)Build command completed, checking output...$(NC)"; \
+	ls -la $(BUILD_DIR)/; \
+	if [ ! -f "$(BUILD_DIR)/$${BINARY_OUTPUT}" ]; then \
+		echo "$(RED)Build failed: $(BUILD_DIR)/$${BINARY_OUTPUT} not created$(NC)"; \
+		echo "$(RED)Contents of $(BUILD_DIR):$(NC)"; \
+		ls -la $(BUILD_DIR)/; \
+		echo "$(RED)Contents of $(BUILD_DIR_OCB):$(NC)"; \
+		ls -la $(BUILD_DIR_OCB)/; \
 		exit 1; \
 	fi; \
-	echo "$(GREEN)Built: $${OUTPUT}$(NC)"; \
-	ls -la "$(BUILD_DIR)/$$(basename $${OUTPUT})"
+	echo "$(GREEN)Built successfully: $(BUILD_DIR)/$${BINARY_OUTPUT}$(NC)"; \
+	ls -la "$(BUILD_DIR)/$${BINARY_OUTPUT}"
