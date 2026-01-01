@@ -21,10 +21,37 @@
 
 All notable changes to TelemetryFlow Collector will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.1] - 2024-12-29
+## [1.1.1] - 2025-01-01
+
+### Added
+
+- **OTLP Dual Endpoint Support**: Documented dual OTLP HTTP endpoint support
+  - TFO Standalone: v1 (OTEL Community) + v2 (TelemetryFlow Platform)
+  - OCB Build: v1 only (standard OpenTelemetry)
+- **Endpoint Documentation**: Added OTLP endpoint tables to all relevant files
+  - README.md - New "OTLP HTTP Endpoints" section
+  - docs/README.md - OTLP Capabilities section
+  - docs/COMPONENTS.md - HTTP API Endpoints table
+  - docs/CONFIGURATION.md - OTLP Configuration section
+  - docs/INSTALLATION.md - Endpoint version test examples
+  - docs/OCB_BUILD.md - OTLP HTTP Endpoints section
+  - docs/EXEMPLARS.md - OTLP Endpoints section
+- **Config Documentation**: Added endpoint comments to all config files
+  - configs/tfo-collector.yaml - v1+v2 endpoint documentation
+  - configs/otel-collector.yaml - v1 only endpoint documentation
+  - configs/otel-collector-minimal.yaml - v1 only endpoint documentation
+- **Docker Compose Documentation**: Added endpoint info to all docker-compose files
+  - docker-compose.yml - TFO Standalone (v1+v2)
+  - docker-compose.ocb.yml - OCB (v1 only)
+  - docker-compose.e2e.yml - E2E Testing (v1+v2)
+- **GitHub Workflow Updates**: Added endpoint info to workflow summaries
+  - docker-ocb.yml - v1 only endpoints in summary
+  - docker-tfo.yml - v1+v2 endpoints in summary
+  - release-ocb.yml - v1 only endpoints in release notes
+  - release-tfo.yml - v1+v2 endpoints in release notes
 
 ### Changed
 

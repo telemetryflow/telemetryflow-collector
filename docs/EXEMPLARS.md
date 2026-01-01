@@ -63,6 +63,17 @@ flowchart TB
     style SPAN fill:#FFF9C4,stroke:#F9A825
 ```
 
+## OTLP Endpoints
+
+When sending traces to the collector for exemplars generation:
+
+| Build Type | Recommended Endpoint | Description |
+|------------|---------------------|-------------|
+| TFO Standalone | `/v2/traces` | TelemetryFlow Platform endpoint |
+| OCB (OTEL Community) | `/v1/traces` | Standard OpenTelemetry endpoint |
+
+> **Note:** TFO Standalone supports both v1 and v2 endpoints. OCB build only supports v1 endpoints.
+
 ## Configuration
 
 ### Complete Exemplars Configuration

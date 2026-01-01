@@ -134,7 +134,19 @@ Receivers collect telemetry data from various sources.
 
 ### OTLP Receiver (Core)
 
-The primary receiver for OpenTelemetry Protocol data.
+The primary receiver for OpenTelemetry Protocol data. Supports all three signal types (traces, metrics, logs) over both gRPC and HTTP protocols.
+
+**Capabilities:**
+
+| Feature | gRPC (4317) | HTTP (4318) |
+|---------|-------------|-------------|
+| Protocol Buffers | Yes | Yes |
+| JSON Encoding | No | Yes |
+| Streaming | Bidirectional | Request/Response |
+| TLS/mTLS | Yes | Yes |
+| Compression | gzip | gzip |
+
+**Basic Configuration:**
 
 ```yaml
 receivers:
@@ -145,6 +157,56 @@ receivers:
       http:
         endpoint: "0.0.0.0:4318"
 ```
+
+**Advanced Configuration with TLS:**
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+        max_recv_msg_size_mib: 4
+        max_concurrent_streams: 100
+        read_buffer_size: 524288
+        write_buffer_size: 524288
+        tls:
+          cert_file: /etc/tfo-collector/certs/server.crt
+          key_file: /etc/tfo-collector/certs/server.key
+          client_ca_file: /etc/tfo-collector/certs/ca.crt
+        keepalive:
+          server_parameters:
+            max_connection_idle: 15s
+            max_connection_age: 30s
+            max_connection_age_grace: 5s
+            time: 10s
+            timeout: 5s
+      http:
+        endpoint: "0.0.0.0:4318"
+        max_request_body_size: 10485760
+        cors:
+          allowed_origins: ["*"]
+          allowed_headers: ["*"]
+          max_age: 7200
+        tls:
+          cert_file: /etc/tfo-collector/certs/server.crt
+          key_file: /etc/tfo-collector/certs/server.key
+```
+
+**HTTP API Endpoints:**
+
+TFO-Collector supports both standard OTLP v1 and TelemetryFlow Platform v2 endpoints:
+
+| Version | Endpoint | Signal | Content-Type |
+|---------|----------|--------|--------------|
+| v1 (Standard OTLP) | `/v1/traces` | Traces | `application/x-protobuf`, `application/json` |
+| v1 (Standard OTLP) | `/v1/metrics` | Metrics | `application/x-protobuf`, `application/json` |
+| v1 (Standard OTLP) | `/v1/logs` | Logs | `application/x-protobuf`, `application/json` |
+| v2 (TelemetryFlow) | `/v2/traces` | Traces | `application/x-protobuf`, `application/json` |
+| v2 (TelemetryFlow) | `/v2/metrics` | Metrics | `application/x-protobuf`, `application/json` |
+| v2 (TelemetryFlow) | `/v2/logs` | Logs | `application/x-protobuf`, `application/json` |
+
+> **Note:** The v1 endpoints follow the standard OpenTelemetry specification. The v2 endpoints are TelemetryFlow Platform-specific for enhanced features. Both versions use the same handlers and are functionally equivalent.
 
 ### Trace Receivers (Legacy Formats)
 
@@ -306,6 +368,61 @@ Exporters send telemetry data to various backends.
 | `otlp` | OTLP gRPC exporter | [Link](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) |
 | `otlphttp` | OTLP HTTP exporter | [Link](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter) |
 | `debug` | Debug output (console) | [Link](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/debugexporter) |
+
+**OTLP gRPC Exporter Configuration:**
+
+```yaml
+exporters:
+  otlp:
+    endpoint: "otel-backend:4317"
+    tls:
+      insecure: false
+      cert_file: /etc/tfo-collector/certs/client.crt
+      key_file: /etc/tfo-collector/certs/client.key
+      ca_file: /etc/tfo-collector/certs/ca.crt
+    headers:
+      Authorization: "Bearer ${API_TOKEN}"
+    compression: gzip
+    timeout: 30s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 5000
+```
+
+**OTLP HTTP Exporter Configuration:**
+
+```yaml
+exporters:
+  otlphttp:
+    endpoint: "https://otel-backend:4318"
+    tls:
+      insecure: false
+      cert_file: /etc/tfo-collector/certs/client.crt
+      key_file: /etc/tfo-collector/certs/client.key
+    headers:
+      Authorization: "Bearer ${API_TOKEN}"
+    compression: gzip
+    timeout: 30s
+    encoding: proto  # or "json"
+```
+
+**OTLP Exporter Features:**
+
+| Feature | gRPC | HTTP |
+|---------|------|------|
+| Protocol Buffers | Yes | Yes |
+| JSON Encoding | No | Yes |
+| TLS/mTLS | Yes | Yes |
+| Compression | gzip | gzip |
+| Retry on Failure | Yes | Yes |
+| Sending Queue | Yes | Yes |
+| Custom Headers | Yes | Yes |
 
 ### Metrics Exporters
 

@@ -114,6 +114,172 @@ service:
 
 ---
 
+## OTLP Configuration
+
+### OTLP Receiver Configuration
+
+The OTLP receiver is the primary entry point for telemetry data. It supports both gRPC and HTTP protocols.
+
+**Complete OTLP Receiver Configuration:**
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      # gRPC Protocol (Port 4317)
+      grpc:
+        endpoint: "0.0.0.0:4317"
+        max_recv_msg_size_mib: 4           # Max message size in MiB
+        max_concurrent_streams: 100         # Max concurrent gRPC streams
+        read_buffer_size: 524288            # Read buffer size (512 KiB)
+        write_buffer_size: 524288           # Write buffer size (512 KiB)
+
+        # TLS Configuration
+        tls:
+          cert_file: /etc/tfo-collector/certs/server.crt
+          key_file: /etc/tfo-collector/certs/server.key
+          client_ca_file: /etc/tfo-collector/certs/ca.crt  # For mTLS
+          min_version: "1.2"
+
+        # Keepalive Configuration
+        keepalive:
+          server_parameters:
+            max_connection_idle: 15s
+            max_connection_age: 30s
+            max_connection_age_grace: 5s
+            time: 10s
+            timeout: 5s
+
+      # HTTP Protocol (Port 4318)
+      http:
+        endpoint: "0.0.0.0:4318"
+        max_request_body_size: 10485760     # 10 MiB
+
+        # CORS Configuration
+        cors:
+          allowed_origins: ["*"]
+          allowed_headers: ["*"]
+          max_age: 7200
+
+        # TLS Configuration
+        tls:
+          cert_file: /etc/tfo-collector/certs/server.crt
+          key_file: /etc/tfo-collector/certs/server.key
+```
+
+### OTLP Exporter Configuration
+
+**OTLP gRPC Exporter (Recommended for high throughput):**
+
+```yaml
+exporters:
+  otlp:
+    endpoint: "otel-backend:4317"
+
+    # TLS Configuration
+    tls:
+      insecure: false
+      cert_file: /etc/tfo-collector/certs/client.crt
+      key_file: /etc/tfo-collector/certs/client.key
+      ca_file: /etc/tfo-collector/certs/ca.crt
+
+    # Custom Headers (for authentication)
+    headers:
+      Authorization: "Bearer ${OTEL_API_TOKEN}"
+      X-Tenant-ID: "${TENANT_ID}"
+
+    # Compression
+    compression: gzip
+
+    # Timeout
+    timeout: 30s
+
+    # Retry Configuration
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+    # Sending Queue (for resilience)
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 5000
+      storage: file_storage  # For persistent queue
+```
+
+**OTLP HTTP Exporter (For HTTP-only backends):**
+
+```yaml
+exporters:
+  otlphttp:
+    endpoint: "https://otel-backend:4318"
+
+    # TLS Configuration
+    tls:
+      insecure: false
+      cert_file: /etc/tfo-collector/certs/client.crt
+      key_file: /etc/tfo-collector/certs/client.key
+
+    # Custom Headers
+    headers:
+      Authorization: "Bearer ${OTEL_API_TOKEN}"
+
+    # Encoding: proto (default) or json
+    encoding: proto
+
+    # Compression
+    compression: gzip
+
+    # Timeout
+    timeout: 30s
+
+    # Retry Configuration
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+```
+
+### OTLP with Exemplars (Metrics-to-Traces Correlation)
+
+```yaml
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: http.route
+    exemplars:
+      enabled: true  # Enable exemplars for metrics-to-traces correlation
+    namespace: traces
+    metrics_flush_interval: 15s
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    enable_open_metrics: true  # Required for exemplars
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/traces, spanmetrics]
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      processors: [batch]
+      exporters: [prometheus]
+```
+
+See [EXEMPLARS.md](EXEMPLARS.md) for complete exemplars setup.
+
+---
+
 ## Common Configuration Patterns
 
 ### Pipeline Architecture

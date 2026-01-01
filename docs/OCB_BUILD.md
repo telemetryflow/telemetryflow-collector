@@ -73,8 +73,8 @@ graph TB
 
 ## Prerequisites
 
-- Go 1.21 or later
-- OCB (OpenTelemetry Collector Builder) v0.114.0
+- Go 1.24 or later
+- OCB (OpenTelemetry Collector Builder) v0.142.0
 
 ## Installation
 
@@ -93,7 +93,7 @@ builder version
 ```bash
 # Linux/macOS
 curl -L -o ocb \
-  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.114.0/ocb_0.114.0_$(uname -s)_$(uname -m)"
+  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.142.0/ocb_0.142.0_$(uname -s)_$(uname -m)"
 chmod +x ocb
 sudo mv ocb /usr/local/bin/
 ```
@@ -183,23 +183,23 @@ dist:
   skip_compilation: true  # We compile manually
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.142.0
   # ... more extensions
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0
   # ... more receivers
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.114.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.142.0
   # ... more processors
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.114.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.142.0
   # ... more exporters
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.114.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.142.0
   # ... more connectors
 ```
 
@@ -235,7 +235,7 @@ Browse available components:
 ```yaml
 receivers:
   # Add new receiver
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.142.0
 ```
 
 ### 3. Rebuild
@@ -270,9 +270,9 @@ service:
 
 ```bash
 docker build -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.0.0 .
+  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 ```
 
 ### Run Container
@@ -286,7 +286,7 @@ docker run -d \
   -p 8889:8889 \
   -p 13133:13133 \
   -v $(pwd)/configs/otel-collector.yaml:/etc/tfo-collector/otel-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:1.0.0
+  telemetryflow/telemetryflow-collector-ocb:1.1.1
 ```
 
 ### Docker Compose
@@ -299,9 +299,35 @@ docker-compose -f docker-compose.ocb.yml up -d
 
 | TelemetryFlow | OTEL Version | OCB Version |
 |---------------|--------------|-------------|
+| 1.1.x | 0.142.0 | v0.142.0 |
 | 1.0.x | 0.114.0 | v0.114.0 |
 
 **Important**: All components in `manifest.yaml` must use the same OTEL version to ensure compatibility.
+
+## OTLP HTTP Endpoints
+
+### OCB Build (OTEL Community - v1 Only)
+
+The OCB build uses the **standard OpenTelemetry OTLP receiver** which supports **v1 endpoints only**:
+
+| Signal | Endpoint | Content-Type |
+|--------|----------|--------------|
+| Traces | `/v1/traces` | `application/x-protobuf`, `application/json` |
+| Metrics | `/v1/metrics` | `application/x-protobuf`, `application/json` |
+| Logs | `/v1/logs` | `application/x-protobuf`, `application/json` |
+
+This ensures full compatibility with the OpenTelemetry specification and all OTEL SDKs.
+
+### TFO Standalone Build (Dual Endpoints)
+
+The standalone TFO build uses a **custom OTLP receiver** that supports **both v1 and v2** endpoints:
+
+| Version | Endpoint | Description |
+|---------|----------|-------------|
+| **v1** (OTEL Community) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | Standard OpenTelemetry spec |
+| **v2** (TFO Platform) | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform-specific |
+
+> **Recommendation:** Use **v2 endpoints** for TFO Standalone build for TelemetryFlow Platform features. Use **v1 endpoints** when compatibility with standard OTEL tooling is required.
 
 ## Troubleshooting
 

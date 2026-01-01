@@ -1,15 +1,52 @@
-version: '3.8'
+# =============================================================================
+# TelemetryFlow Collector - Docker Compose (E2E Testing)
+# =============================================================================
+#
+# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+#
+# This docker-compose is for End-to-End testing using the Standalone build.
+#
+# Usage:
+#   # Start E2E test environment
+#   docker-compose -f docker-compose.e2e.yml up -d
+#
+#   # Run tests
+#   go test ./tests/e2e/...
+#
+#   # Stop
+#   docker-compose -f docker-compose.e2e.yml down
+#
+# =============================================================================
+# OTLP HTTP Endpoints (TFO Standalone supports BOTH v1 and v2)
+# =============================================================================
+#
+#   TelemetryFlow Platform (Recommended):
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
+#
+#   OTEL Community (Backwards Compatible):
+#     POST http://localhost:4318/v1/traces
+#     POST http://localhost:4318/v1/metrics
+#     POST http://localhost:4318/v1/logs
+#
+#   gRPC (Both versions via same port):
+#     localhost:4317
+#
+# =============================================================================
 
 services:
   tfo-collector-e2e:
+    container_name: tfo-collector-e2e
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "8888:8888"
-      - "13133:13133"
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP (v1 + v2 endpoints)
+      - "8888:8888"   # Prometheus metrics (self)
+      - "13133:13133" # Health check
     volumes:
       - ./tests/e2e/testdata/minimal.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
     healthcheck:
@@ -21,12 +58,17 @@ services:
       - e2e-test
 
   mock-backend:
+    container_name: mock-backend
     image: nginx:alpine
     ports:
       - "8080:80"
     networks:
       - e2e-test
 
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
 networks:
   e2e-test:
     driver: bridge
+    name: tfo-e2e-network

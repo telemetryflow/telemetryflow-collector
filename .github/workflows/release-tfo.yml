@@ -1094,6 +1094,17 @@ jobs:
             | 8888 | Prometheus metrics |
             | 8889 | Prometheus exporter |
             | 13133 | Health check |
+            | 55679 | zPages |
+            | 1777 | pprof |
+
+            ### OTLP HTTP Endpoints (v1 + v2)
+
+            | Version | Endpoint | Description |
+            |---------|----------|-------------|
+            | **v2** (Recommended) | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform |
+            | **v1** (Compatible) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | OTEL Community |
+
+            > **Note:** TFO Standalone supports both v1 and v2 endpoints. Use v2 for TelemetryFlow Platform features.
 
             ### Verification
 

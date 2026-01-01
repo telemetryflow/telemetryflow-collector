@@ -1139,6 +1139,16 @@ jobs:
             | 55679 | zPages |
             | 1777 | pprof |
 
+            ### OTLP HTTP Endpoints (v1 Only)
+
+            | Signal | Endpoint |
+            |--------|----------|
+            | Traces | `POST http://localhost:4318/v1/traces` |
+            | Metrics | `POST http://localhost:4318/v1/metrics` |
+            | Logs | `POST http://localhost:4318/v1/logs` |
+
+            > **Note:** OCB build uses standard OpenTelemetry OTLP receiver (v1 endpoints only).
+
             ### Verification
 
             Verify downloads using SHA256 checksums in `checksums-sha256.txt`.

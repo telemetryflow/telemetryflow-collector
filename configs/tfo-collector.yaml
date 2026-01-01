@@ -15,6 +15,22 @@
 # Copy to: /etc/tfo-collector/tfo-collector.yaml or ~/.tfo-collector/
 #
 # =============================================================================
+# OTLP HTTP Endpoints (TFO Standalone supports BOTH v1 and v2)
+# =============================================================================
+#   TelemetryFlow Platform (Recommended):
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
+#
+#   OTEL Community (Backwards Compatible):
+#     POST http://localhost:4318/v1/traces
+#     POST http://localhost:4318/v1/metrics
+#     POST http://localhost:4318/v1/logs
+#
+#   gRPC (Both versions via same port):
+#     localhost:4317
+#
+# =============================================================================
 # Environment Variables
 # =============================================================================
 #   TELEMETRYFLOW_API_KEY_ID      - API Key ID for authentication (tfk_xxx)

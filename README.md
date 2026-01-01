@@ -471,6 +471,50 @@ tfo-collector/
 | 55679 | HTTP | zPages |
 | 1777 | HTTP | pprof |
 
+## OTLP HTTP Endpoints
+
+TelemetryFlow Collector supports dual OTLP HTTP endpoint versions based on build type:
+
+### TFO Standalone (v1 + v2)
+
+The Standalone build supports **both v1 and v2** endpoints:
+
+| Version | Endpoint | Description |
+|---------|----------|-------------|
+| **v2** (Recommended) | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform |
+| **v1** (Compatible) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | OTEL Community standard |
+
+```bash
+# TelemetryFlow Platform v2 (recommended)
+curl -X POST http://localhost:4318/v2/traces \
+  -H "Content-Type: application/json" \
+  -d '{"resourceSpans": [...]}'
+
+# OTEL Community v1 (backwards compatible)
+curl -X POST http://localhost:4318/v1/traces \
+  -H "Content-Type: application/json" \
+  -d '{"resourceSpans": [...]}'
+```
+
+### OCB Build (v1 Only)
+
+The OCB build uses the **standard OpenTelemetry OTLP receiver** which supports **v1 endpoints only**:
+
+| Signal | Endpoint | Content-Type |
+|--------|----------|--------------|
+| Traces | `/v1/traces` | `application/x-protobuf`, `application/json` |
+| Metrics | `/v1/metrics` | `application/x-protobuf`, `application/json` |
+| Logs | `/v1/logs` | `application/x-protobuf`, `application/json` |
+
+```bash
+# OTEL Community v1 (standard)
+curl -X POST http://localhost:4318/v1/metrics \
+  -H "Content-Type: application/json" \
+  -d '{"resourceMetrics": [...]}'
+```
+
+> **Note:** Use TFO Standalone for v2 endpoint support. Use v2 endpoints for TelemetryFlow Platform features.
+
 ## Development
 
 ### Build Commands

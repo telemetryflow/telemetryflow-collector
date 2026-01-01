@@ -470,9 +470,9 @@ flowchart LR
 ```mermaid
 flowchart TD
     subgraph "Git Tags"
-        V1[v1.1.0]
-        V2[v1.1.0-standalone]
-        V3[v1.1.0-ocb]
+        V1[v1.1.1]
+        V2[v1.1.1-standalone]
+        V3[v1.1.1-ocb]
     end
 
     subgraph "Standalone Workflows"
@@ -510,10 +510,10 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph "Input"
-        I1[Tag: v1.1.0-standalone]
-        I2[Tag: v1.1.0-ocb]
-        I3[Tag: v1.1.0]
-        I4[Manual: 1.1.0]
+        I1[Tag: v1.1.1-standalone]
+        I2[Tag: v1.1.1-ocb]
+        I3[Tag: v1.1.1]
+        I4[Manual: 1.1.1]
     end
 
     subgraph "Processing"
@@ -521,7 +521,7 @@ flowchart LR
     end
 
     subgraph "Output"
-        O[Clean Version: 1.1.0]
+        O[Clean Version: 1.1.1]
     end
 
     I1 --> P
@@ -660,9 +660,9 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph "Tagging"
-        T1[v1.1.0 → Both builds]
-        T2[v1.1.0-standalone → Standalone only]
-        T3[v1.1.0-ocb → OCB only]
+        T1[v1.1.1 → Both builds]
+        T2[v1.1.1-standalone → Standalone only]
+        T3[v1.1.1-ocb → OCB only]
     end
 ```
 
@@ -670,16 +670,16 @@ flowchart LR
 
 ```bash
 # Standalone release
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.1.1
+git push origin v1.1.1
 
 # Or explicit standalone
-git tag v1.1.0-standalone
-git push origin v1.1.0-standalone
+git tag v1.1.1-standalone
+git push origin v1.1.1-standalone
 
 # OCB-only release
-git tag v1.1.0-ocb
-git push origin v1.1.0-ocb
+git tag v1.1.1-ocb
+git push origin v1.1.1-ocb
 ```
 
 ### Docker Pull Commands
@@ -687,11 +687,11 @@ git push origin v1.1.0-ocb
 ```bash
 # Standalone
 docker pull telemetryflow/telemetryflow-collector:latest
-docker pull telemetryflow/telemetryflow-collector:1.1.0
+docker pull telemetryflow/telemetryflow-collector:1.1.1
 
 # OCB
 docker pull telemetryflow/telemetryflow-collector-ocb:latest
-docker pull telemetryflow/telemetryflow-collector-ocb:1.1.0-ocb
+docker pull telemetryflow/telemetryflow-collector-ocb:1.1.1-ocb
 ```
 
 ### Run Commands

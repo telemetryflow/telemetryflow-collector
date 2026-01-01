@@ -1,12 +1,27 @@
-# OpenTelemetry Collector Configuration (Standard OTEL Format)
+# OpenTelemetry Collector Configuration - Minimal (Standard OTEL Format)
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 #
-# This config uses STANDARD OpenTelemetry Collector format.
-# Use with OCB build: ./build/tfo-collector-ocb --config configs/otel-collector.yaml
-# Or with community OTEL collector: otelcol --config configs/otel-collector.yaml
+# This is a MINIMAL config using STANDARD OpenTelemetry Collector format.
+# Use with OCB build: ./build/tfo-collector-ocb --config configs/otel-collector-minimal.yaml
+# Or with community OTEL collector: otelcol --config configs/otel-collector-minimal.yaml
 #
-# For the TelemetryFlow Standalone build (custom format), use: configs/tfo-collector.yaml
+# For the TelemetryFlow Standalone build, use: configs/tfo-collector.yaml
+# For full-featured OCB config, use: configs/otel-collector.yaml
+#
+# =============================================================================
+# OTLP HTTP Endpoints (OCB/OTEL Community - v1 ONLY)
+# =============================================================================
+#   Standard OpenTelemetry endpoints:
+#     POST http://localhost:4318/v1/traces
+#     POST http://localhost:4318/v1/metrics
+#     POST http://localhost:4318/v1/logs
+#
+#   gRPC:
+#     localhost:4317
+#
+#   NOTE: v2 endpoints are NOT supported in OCB builds.
+#         Use TFO Standalone build for v2 endpoint support.
 
 # =============================================================================
 # RECEIVERS - How telemetry data enters the collector
@@ -112,4 +127,9 @@ service:
 
     metrics:
       level: detailed
-      address: "0.0.0.0:8888"
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888

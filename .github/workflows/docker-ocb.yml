@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.1.0)'
+        description: 'Version tag (e.g., 1.1.1)'
         required: false
         default: ''
       otel_version:
@@ -315,3 +315,13 @@ jobs:
           echo "|------------|---------|" >> $GITHUB_STEP_SUMMARY
           echo "| Standalone | \`tfo-collector start --config config.yaml\` |" >> $GITHUB_STEP_SUMMARY
           echo "| OCB | \`tfo-collector --config config.yaml\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### OTLP HTTP Endpoints (v1 ONLY)" >> $GITHUB_STEP_SUMMARY
+          echo "| Signal | Endpoint |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Traces | \`POST http://localhost:4318/v1/traces\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Metrics | \`POST http://localhost:4318/v1/metrics\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Logs | \`POST http://localhost:4318/v1/logs\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** OCB build uses standard OpenTelemetry OTLP receiver (v1 endpoints only)." >> $GITHUB_STEP_SUMMARY
+          echo "> Use TFO Standalone build for v2 endpoint support." >> $GITHUB_STEP_SUMMARY

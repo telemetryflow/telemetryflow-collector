@@ -53,7 +53,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.1.0)'
+        description: 'Version tag (e.g., 1.1.1)'
         required: false
         default: ''
       push:
@@ -318,3 +318,11 @@ jobs:
           echo "  -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \\" >> $GITHUB_STEP_SUMMARY
           echo "  ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### OTLP HTTP Endpoints (v1 + v2)" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | Endpoint | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **v2** (Recommended) | \`/v2/traces\`, \`/v2/metrics\`, \`/v2/logs\` | TelemetryFlow Platform |" >> $GITHUB_STEP_SUMMARY
+          echo "| **v1** (Compatible) | \`/v1/traces\`, \`/v1/metrics\`, \`/v1/logs\` | OTEL Community |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** TFO Standalone supports both v1 and v2 endpoints. Use v2 for TelemetryFlow Platform features." >> $GITHUB_STEP_SUMMARY

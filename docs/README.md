@@ -1,8 +1,8 @@
 # TelemetryFlow Collector Documentation
 
-- **Version:** 1.0.0
-- **OTEL Version:** 0.114.0
-- **Last Updated:** December 2025
+- **Version:** 1.1.1
+- **OTEL Version:** 0.142.0
+- **Last Updated:** January 2026
 - **Status:** Production Ready
 
 ---
@@ -217,6 +217,90 @@ sequenceDiagram
 
 ---
 
+## OTLP Capabilities
+
+TelemetryFlow Collector provides comprehensive OTLP (OpenTelemetry Protocol) support as the primary data ingestion and export mechanism.
+
+### OTLP Protocol Support
+
+| Protocol | Endpoint | Encoding | Signals |
+|----------|----------|----------|---------|
+| gRPC | `0.0.0.0:4317` | Protocol Buffers | Traces, Metrics, Logs |
+| HTTP/1.1 | `0.0.0.0:4318` | Protocol Buffers, JSON | Traces, Metrics, Logs |
+
+### OTLP Receiver Features
+
+**gRPC Protocol (Port 4317):**
+- Full bidirectional streaming support
+- Max receive message size: 4 MiB (configurable)
+- Max concurrent streams: 100 (configurable)
+- Keepalive configuration with configurable ping intervals
+- TLS/mTLS support with client certificate authentication
+
+**HTTP Protocol (Port 4318):**
+
+- API endpoints (both versions supported):
+  - Standard OTLP: `/v1/traces`, `/v1/metrics`, `/v1/logs`
+  - TelemetryFlow Platform: `/v2/traces`, `/v2/metrics`, `/v2/logs`
+- Content-Type negotiation: `application/json`, `application/x-protobuf`
+- CORS support with configurable origins and headers
+- Max request body: 10 MiB
+- Keepalive: 30s read/write timeout
+
+### OTLP Exporter Features
+
+**OTLP gRPC Exporter:**
+- Endpoint: Configurable backend target
+- TLS/mTLS support with custom certificates
+- Custom headers for authentication
+- Gzip compression support
+- Retry on failure with exponential backoff
+- Persistent sending queue (configurable)
+
+**OTLP HTTP Exporter:**
+- HTTP/1.1 with Protocol Buffers or JSON encoding
+- TLS/mTLS support
+- Custom headers support
+- Gzip compression
+- Configurable timeout (default: 30s)
+
+### Signal Types
+
+| Signal | Description | Use Case |
+|--------|-------------|----------|
+| **Traces** | Distributed tracing with spans, resources, and instrumentation metadata | Request flow tracking, latency analysis |
+| **Metrics** | Counters, gauges, histograms, summaries with data points | Performance monitoring, alerting |
+| **Logs** | Log records with severity, timestamps, and trace context | Application debugging, audit trails |
+
+### Exemplars Support
+
+TelemetryFlow Collector supports **exemplars** for metrics-to-traces correlation:
+
+```yaml
+connectors:
+  spanmetrics:
+    exemplars:
+      enabled: true  # Enable exemplars
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s]
+
+exporters:
+  prometheus:
+    enable_open_metrics: true  # Required for exemplars
+```
+
+See [EXEMPLARS.md](EXEMPLARS.md) for detailed configuration.
+
+### Connectors for Derived Telemetry
+
+| Connector | Purpose | Output |
+|-----------|---------|--------|
+| `spanmetrics` | Derive metrics from traces with exemplars | `traces_spanmetrics_duration_milliseconds`, `traces_spanmetrics_calls_total` |
+| `servicegraph` | Build service dependency graphs | `traces_service_graph_request_total`, `traces_service_graph_request_duration_seconds` |
+
+---
+
 ## Configuration Overview
 
 Both builds now use **standard OpenTelemetry Collector YAML format**. The standalone config adds optional TelemetryFlow-specific sections for authentication and collector identification.
@@ -402,18 +486,18 @@ TelemetryFlow Collector provides separate Dockerfiles for each build type:
 ```bash
 # Build standalone image
 docker build \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
   --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/telemetryflow-collector:1.0.0 .
+  -t telemetryflow/telemetryflow-collector:1.1.1 .
 
 # Build OCB image
 docker build \
   -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.0.0 .
+  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 ```
 
 #### Run Containers
@@ -424,14 +508,14 @@ docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.0.0
+  telemetryflow/telemetryflow-collector:1.1.1
 
 # OCB
 docker run -d \
   --name tfo-collector-ocb \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:1.0.0
+  telemetryflow/telemetryflow-collector-ocb:1.1.1
 ```
 
 ### Kubernetes

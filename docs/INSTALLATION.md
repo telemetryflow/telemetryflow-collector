@@ -1,6 +1,6 @@
 # TelemetryFlow Collector Installation Guide
 
-- **Version:** 1.1.0
+- **Version:** 1.1.1
 - **OTEL Version:** 0.142.0
 - **Last Updated:** December 2025
 
@@ -107,7 +107,7 @@ docker-compose down
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VERSION` | Build version | `1.1.0` |
+| `VERSION` | Build version | `1.1.1` |
 | `OTEL_VERSION` | OpenTelemetry version (OCB) | `0.142.0` |
 | `IMAGE_NAME` | Docker image name | `telemetryflow/telemetryflow-collector` |
 | `OTLP_GRPC_PORT` | OTLP gRPC port | `4317` |
@@ -125,18 +125,18 @@ docker-compose down
 ```bash
 # Build standalone image
 docker build \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
   --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/telemetryflow-collector:1.1.0 .
+  -t telemetryflow/telemetryflow-collector:1.1.1 .
 
 # Build OCB image
 docker build \
   -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.0 \
+  --build-arg VERSION=1.1.1 \
   --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.1.0 .
+  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 ```
 
 ---
@@ -171,7 +171,7 @@ make build-standalone
 #     ___________    .__                        __
 #     \__    ___/___ |  |   ____   _____   _____/  |________ ___.__. ...
 #
-# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.0"}
+# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.1"}
 ```
 
 ### OCB Collector
@@ -518,7 +518,7 @@ metadata:
   namespace: observability
   labels:
     app: tfo-collector
-    version: "1.1.0"
+    version: "1.1.1"
 spec:
   replicas: 3
   selector:
@@ -528,13 +528,13 @@ spec:
     metadata:
       labels:
         app: tfo-collector
-        version: "1.1.0"
+        version: "1.1.1"
     spec:
       serviceAccountName: tfo-collector
 
       containers:
       - name: tfo-collector
-        image: telemetryflow/telemetryflow-collector:1.1.0
+        image: telemetryflow/telemetryflow-collector:1.1.1
         args:
           - "start"
           - "--config"
@@ -678,8 +678,17 @@ curl http://localhost:8888/metrics | head -30
 
 ### Send Test Data
 
+**OTLP HTTP Endpoint Versions:**
+
+| Build Type | Recommended Endpoint | Description |
+|------------|---------------------|-------------|
+| TFO Standalone | `/v2/*` | TelemetryFlow Platform endpoints |
+| OCB (OTEL Community) | `/v1/*` | Standard OpenTelemetry endpoints |
+
+**TFO Standalone (v2 endpoint - recommended):**
+
 ```bash
-# Send test metrics via OTLP HTTP (TelemetryFlow Platform v2)
+# Send test metrics via OTLP HTTP - TelemetryFlow Platform v2
 curl -X POST http://localhost:4318/v2/metrics \
   -H "Content-Type: application/json" \
   -d '{
@@ -703,6 +712,36 @@ curl -X POST http://localhost:4318/v2/metrics \
     }]
   }'
 ```
+
+**OCB Build (v1 endpoint - OTEL standard):**
+
+```bash
+# Send test metrics via OTLP HTTP - OTEL Community v1
+curl -X POST http://localhost:4318/v1/metrics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resourceMetrics": [{
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "test-service"}}
+        ]
+      },
+      "scopeMetrics": [{
+        "metrics": [{
+          "name": "test.metric",
+          "sum": {
+            "dataPoints": [{
+              "asInt": "100",
+              "timeUnixNano": "'$(date +%s)000000000'"
+            }]
+          }
+        }]
+      }]
+    }]
+  }'
+```
+
+> **Note:** TFO Standalone supports both v1 and v2 endpoints. OCB build only supports v1 endpoints.
 
 ---
 
@@ -731,14 +770,14 @@ tfo-collector version
 
 ```bash
 # Pull new image
-docker pull telemetryflow/telemetryflow-collector:1.1.0
+docker pull telemetryflow/telemetryflow-collector:1.1.1
 
 # Stop and remove
 docker stop tfo-collector
 docker rm tfo-collector
 
 # Start with new image
-docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.0 ...
+docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.1 ...
 ```
 
 ### Kubernetes Upgrade
@@ -746,7 +785,7 @@ docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1
 ```bash
 # Update image
 kubectl set image deployment/tfo-collector \
-  tfo-collector=telemetryflow/telemetryflow-collector:1.1.0 \
+  tfo-collector=telemetryflow/telemetryflow-collector:1.1.1 \
   -n observability
 
 # Watch rollout
