@@ -110,6 +110,23 @@ jobs:
       matrix:
         arch: [amd64, arm64]
     steps:
+      - name: Free up disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          # Remove unnecessary packages to free space for OCB build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get clean
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -152,6 +169,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare
     steps:
+      - name: Free up disk space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          # Remove unnecessary packages to free space for OCB build
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo apt-get clean
+          sudo docker image prune --all --force || true
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
