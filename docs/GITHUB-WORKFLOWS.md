@@ -68,6 +68,127 @@ flowchart LR
 
 ---
 
+## Build Type Selection
+
+The CI/CD workflows use tag-based build type selection to prevent duplicate builds and allow selective releases:
+
+```mermaid
+flowchart TD
+    subgraph "Git Reference"
+        REF[Git Push/Tag]
+    end
+
+    subgraph "Tag Detection"
+        CHECK{Check Tag Suffix}
+    end
+
+    subgraph "Build Decision"
+        STANDALONE[Build Standalone Only]
+        OCB[Build OCB Only]
+        BOTH[Build Both]
+    end
+
+    REF --> CHECK
+    CHECK -->|"v*.*.*-standalone"| STANDALONE
+    CHECK -->|"v*.*.*-ocb"| OCB
+    CHECK -->|"v*.*.* (no suffix)"| BOTH
+    CHECK -->|"main/master branch"| BOTH
+    CHECK -->|"release/* branch"| BOTH
+```
+
+### Selection Matrix
+
+| Git Reference | Standalone Builds | OCB Builds | Example |
+|---------------|-------------------|------------|---------|
+| `v*.*.*-standalone` | ✅ | ❌ | `v1.1.1-standalone` |
+| `v*.*.*-ocb` | ❌ | ✅ | `v1.1.1-ocb` |
+| `v*.*.*` (no suffix) | ✅ | ✅ | `v1.1.1` |
+| `main` / `master` branch | ✅ | ✅ | Push to main |
+| `release/*` branch | ✅ | ✅ | `release/v1.2.0` |
+| `workflow_dispatch` | Based on input | Based on input | Manual trigger |
+
+### Implementation Patterns
+
+Each workflow type uses a specific pattern for build type selection:
+
+#### CI Workflow (`ci.yml`)
+
+Uses a `prepare` job with outputs:
+
+```yaml
+prepare:
+  outputs:
+    build_standalone: ${{ steps.determine.outputs.build_standalone }}
+    build_ocb: ${{ steps.determine.outputs.build_ocb }}
+  steps:
+    - name: Determine build type
+      run: |
+        if [[ "$REF" == refs/tags/*-standalone ]]; then
+          BUILD_STANDALONE="true"
+          BUILD_OCB="false"
+        elif [[ "$REF" == refs/tags/*-ocb ]]; then
+          BUILD_STANDALONE="false"
+          BUILD_OCB="true"
+        else
+          BUILD_STANDALONE="true"
+          BUILD_OCB="true"
+        fi
+
+build-standalone:
+  needs: prepare
+  if: needs.prepare.outputs.build_standalone == 'true'
+
+build-ocb:
+  needs: prepare
+  if: needs.prepare.outputs.build_ocb == 'true'
+```
+
+#### Docker Workflows (`docker-tfo.yml`, `docker-ocb.yml`)
+
+Uses a `check-build-type` job with `should_run` output:
+
+```yaml
+# docker-tfo.yml - Skips if -ocb tag
+check-build-type:
+  outputs:
+    should_run: ${{ steps.check.outputs.should_run }}
+  steps:
+    - run: |
+        if [[ "$REF" == refs/tags/*-ocb ]]; then
+          echo "should_run=false" >> $GITHUB_OUTPUT
+        else
+          echo "should_run=true" >> $GITHUB_OUTPUT
+        fi
+
+# docker-ocb.yml - Skips if -standalone tag
+check-build-type:
+  steps:
+    - run: |
+        if [[ "$REF" == refs/tags/*-standalone ]]; then
+          echo "should_run=false" >> $GITHUB_OUTPUT
+        else
+          echo "should_run=true" >> $GITHUB_OUTPUT
+        fi
+```
+
+#### Release Workflows (`release-tfo.yml`, `release-ocb.yml`)
+
+Uses job-level conditions with `endsWith()`:
+
+```yaml
+# release-tfo.yml
+jobs:
+  prepare:
+    if: ${{ !endsWith(github.ref, '-ocb') }}
+
+# release-ocb.yml
+jobs:
+  prepare:
+    if: ${{ !endsWith(github.ref, '-standalone') }}
+```
+
+---
+
 ## Workflow Files
 
 | Workflow | File | Build Type | Purpose |

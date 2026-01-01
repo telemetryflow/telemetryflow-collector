@@ -52,6 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - docker-tfo.yml - v1+v2 endpoints in summary
   - release-ocb.yml - v1 only endpoints in release notes
   - release-tfo.yml - v1+v2 endpoints in release notes
+- **CI/CD Build Type Selection**: Implemented tag-based build type selection
+  - Tag `v*.*.*-standalone` → Standalone only builds
+  - Tag `v*.*.*-ocb` → OCB only builds
+  - Tag `v*.*.*` (no suffix) → Both builds run
+  - Branch `main`/`master`/`release/*` → Both builds run
+  - Prevents duplicate builds when using type-specific tags
 
 ### Changed
 
@@ -68,6 +74,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - presentation/ - Banner, version tests
 - **Documentation**: Added ARCHITECTURE.md and TESTING.md guides
 - **Fixtures**: Added test fixtures for configuration and telemetry data
+- **GitHub Workflows**: Updated all CI/CD workflows with build type selection
+  - ci.yml - Added `prepare` job with `build_standalone`/`build_ocb` outputs
+  - docker-tfo.yml - Added `check-build-type` job, skips on `-ocb` tags
+  - docker-ocb.yml - Added `check-build-type` job, skips on `-standalone` tags
+  - release-tfo.yml - Uses `!endsWith(github.ref, '-ocb')` condition
+  - release-ocb.yml - Uses `!endsWith(github.ref, '-standalone')` condition
+- **Disk Space Optimization**: Added aggressive disk cleanup for OCB builds
+  - Removes dotnet, android, ghc, CodeQL, boost, swift, AGENT_TOOLSDIRECTORY
+  - Fixes "no space left on device" error during OCB compilation
 
 ### Fixed
 

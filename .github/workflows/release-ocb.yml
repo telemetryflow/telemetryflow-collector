@@ -11,16 +11,17 @@
 # - macOS: DMG (Intel and Apple Silicon)
 #
 # Build Type: OCB (OpenTelemetry Collector Builder)
-# For Standalone build, see release-standalone.yml
+# For Standalone build, see release-tfo.yml
 #
-# Triggers:
-# - Push tags matching v*.*.* (creates both standalone and OCB releases)
-# - Push tags matching v*.*.*-ocb (OCB only)
-# - Manual workflow dispatch
+# Build Type Selection:
+# - Tag v*.*.*-ocb → OCB only (this workflow runs)
+# - Tag v*.*.*-standalone → Standalone only (this workflow SKIPS)
+# - Tag v*.*.* (no suffix) → Both builds (this workflow runs)
+# - Manual workflow dispatch → This workflow runs
 #
 # =============================================================================
 
-name: Release OCB
+name: Release OCB - TFO Collector
 
 on:
   push:
