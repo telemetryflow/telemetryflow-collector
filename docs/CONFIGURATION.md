@@ -1,5 +1,9 @@
 # TelemetryFlow Collector - Configuration Guide
 
+- **Version:** 1.1.2
+- **OTEL Version:** 0.142.0
+- **Last Updated:** January 2026
+
 This guide provides configuration examples and best practices for the TelemetryFlow Collector.
 
 ## Configuration Overview
@@ -708,11 +712,8 @@ Common environment variables:
 Validate your configuration before running:
 
 ```bash
-# OCB build
-./tfo-collector-ocb validate --config config.yaml
-
-# Standalone build
-./tfo-collector config validate --config config.yaml
+# Validate configuration
+./tfo-collector validate --config config.yaml
 ```
 
 ---

@@ -11,7 +11,7 @@ require (
 	// -------------------------------------------------------------------------
 	// CLI & Utilities
 	// -------------------------------------------------------------------------
-	github.com/google/uuid v1.6.0 // UUID generation for collector ID
+	github.com/google/uuid v1.6.0 // indirect; UUID generation for collector ID
 
 	// -------------------------------------------------------------------------
 	// OpenTelemetry Collector Contrib - Connectors
@@ -57,13 +57,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.142.0 // Jaeger traces
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.142.0 // Prometheus scraper
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.142.0 // Zipkin traces
-	github.com/spf13/cobra v1.10.2 // CLI framework
-	github.com/spf13/viper v1.21.0 // Configuration management
+	github.com/spf13/cobra v1.10.2 // indirect; CLI framework
 
 	// -------------------------------------------------------------------------
 	// Testing
 	// -------------------------------------------------------------------------
-	github.com/stretchr/testify v1.11.1 // Test assertions
+	github.com/stretchr/testify v1.11.1 // indirect; Test assertions
 
 	// -------------------------------------------------------------------------
 	// OpenTelemetry Collector Core
@@ -87,9 +86,9 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.142.0 // Memory limiter
 	go.opentelemetry.io/collector/receiver v1.48.0 // Receiver interfaces
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0 // OTLP receiver
-	go.uber.org/zap v1.27.1 // Structured logging
-	google.golang.org/grpc v1.77.0 // gRPC support
-	gopkg.in/yaml.v3 v3.0.1 // YAML parsing
+	go.uber.org/zap v1.27.1 // indirect; Structured logging
+	google.golang.org/grpc v1.77.0 // indirect; gRPC support
+	gopkg.in/yaml.v3 v3.0.1 // indirect; YAML parsing
 )
 
 // =============================================================================
@@ -290,7 +289,6 @@ require (
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/ovh/go-ovh v1.9.0 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -310,17 +308,12 @@ require (
 	github.com/prometheus/sigv4 v0.3.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
-	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
-	github.com/spf13/afero v1.15.0 // indirect
-	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.17.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -376,7 +369,7 @@ require (
 	go.opentelemetry.io/collector/internal/memorylimiter v0.142.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.142.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.142.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.48.0
+	go.opentelemetry.io/collector/pdata v1.48.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.142.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.142.0 // indirect
@@ -455,4 +448,30 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
+)
+
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.142.0
+	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoauthextension v0.0.0-00010101000000-000000000000
+	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoidentityextension v0.0.0-00010101000000-000000000000
+	github.com/telemetryflow/telemetryflow-collector/components/tfoexporter v0.0.0-00010101000000-000000000000
+	github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.48.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.142.0
+)
+
+require (
+	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5 // indirect
+	github.com/tg123/go-htpasswd v1.2.4 // indirect
+)
+
+// =============================================================================
+// Replace Directives for Local TFO Components
+// =============================================================================
+replace (
+	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoauthextension => ./components/extension/tfoauthextension
+	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoidentityextension => ./components/extension/tfoidentityextension
+	github.com/telemetryflow/telemetryflow-collector/components/tfoexporter => ./components/tfoexporter
+	github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver => ./components/tfootlpreceiver
 )

@@ -5,31 +5,32 @@
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
-# This docker-compose is for End-to-End testing using the Standalone build.
+# This docker-compose is for End-to-End testing using the OCB Native build.
 #
 # Usage:
 #   # Start E2E test environment
 #   docker-compose -f docker-compose.e2e.yml up -d
 #
 #   # Run tests
-#   go test ./tests/e2e/...
+#   go test ./tests/...
 #
 #   # Stop
 #   docker-compose -f docker-compose.e2e.yml down
 #
 # =============================================================================
-# OTLP HTTP Endpoints (TFO Standalone supports BOTH v1 and v2)
+# OTLP HTTP Endpoints (v1 + v2 on same port 4318)
 # =============================================================================
 #
-#   TelemetryFlow Platform (Recommended):
-#     POST http://localhost:4318/v2/traces
-#     POST http://localhost:4318/v2/metrics
-#     POST http://localhost:4318/v2/logs
-#
-#   OTEL Community (Backwards Compatible):
+#   v1 Endpoints (Community/Open - NO AUTH REQUIRED):
 #     POST http://localhost:4318/v1/traces
 #     POST http://localhost:4318/v1/metrics
 #     POST http://localhost:4318/v1/logs
+#
+#   v2 Endpoints (TFO Platform - AUTH REQUIRED):
+#     Headers: X-TelemetryFlow-Key-ID, X-TelemetryFlow-Key-Secret
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
 #
 #   gRPC (Both versions via same port):
 #     localhost:4317
@@ -42,13 +43,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-1.1.2}
+        OTEL_VERSION: ${OTEL_VERSION:-0.142.0}
+    environment:
+      - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID:-tfk_e2e_test_key}
+      - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET:-tfs_e2e_test_secret}
+      - TELEMETRYFLOW_COLLECTOR_ID=e2e-test-collector
+      - TELEMETRYFLOW_ENVIRONMENT=testing
     ports:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP (v1 + v2 endpoints)
       - "8888:8888"   # Prometheus metrics (self)
       - "13133:13133" # Health check
     volumes:
-      - ./tests/e2e/testdata/minimal.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
+      - ./configs/tfo-collector.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:13133/"]
       interval: 10s

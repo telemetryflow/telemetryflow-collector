@@ -58,18 +58,30 @@
 # =============================================================================
 
 dist:
-  name: tfo-collector-ocb
-  description: TelemetryFlow Collector OCB - Community Enterprise Observability Platform (CEOP)
-  output_path: ./build/ocb
-  module: github.com/telemetryflow/telemetryflow-collector-ocb
-  # Skip compilation - we build manually
+  name: tfo-collector
+  description: TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+  output_path: ./build
+  module: github.com/telemetryflow/telemetryflow-collector
+  # Skip compilation - we build manually with custom main.go
   skip_compilation: true
 
 # =============================================================================
 # Extensions
 # =============================================================================
 extensions:
-  # Core extensions
+  # ---------------------------------------------------------------------------
+  # TelemetryFlow Custom Extensions
+  # ---------------------------------------------------------------------------
+  # TFO Auth Extension - centralized API key management
+  - gomod: github.com/telemetryflow/telemetryflow-collector/components/extension/tfoauthextension v1.1.2
+    path: ./components/extension/tfoauthextension
+  # TFO Identity Extension - collector identity management
+  - gomod: github.com/telemetryflow/telemetryflow-collector/components/extension/tfoidentityextension v1.1.2
+    path: ./components/extension/tfoidentityextension
+
+  # ---------------------------------------------------------------------------
+  # Core Extensions
+  # ---------------------------------------------------------------------------
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.142.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.142.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.142.0
@@ -91,6 +103,13 @@ extensions:
 # Receivers - Metrics, Logs, Traces
 # =============================================================================
 receivers:
+  # ---------------------------------------------------------------------------
+  # TelemetryFlow Custom Receiver
+  # ---------------------------------------------------------------------------
+  # TFO OTLP Receiver - supports v1 and v2 endpoints on same port
+  - gomod: github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver v1.1.2
+    path: ./components/tfootlpreceiver
+
   # ---------------------------------------------------------------------------
   # Core OTLP Receiver (gRPC and HTTP)
   # ---------------------------------------------------------------------------
@@ -327,6 +346,13 @@ processors:
 # Exporters - Send to Backends
 # =============================================================================
 exporters:
+  # ---------------------------------------------------------------------------
+  # TelemetryFlow Custom Exporter
+  # ---------------------------------------------------------------------------
+  # TFO Exporter - auto-injects TFO auth headers, supports v2 API
+  - gomod: github.com/telemetryflow/telemetryflow-collector/components/tfoexporter v1.1.2
+    path: ./components/tfoexporter
+
   # ---------------------------------------------------------------------------
   # Core OTLP Exporters
   # ---------------------------------------------------------------------------

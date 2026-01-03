@@ -8,20 +8,13 @@
 # This workflow provides continuous integration for TelemetryFlow Collector:
 # - Code quality checks (lint, vet, fmt)
 # - Unit and integration tests
-# - Build verification (Standalone + OCB, multi-platform)
+# - Build verification (OCB Native, multi-platform)
 # - Security scanning
 # - Coverage reporting
 #
-# Build Types:
-# - Standalone: Custom Cobra CLI (cmd/tfo-collector)
-# - OCB: OpenTelemetry Collector Builder (manifest.yaml)
-#
-# Build Type Selection:
-# - Tag v*.*.*-standalone → Standalone only
-# - Tag v*.*.*-ocb → OCB only
-# - Tag v*.*.* (no suffix) → Both builds
-# - Branch main/master/release/* → Both builds
-# - workflow_dispatch → Based on build_type input
+# Build Type: OCB Native (100% OpenTelemetry Collector Builder)
+# - Uses manifest.yaml to generate collector with TFO custom components
+# - Single unified binary with all 85+ OTEL components + TFO components
 #
 # =============================================================================
 
@@ -37,12 +30,10 @@ on:
       - 'release/**'
     tags:
       - 'v*.*.*'
-      - 'v*.*.*-standalone'
-      - 'v*.*.*-ocb'
     paths:
       - 'cmd/**'
-      - 'internal/**'
-      - 'pkg/**'
+      - 'components/**'
+      - 'configs/**'
       - 'tests/**'
       - 'go.mod'
       - 'go.sum'
@@ -55,8 +46,8 @@ on:
       - develop
     paths:
       - 'cmd/**'
-      - 'internal/**'
-      - 'pkg/**'
+      - 'components/**'
+      - 'configs/**'
       - 'tests/**'
       - 'go.mod'
       - 'go.sum'
@@ -73,22 +64,13 @@ on:
         required: false
         type: boolean
         default: false
-      build_type:
-        description: 'Build type (all, standalone, ocb)'
-        required: false
-        type: choice
-        options:
-          - all
-          - standalone
-          - ocb
-        default: 'all'
 
 env:
   GO_VERSION: '1.24'
   OCB_VERSION: '0.142.0'
+  OTEL_VERSION: '0.142.0'
   PRODUCT_NAME: TelemetryFlow Collector
-  BINARY_NAME_STANDALONE: tfo-collector
-  BINARY_NAME_OCB: tfo-collector-ocb
+  BINARY_NAME: tfo-collector
 
 permissions:
   contents: read
@@ -97,87 +79,49 @@ permissions:
 
 jobs:
   # ===========================================================================
-  # Prepare - Determine Build Type
+  # Prepare - Determine Build Context
   # ===========================================================================
   prepare:
     name: Prepare Build Context
     runs-on: ubuntu-latest
     outputs:
-      build_standalone: ${{ steps.determine.outputs.build_standalone }}
-      build_ocb: ${{ steps.determine.outputs.build_ocb }}
       version: ${{ steps.determine.outputs.version }}
+      commit: ${{ steps.determine.outputs.commit }}
+      branch: ${{ steps.determine.outputs.branch }}
     steps:
-      - name: Determine build type
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine build context
         id: determine
         run: |
           REF="${{ github.ref }}"
-          BUILD_TYPE="${{ inputs.build_type }}"
 
-          echo "=== Build Type Determination ==="
+          echo "=== Build Context ==="
           echo "REF: $REF"
-          echo "BUILD_TYPE input: $BUILD_TYPE"
           echo "Event: ${{ github.event_name }}"
-
-          # Default: build both
-          BUILD_STANDALONE="true"
-          BUILD_OCB="true"
 
           # Extract version from ref
           VERSION="0.0.0-dev"
           if [[ "$REF" == refs/tags/v* ]]; then
             VERSION="${REF#refs/tags/v}"
-            VERSION="${VERSION%-standalone}"
-            VERSION="${VERSION%-ocb}"
           fi
 
-          # Determine build type based on ref or input
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Manual trigger - use input
-            case "$BUILD_TYPE" in
-              standalone)
-                BUILD_STANDALONE="true"
-                BUILD_OCB="false"
-                echo "Manual trigger: Standalone only"
-                ;;
-              ocb)
-                BUILD_STANDALONE="false"
-                BUILD_OCB="true"
-                echo "Manual trigger: OCB only"
-                ;;
-              *)
-                echo "Manual trigger: Both builds"
-                ;;
-            esac
-          elif [[ "$REF" == refs/tags/*-standalone ]]; then
-            # Tag with -standalone suffix
-            BUILD_STANDALONE="true"
-            BUILD_OCB="false"
-            echo "Tag trigger: Standalone only (suffix detected)"
-          elif [[ "$REF" == refs/tags/*-ocb ]]; then
-            # Tag with -ocb suffix
-            BUILD_STANDALONE="false"
-            BUILD_OCB="true"
-            echo "Tag trigger: OCB only (suffix detected)"
-          elif [[ "$REF" == refs/tags/v* ]]; then
-            # Tag without suffix - build both
-            echo "Tag trigger: Both builds (no suffix)"
-          elif [[ "$REF" == refs/heads/main ]] || [[ "$REF" == refs/heads/master ]] || [[ "$REF" == refs/heads/release/* ]]; then
-            # Main, master, or release branch - build both
-            echo "Branch trigger ($REF): Both builds"
-          else
-            # Other branches (feature, develop, etc.) - build both
-            echo "Branch trigger ($REF): Both builds"
-          fi
+          COMMIT=$(git rev-parse --short HEAD)
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-          echo "build_standalone=$BUILD_STANDALONE" >> $GITHUB_OUTPUT
-          echo "build_ocb=$BUILD_OCB" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
           echo ""
-          echo "=== Final Decision ==="
-          echo "Build Standalone: $BUILD_STANDALONE"
-          echo "Build OCB: $BUILD_OCB"
+          echo "=== Build Context ==="
           echo "Version: $VERSION"
+          echo "Commit: $COMMIT"
+          echo "Branch: $BRANCH"
+          echo "Build Type: OCB Native (100% OpenTelemetry Collector Builder)"
 
   # ===========================================================================
   # Code Quality - Lint, Vet, Format
@@ -260,7 +204,6 @@ jobs:
         run: |
           echo "=== Disk space before cleanup ==="
           df -h
-          # Remove unnecessary packages to free space for OCB build
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -285,11 +228,11 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Build collector binary standalone
-        run: make build-standalone
+      - name: Install OCB (OpenTelemetry Collector Builder)
+        run: make install-ocb
 
-      - name: Build collector binary ocb
-        run: make build-ocb
+      - name: Build collector binary (OCB Native)
+        run: make build
 
       - name: Run integration tests
         run: make test-integration-ci
@@ -316,7 +259,6 @@ jobs:
         run: |
           echo "=== Disk space before cleanup ==="
           df -h
-          # Remove unnecessary packages to free space for OCB build
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -341,11 +283,11 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Build collector binary standalone
-        run: make build-standalone
+      - name: Install OCB (OpenTelemetry Collector Builder)
+        run: make install-ocb
 
-      - name: Build collector binary ocb
-        run: make build-ocb
+      - name: Build collector binary (OCB Native)
+        run: make build
 
       - name: Run E2E tests
         run: make test-e2e-ci
@@ -353,110 +295,15 @@ jobs:
           TFO_COLLECTOR_BINARY: ./build/tfo-collector
 
   # ===========================================================================
-  # Build Verification - Standalone
+  # Build Verification - OCB Native (Multi-Platform)
   # ===========================================================================
-  build-standalone:
-    name: Build Standalone (${{ matrix.os }}/${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    needs: [prepare, lint]
-    if: |
-      always() &&
-      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
-      needs.prepare.outputs.build_standalone == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: linux
-            arch: amd64
-            runner: ubuntu-latest
-          - os: linux
-            arch: arm64
-            runner: ubuntu-latest
-          - os: darwin
-            arch: amd64
-            runner: macos-latest
-          - os: darwin
-            arch: arm64
-            runner: macos-latest
-          - os: windows
-            arch: amd64
-            runner: windows-latest
-    steps:
-      - name: Free disk space (Ubuntu only)
-        if: runner.os == 'Linux'
-        run: |
-          echo "=== Disk space before cleanup ==="
-          df -h
-          # Remove unnecessary packages to free space for OCB build
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force || true
-          echo "=== Disk space after cleanup ==="
-          df -h
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Download dependencies
-        run: make deps
-
-      - name: Build standalone binary
-        shell: bash
-        run: make ci-build-standalone
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-
-      - name: Verify binary
-        shell: bash
-        run: |
-          OUTPUT="build/${{ env.BINARY_NAME_STANDALONE }}-${{ matrix.os }}-${{ matrix.arch }}"
-          if [ "${{ matrix.os }}" = "windows" ]; then
-            OUTPUT="${OUTPUT}.exe"
-          fi
-
-          if [ -f "$OUTPUT" ]; then
-            echo "Binary built successfully: $OUTPUT"
-            ls -la "$OUTPUT"
-          else
-            echo "Build failed: $OUTPUT not found"
-            exit 1
-          fi
-
-      - name: Test binary (version command)
-        if: matrix.os == 'linux' && matrix.arch == 'amd64'
-        run: |
-          chmod +x build/${{ env.BINARY_NAME_STANDALONE }}-${{ matrix.os }}-${{ matrix.arch }}
-          ./build/${{ env.BINARY_NAME_STANDALONE }}-${{ matrix.os }}-${{ matrix.arch }} version
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.BINARY_NAME_STANDALONE }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: build/${{ env.BINARY_NAME_STANDALONE }}-${{ matrix.os }}-${{ matrix.arch }}*
-          retention-days: 7
-
-  # ===========================================================================
-  # Build Verification - OCB (OpenTelemetry Collector Builder)
-  # ===========================================================================
-  build-ocb:
-    name: Build OCB (${{ matrix.os }}/${{ matrix.arch }})
+  build:
+    name: Build (${{ matrix.os }}/${{ matrix.arch }})
     runs-on: ubuntu-latest
     needs: [prepare, lint]
     if: |
       always() &&
-      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
-      needs.prepare.outputs.build_ocb == 'true'
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
@@ -470,7 +317,6 @@ jobs:
         run: |
           echo "=== Disk space before cleanup ==="
           df -h
-          # Remove unnecessary packages to free space for OCB build
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -480,7 +326,6 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo apt-get clean
           sudo docker image prune --all --force || true
-          # Clean Go build cache to free more space
           go clean -cache -modcache || true
           echo "=== Disk space after cleanup ==="
           df -h
@@ -500,8 +345,8 @@ jobs:
       - name: Install OCB (OpenTelemetry Collector Builder)
         run: make install-ocb
 
-      - name: Build OCB binary
-        run: make ci-build-ocb
+      - name: Build OCB Native binary
+        run: make ci-build
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
@@ -509,7 +354,7 @@ jobs:
 
       - name: Verify binary
         run: |
-          OUTPUT="build/${{ env.BINARY_NAME_OCB }}-${{ matrix.os }}-${{ matrix.arch }}"
+          OUTPUT="build/${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }}"
 
           if [ -f "$OUTPUT" ]; then
             echo "Binary built successfully: $OUTPUT"
@@ -522,14 +367,14 @@ jobs:
       - name: Test binary (version command)
         if: matrix.os == 'linux' && matrix.arch == 'amd64'
         run: |
-          chmod +x build/${{ env.BINARY_NAME_OCB }}-${{ matrix.os }}-${{ matrix.arch }}
-          ./build/${{ env.BINARY_NAME_OCB }}-${{ matrix.os }}-${{ matrix.arch }} --version || true
+          chmod +x build/${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }}
+          ./build/${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }} --version || true
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BINARY_NAME_OCB }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: build/${{ env.BINARY_NAME_OCB }}-${{ matrix.os }}-${{ matrix.arch }}*
+          name: ${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: build/${{ env.BINARY_NAME }}-${{ matrix.os }}-${{ matrix.arch }}*
           retention-days: 7
 
   # ===========================================================================
@@ -556,9 +401,6 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          # Exclude vendor directories and known false positives from expr library
-          # The expr library (github.com/expr-lang/expr) used by OTTL generates
-          # false positives for ast.*Node.String methods
           args: '-no-fail -fmt sarif -out gosec-results.sarif -exclude-dir=vendor -exclude-generated ./...'
 
       - name: Upload SARIF file
@@ -637,7 +479,7 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [prepare, lint, test-unit, test-integration, build-standalone, build-ocb, security, coverage]
+    needs: [prepare, lint, test-unit, test-integration, build, security, coverage]
     if: always()
     steps:
       - name: Generate summary
@@ -648,8 +490,10 @@ jobs:
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| **Version** | ${{ needs.prepare.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Build Standalone** | ${{ needs.prepare.outputs.build_standalone }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Build OCB** | ${{ needs.prepare.outputs.build_ocb }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Type** | OCB Native (100% OpenTelemetry Collector Builder) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **OTEL Version** | ${{ env.OTEL_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | ${{ needs.prepare.outputs.commit }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ needs.prepare.outputs.branch }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Job Results" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
@@ -657,18 +501,17 @@ jobs:
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ needs.prepare.outputs.build_standalone }}" = "true" ]; then
-            echo "| Build (Standalone) | ${{ needs.build-standalone.result }} |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| Build (Standalone) | skipped |" >> $GITHUB_STEP_SUMMARY
-          fi
-          if [ "${{ needs.prepare.outputs.build_ocb }}" = "true" ]; then
-            echo "| Build (OCB) | ${{ needs.build-ocb.result }} |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| Build (OCB) | skipped |" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "| Build (OCB Native) | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Coverage | ${{ needs.coverage.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### TFO Custom Components" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Type | Purpose |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| tfootlp | Receiver | OTLP with v1/v2 endpoint support |" >> $GITHUB_STEP_SUMMARY
+          echo "| tfo | Exporter | Auto-injects TFO auth headers |" >> $GITHUB_STEP_SUMMARY
+          echo "| tfoauth | Extension | TFO API key management |" >> $GITHUB_STEP_SUMMARY
+          echo "| tfoidentity | Extension | Collector identity management |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
@@ -688,17 +531,9 @@ jobs:
             exit 1
           fi
 
-          # Check standalone build if it was supposed to run
-          if [[ "${{ needs.prepare.outputs.build_standalone }}" == "true" ]] && \
-             [[ "${{ needs.build-standalone.result }}" == "failure" ]]; then
-            echo "CI failed - Standalone build failed"
-            exit 1
-          fi
-
-          # Check OCB build if it was supposed to run
-          if [[ "${{ needs.prepare.outputs.build_ocb }}" == "true" ]] && \
-             [[ "${{ needs.build-ocb.result }}" == "failure" ]]; then
-            echo "CI failed - OCB build failed"
+          # Check build
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "CI failed - Build failed"
             exit 1
           fi
 

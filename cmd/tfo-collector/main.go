@@ -3,6 +3,11 @@
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 // Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 //
+// This is the OCB-native build that includes:
+// - All 85+ OpenTelemetry Collector community components
+// - TFO custom components (tfootlpreceiver, tfoexporter, tfoauth, tfoidentity)
+// - TFO branding and CLI experience
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,50 +23,91 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
 
-	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/otelcol"
 
-	"github.com/telemetryflow/telemetryflow-collector/internal/cli"
 	"github.com/telemetryflow/telemetryflow-collector/internal/version"
 )
 
 func main() {
-	opts := &cli.Options{}
+	// Print TFO banner on startup
+	fmt.Print(version.Banner())
 
-	rootCmd := &cobra.Command{
-		Use:   "tfo-collector",
-		Short: "TelemetryFlow Collector - Enterprise Observability Platform",
-		Long: fmt.Sprintf(`%s
-TelemetryFlow Collector is an enterprise-grade OpenTelemetry collector
-that receives, processes, and exports telemetry data (metrics, logs, traces)
-using the OTLP protocol.
-
-Features:
-  • OTLP receiver (gRPC and HTTP)
-  • Prometheus metrics receiver
-  • Batch and memory limiter processors
-  • Multiple exporters (OTLP, Prometheus, file)
-  • Health check and monitoring extensions
-  • Graceful shutdown with signal handling
-  • Cross-platform support (Linux, macOS, Windows)
-
-  `, version.Banner()),
+	info := component.BuildInfo{
+		Command:     version.ProductShortName,
+		Description: version.ProductDescription,
+		Version:     version.Version,
 	}
 
-	// Add subcommands
-	rootCmd.AddCommand(cli.NewStartCmd(opts))
-	rootCmd.AddCommand(cli.NewVersionCmd())
-	rootCmd.AddCommand(cli.NewConfigCmd(opts))
-	rootCmd.AddCommand(cli.NewValidateCmd(opts))
+	// Configure the collector settings
+	// Pass the components function directly (not called) - OTEL 0.142.0 API
+	set := otelcol.CollectorSettings{
+		BuildInfo: info,
+		Factories: components,
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				ProviderFactories: []confmap.ProviderFactory{
+					fileprovider.NewFactory(),
+					yamlprovider.NewFactory(),
+					envprovider.NewFactory(),
+				},
+			},
+		},
+	}
 
-	// Global flags
-	rootCmd.PersistentFlags().StringVarP(&opts.CfgFile, "config", "c", "", "config file path")
-	rootCmd.PersistentFlags().StringVar(&opts.LogLevel, "log-level", "", "log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().StringVar(&opts.LogFormat, "log-format", "", "log format (json, text)")
+	// Create and run the collector
+	cmd := otelcol.NewCommand(set)
+	cmd.Use = version.ProductShortName
+	cmd.Short = version.ProductName
+	cmd.Long = fmt.Sprintf(`%s
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+%s
+
+Usage Examples:
+  # Start with default config
+  %s --config /etc/tfo-collector/config.yaml
+
+  # Start with TFO Platform config (supports v2 endpoints)
+  %s --config configs/tfo-collector.yaml
+
+  # Start with multiple configs
+  %s --config base.yaml --config overrides.yaml
+
+TFO Custom Components:
+  Receivers:
+    tfootlp   - OTLP receiver with v1 and v2 endpoint support
+
+  Exporters:
+    tfo       - TFO Platform exporter with auto-auth injection
+
+  Extensions:
+    tfoauth     - TFO API key management
+    tfoidentity - Collector identity and resource enrichment
+
+Environment Variables:
+  TELEMETRYFLOW_API_KEY_ID      - TFO API Key ID (tfk_xxx)
+  TELEMETRYFLOW_API_KEY_SECRET  - TFO API Key Secret (tfs_xxx)
+  TELEMETRYFLOW_ENDPOINT        - TFO Platform endpoint
+  TELEMETRYFLOW_COLLECTOR_ID    - Unique collector identifier
+  TELEMETRYFLOW_COLLECTOR_NAME  - Human-readable collector name
+  TELEMETRYFLOW_ENVIRONMENT     - Deployment environment
+
+For more information, visit: %s`,
+		version.ProductName,
+		version.Motto,
+		version.ProductShortName,
+		version.ProductShortName,
+		version.ProductShortName,
+		version.SupportURL,
+	)
+
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
 	}
 }

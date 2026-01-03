@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.2-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
@@ -23,6 +23,56 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.2] - 2026-01-03
+
+### Added
+
+- **OCB-Native Architecture**: Unified single build system based on OpenTelemetry Collector Builder (OCB)
+  - Single binary (`tfo-collector`) with 85+ OTEL community components
+  - TFO custom components integrated natively into OCB build
+  - Removed legacy standalone build completely
+- **TFO Custom Components**: Production-ready custom components for TelemetryFlow Platform
+  - `tfootlpreceiver` - OTLP receiver with dual v1/v2 endpoint support
+  - `tfoexporter` - Exporter with auto TFO authentication header injection
+  - `tfoauthextension` - Centralized API key management
+  - `tfoidentityextension` - Collector identity and resource enrichment
+- **OTEL 0.142.0 API Compatibility**: Updated all components for latest OTEL Collector API
+  - Fixed factory map creation using new map-based approach
+  - Updated exporter settings (removed deprecated QueueConfig)
+  - Fixed `component.ID` API changes (String() vs Type())
+  - Updated `ToClient()` signature for HTTP client creation
+
+### Changed
+
+- **Build System**: Simplified to OCB-native only
+  - Makefile cleaned up - removed legacy/standalone targets
+  - Single `make build` target for OCB-native build
+  - `make ci-build` target for GitHub Actions CI
+  - Unified binary name: `tfo-collector` (no more `-ocb` suffix)
+- **GitHub Workflows**: Consolidated for OCB-native
+  - Updated `ci.yml` for OCB-native only builds
+  - Updated `release.yml` for unified release workflow
+  - Updated `docker.yml` for single image build
+  - Removed obsolete `docker-tfo.yml` and `release-tfo.yml`
+- **Documentation**: Updated all docs for unified architecture
+  - Removed dual build references
+  - Updated configuration examples
+  - Simplified installation instructions
+
+### Removed
+
+- **Legacy Standalone Build**: Fully deprecated
+  - Removed custom Cobra CLI implementation
+  - Removed `cmd/tfo-collector-legacy/` directory
+  - Removed `Dockerfile.ocb` (merged into `Dockerfile`)
+  - Removed `docker-compose.ocb.yml` (merged into `docker-compose.yml`)
+  - Removed `internal/collector/`, `internal/cli/`, `internal/pipeline/` packages
+
+### Fixed
+
+- OTEL 0.142.0 API compatibility issues in components
+- Build cache conflicts with Go version management
 
 ## [1.1.1] - 2025-01-01
 
@@ -241,42 +291,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 1.1.1 | 2024-12-29 | Documentation improvements, DDD test reorganization |
+| 1.1.2 | 2026-01-03 | OCB-native architecture, unified build system |
+| 1.1.1 | 2025-01-01 | Documentation improvements, DDD test reorganization |
 | 1.1.0 | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
 | 1.0.1 | 2024-12-17 | Docker workflows, SBOM, multi-platform support |
 | 1.0.0 | 2024-12-17 | Initial release |
 
-## Build Types
+## Build Architecture
 
-### Standalone vs OCB
+### OCB-Native Build (v1.1.2+)
 
-| Feature | Standalone | OCB |
-|---------|------------|-----|
-| CLI | Custom Cobra | Standard OTEL |
-| Config format | `enabled` flags | Standard OTEL |
-| Start command | `start --config` | `--config` |
-| Binary name | `tfo-collector` | `tfo-collector-ocb` |
-| Docker image | `telemetryflow-collector` | `telemetryflow-collector-ocb` |
+| Feature | Description |
+|---------|-------------|
+| Binary | `tfo-collector` |
+| Build | OpenTelemetry Collector Builder (OCB) |
+| Components | 85+ OTEL community + TFO custom components |
+| CLI | Standard OTEL CLI with TFO branding |
+| Config | Standard OTEL YAML format |
+| Docker | `telemetryflow/telemetryflow-collector` |
+
+### TFO Custom Components
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `tfootlp` | Receiver | OTLP with v1+v2 endpoint support |
+| `tfo` | Exporter | Auto TFO auth header injection |
+| `tfoauth` | Extension | API key management |
+| `tfoidentity` | Extension | Collector identity |
 
 ## Upgrade Guide
 
-### From Pre-release to 1.0.0
+### From v1.1.1 to v1.1.2
 
-This is the initial stable release. No upgrade steps required.
+1. **Single Binary**: Replace both `tfo-collector` and `tfo-collector-ocb` with unified `tfo-collector`
+2. **Config**: Standard OTEL format works unchanged
+3. **Docker**: Use single image `telemetryflow/telemetryflow-collector`
+4. **Commands**: Remove `start` prefix - use `tfo-collector --config config.yaml` directly
 
-### Switching Build Types
-
-#### Standalone to OCB
+### From v1.0.x to v1.1.x
 
 1. Update configuration from custom format to standard OTEL format
-2. Change start command from `start --config` to `--config`
-3. Pull OCB Docker image or install OCB package
-
-#### OCB to Standalone
-
-1. Update configuration to use `enabled` flags format
-2. Change start command from `--config` to `start --config`
-3. Pull Standalone Docker image or install Standalone package
+2. Use new `telemetryflow:` section for TFO-specific settings
+3. Remove `enabled` flags - use `service.pipelines` instead
 
 ## Support
 

@@ -1,100 +1,120 @@
 # TelemetryFlow Collector Build System
 
-- **Version:** 1.1.1
+- **Version:** 1.1.2
 - **OTEL Version:** 0.142.0
-- **Last Updated:** December 2025
+- **Last Updated:** January 2026
 
 ---
 
 ## Overview
 
-TelemetryFlow Collector uses a **dual build system** that produces two different binaries from the same codebase:
+TelemetryFlow Collector uses **OCB (OpenTelemetry Collector Builder)** as the native build system, producing a single unified binary that includes:
 
-1. **Standalone Build** (`tfo-collector`) - Custom Cobra CLI
-2. **OCB Build** (`tfo-collector-ocb`) - Standard OpenTelemetry Collector
+- **85+ OTEL Community Components** - Full ecosystem compatibility
+- **TFO Custom Components** - Platform-specific features for TelemetryFlow
 
 ```mermaid
 graph LR
     subgraph "Source Code"
-        CMD[cmd/tfo-collector/main.go]
-        INTERNAL[internal/]
+        CMD[cmd/tfo-collector/]
+        COMPONENTS[components/]
         MANIFEST[manifest.yaml]
     end
 
     subgraph "Build Process"
-        STANDALONE[make build-standalone]
-        OCB[make build]
+        OCB[make build<br/>OCB Native]
     end
 
     subgraph "Output ./build/"
-        BIN1[tfo-collector<br/>Standalone Binary]
-        BIN2[tfo-collector-ocb<br/>OCB Binary]
-        OCB_DIR[ocb/<br/>Generated Code]
+        BIN[tfo-collector<br/>Unified Binary]
     end
 
-    CMD --> STANDALONE
-    INTERNAL --> STANDALONE
-    STANDALONE --> BIN1
-
+    CMD --> OCB
+    COMPONENTS --> OCB
     MANIFEST --> OCB
-    OCB --> OCB_DIR
-    OCB_DIR --> BIN2
+    OCB --> BIN
 
-    style BIN1 fill:#81C784,stroke:#388E3C
-    style BIN2 fill:#64B5F6,stroke:#1976D2
+    style BIN fill:#81C784,stroke:#388E3C
 ```
 
 ---
 
-## Build Comparison
+## OCB-Native Architecture
 
-| Aspect | Standalone (`tfo-collector`) | OCB (`tfo-collector-ocb`) |
-|--------|------------------------------|---------------------------|
-| **Source** | `cmd/tfo-collector/main.go` | `manifest.yaml` → generated |
-| **CLI** | Cobra (`start`, `version`, `config`) | Standard OTEL (`--config`) |
-| **Config Format** | Standard OTEL + TelemetryFlow extensions | Standard OTEL YAML |
-| **Banner** | Custom ASCII art | None |
-| **Build Command** | `make build-standalone` | `make build` |
-| **Default Target** | Yes (`make` or `make all`) | No |
-| **Binary Location** | `./build/tfo-collector` | `./build/tfo-collector-ocb` |
-
-> **Note:** Both builds now use **standard OpenTelemetry Collector YAML format**. The standalone config adds optional TelemetryFlow-specific sections (`telemetryflow:` and `collector:`) for authentication and collector identification, which are ignored by the OCB build.
+| Aspect | Description |
+|--------|-------------|
+| **Binary** | `tfo-collector` (single unified binary) |
+| **Build System** | OpenTelemetry Collector Builder (OCB) |
+| **CLI** | Standard OTEL CLI with TFO branding |
+| **Config Format** | Standard OTEL YAML |
+| **Components** | 85+ OTEL community + TFO custom |
+| **Build Command** | `make build` |
+| **Binary Location** | `./build/tfo-collector` |
 
 ---
 
-## Standalone Build
+## TFO Custom Components
 
-### Build Process
+TFO custom components are integrated natively into the OCB build:
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `tfootlp` | Receiver | OTLP receiver with v1 + v2 endpoint support |
+| `tfo` | Exporter | Auto-injects TFO authentication headers |
+| `tfoauth` | Extension | Centralized API key management |
+| `tfoidentity` | Extension | Collector identity and resource enrichment |
+
+---
+
+## Build Process
+
+### How It Works
 
 ```mermaid
 flowchart TD
-    A[make build-standalone] --> B[go build]
-    B --> C[Compile cmd/tfo-collector]
-    C --> D[Link internal packages]
-    D --> E[Inject LDFLAGS]
+    A[make build] --> B[Compile components/]
+    B --> C[Link TFO custom components]
+    C --> D[Link OTEL community components]
+    D --> E[Inject LDFLAGS version info]
     E --> F[./build/tfo-collector]
 
-    subgraph "LDFLAGS"
-        L1[Version]
-        L2[GitCommit]
-        L3[GitBranch]
-        L4[BuildTime]
+    subgraph "TFO Components"
+        T1[tfootlpreceiver]
+        T2[tfoexporter]
+        T3[tfoauthextension]
+        T4[tfoidentityextension]
     end
 
-    E --> L1
-    E --> L2
-    E --> L3
-    E --> L4
+    subgraph "OTEL Components"
+        O1[otlpreceiver]
+        O2[batchprocessor]
+        O3[otlpexporter]
+        O4[healthcheckextension]
+    end
+
+    C --> T1
+    C --> T2
+    C --> T3
+    C --> T4
+    D --> O1
+    D --> O2
+    D --> O3
+    D --> O4
+
+    style F fill:#81C784,stroke:#388E3C
 ```
 
-### Build Command
+### Build Commands
 
 ```bash
-# Default build (standalone)
-make
+# Build unified binary
+make build
 
-# Explicit standalone build
-make build-standalone
+# Build for all platforms
+make build-all
+
+# Build for CI (specific platform)
+GOOS=linux GOARCH=amd64 make ci-build
 
 # Output
 ./build/tfo-collector
@@ -105,183 +125,11 @@ make build-standalone
 Version information is injected at build time:
 
 ```makefile
-LDFLAGS_STANDALONE := -s -w \
+LDFLAGS_VERSION := -s -w \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=$(VERSION)' \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=$(GIT_COMMIT)' \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitBranch=$(GIT_BRANCH)' \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=$(BUILD_TIME)'
-```
-
-### Configuration Format
-
-Standalone uses standard OTEL format with optional TelemetryFlow extensions:
-
-```yaml
-# configs/tfo-collector.yaml
-
-# TelemetryFlow-specific extensions (optional, ignored by OCB)
-telemetryflow:
-  api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
-  api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-  endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
-
-collector:
-  name: "${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
-  tags:
-    environment: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
-
-# Standard OTEL configuration (same format as OCB)
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"
-      http:
-        endpoint: "0.0.0.0:4318"
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
-```
-
-### CLI Commands
-
-```bash
-# Show help
-./build/tfo-collector --help
-
-# Start collector
-./build/tfo-collector start --config configs/tfo-collector.yaml
-
-# Show version
-./build/tfo-collector version
-
-# Show parsed config
-./build/tfo-collector config --config configs/tfo-collector.yaml
-```
-
----
-
-## OCB Build
-
-### What is OCB?
-
-OCB (OpenTelemetry Collector Builder) is the official tool for building custom OpenTelemetry Collector distributions. It:
-
-1. Reads a `manifest.yaml` specifying components
-2. Generates Go source code
-3. Compiles a standard OTEL Collector binary
-
-### Build Process
-
-```mermaid
-flowchart TD
-    A[make build] --> B[make generate]
-    B --> C[OCB reads manifest.yaml]
-    C --> D[Generate code in ./build/ocb/]
-    D --> E[go build in ./build/ocb/]
-    E --> F[./build/tfo-collector-ocb]
-
-    subgraph "manifest.yaml"
-        M1[Receivers]
-        M2[Processors]
-        M3[Exporters]
-        M4[Extensions]
-    end
-
-    C --> M1
-    C --> M2
-    C --> M3
-    C --> M4
-```
-
-### Install OCB
-
-```bash
-# Install OpenTelemetry Collector Builder
-make install-ocb
-
-# This runs:
-go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
-```
-
-### Build Command
-
-```bash
-# Generate and build OCB collector
-make build
-
-# Just generate code (no compile)
-make generate
-
-# Output
-./build/tfo-collector-ocb
-```
-
-### Manifest Configuration
-
-The `manifest.yaml` defines which components to include:
-
-```yaml
-# manifest.yaml
-dist:
-  name: tfo-collector-ocb
-  output_path: ./build/ocb
-  module: github.com/telemetryflow/telemetryflow-collector-ocb
-  skip_compilation: true
-
-receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.142.0
-  # ... more receivers
-
-processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.142.0
-  # ... more processors
-
-exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.142.0
-  # ... more exporters
-
-extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.142.0
-  # ... more extensions
-```
-
-### Configuration Format
-
-OCB uses standard OTEL configuration (no `enabled` flags):
-
-```yaml
-# configs/otel-collector.yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"  # No enabled flag
-
-service:
-  pipelines:
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
-```
-
-### CLI Commands
-
-```bash
-# Show help
-./build/tfo-collector-ocb --help
-
-# Run with config
-./build/tfo-collector-ocb --config configs/otel-collector.yaml
-
-# Validate config
-./build/tfo-collector-ocb validate --config configs/otel-collector.yaml
 ```
 
 ---
@@ -293,48 +141,58 @@ graph TD
     ROOT[tfo-collector/]
 
     ROOT --> CMD[cmd/tfo-collector/]
+    ROOT --> COMPONENTS[components/]
     ROOT --> INTERNAL[internal/]
     ROOT --> BUILD[build/]
     ROOT --> CONFIGS[configs/]
-    ROOT --> MANIFEST[manifest.yaml]
 
-    CMD --> MAIN[main.go<br/>Standalone Entry]
+    CMD --> MAIN[main.go<br/>OCB-native entry]
+    CMD --> COMPS[components.go<br/>Factory registration]
 
-    INTERNAL --> COLLECTOR[collector/]
-    INTERNAL --> CONFIG[config/]
+    COMPONENTS --> TFOOTLP[tfootlpreceiver/]
+    COMPONENTS --> TFOEXP[tfoexporter/]
+    COMPONENTS --> EXT[extension/]
+    EXT --> AUTH[tfoauthextension/]
+    EXT --> ID[tfoidentityextension/]
+
     INTERNAL --> VERSION[version/]
 
-    BUILD --> BIN1[tfo-collector]
-    BUILD --> BIN2[tfo-collector-ocb]
-    BUILD --> OCB[ocb/<br/>Generated]
+    BUILD --> BIN[tfo-collector]
 
     CONFIGS --> CFG1[tfo-collector.yaml]
     CONFIGS --> CFG2[otel-collector.yaml]
 
-    style BIN1 fill:#81C784
-    style BIN2 fill:#64B5F6
-    style OCB fill:#FFF9C4
+    style BIN fill:#81C784
+    style TFOOTLP fill:#E3F2FD
+    style TFOEXP fill:#E3F2FD
+    style AUTH fill:#E3F2FD
+    style ID fill:#E3F2FD
 ```
 
 ```text
 tfo-collector/
 ├── cmd/tfo-collector/
-│   └── main.go                 # Standalone CLI entry point
+│   ├── main.go                 # OCB-native entry with TFO branding
+│   └── components.go           # Component factory registration
+├── components/                 # TFO custom components
+│   ├── tfootlpreceiver/        # TFO OTLP receiver (v1+v2)
+│   │   ├── factory.go
+│   │   ├── config.go
+│   │   └── receiver.go
+│   ├── tfoexporter/            # TFO exporter (auto-auth)
+│   │   ├── factory.go
+│   │   ├── config.go
+│   │   └── exporter.go
+│   └── extension/
+│       ├── tfoauthextension/   # TFO auth extension
+│       └── tfoidentityextension/ # TFO identity extension
 ├── internal/
-│   ├── collector/              # Standalone collector logic
-│   ├── config/                 # Custom config parser
 │   └── version/                # Version info & banner
 ├── build/
-│   ├── tfo-collector           # Standalone binary
-│   ├── tfo-collector-ocb       # OCB binary
-│   └── ocb/                    # OCB generated code
-│       ├── main.go             # Generated main
-│       ├── components.go       # Generated components
-│       └── go.mod              # Generated module
+│   └── tfo-collector           # Built binary
 ├── configs/
-│   ├── tfo-collector.yaml      # Standalone config (custom format)
-│   └── otel-collector.yaml     # OCB config (standard OTEL)
-├── manifest.yaml               # OCB build manifest
+│   ├── tfo-collector.yaml      # TFO config with custom components
+│   └── otel-collector.yaml     # Standard OTEL config
 └── Makefile
 ```
 
@@ -347,56 +205,51 @@ tfo-collector/
 ```makefile
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-BINARY_NAME_OCB := tfo-collector-ocb
-VERSION ?= 1.1.1
+VERSION ?= 1.1.2
 OTEL_VERSION := 0.142.0
 
 BUILD_DIR := ./build
-BUILD_DIR_OCB := ./build/ocb
 CONFIG_DIR := ./configs
 ```
 
-### Standalone Targets
+### Build Targets
 
 ```makefile
-# Default target (builds standalone)
-all: build-standalone
+# Default target - builds collector
+all: build
 
-# Build standalone binary
-build-standalone:
-    go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/tfo-collector
+# Build unified binary
+build: tidy-components
+    go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/tfo-collector
 
-# Run standalone
-run-standalone: build-standalone
-    $(BUILD_DIR)/$(BINARY_NAME) start --config $(CONFIG_DIR)/tfo-collector.yaml
+# Build for all platforms
+build-all:
+    # linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64
 
-# Test standalone
-test-standalone:
-    go test -v ./...
+# CI build for specific platform
+ci-build:
+    CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build ...
+
+# Tidy component modules
+tidy-components:
+    for dir in components/*/; do cd $$dir && go mod tidy && cd -; done
 ```
 
-### OCB Targets
+### Run Targets
 
 ```makefile
-# Install OCB
-install-ocb:
-    go install go.opentelemetry.io/collector/cmd/builder@v$(OCB_VERSION)
-
-# Generate code with OCB
-generate: check-ocb
-    $(OCB) --config manifest.yaml
-
-# Build OCB binary
-build: generate
-    cd $(BUILD_DIR_OCB) && go build -ldflags "$(LDFLAGS)" -o ../$(BINARY_NAME_OCB) .
-
-# Run OCB
+# Run collector
 run: build
-    $(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml
+    $(BUILD_DIR)/$(BINARY_NAME) --config $(CONFIG_DIR)/tfo-collector.yaml
 
-# Validate OCB config
+# Run with debug logging
+run-debug: build
+    $(BUILD_DIR)/$(BINARY_NAME) --config $(CONFIG_DIR)/tfo-collector.yaml \
+        --set=service.telemetry.logs.level=debug
+
+# Validate configuration
 validate-config: build
-    $(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/otel-collector.yaml
+    $(BUILD_DIR)/$(BINARY_NAME) validate --config $(CONFIG_DIR)/tfo-collector.yaml
 ```
 
 ### Common Targets
@@ -405,7 +258,6 @@ validate-config: build
 # Clean all build artifacts
 clean:
     rm -rf $(BUILD_DIR)/*
-    rm -rf $(DIST_DIR)
 
 # Show version info
 version:
@@ -413,83 +265,153 @@ version:
     @echo "OTEL Version: $(OTEL_VERSION)"
     @echo "Git Commit: $(GIT_COMMIT)"
 
-# Tidy go modules
+# Tidy all go modules
 tidy:
     go mod tidy
+    $(MAKE) tidy-components
+
+# Run tests
+test:
+    go test -v ./...
+
+# Run linter
+lint:
+    golangci-lint run ./...
 ```
 
 ---
 
-## When to Use Which Build
+## Configuration Format
 
-### Use Standalone (`tfo-collector`) When:
+TelemetryFlow Collector uses **standard OpenTelemetry Collector YAML format** with TFO custom components:
 
-- You want TelemetryFlow-specific branding and CLI
-- You prefer the custom config format with `enabled` flags
-- You're deploying in a TelemetryFlow ecosystem
-- You need the `start`, `version`, `config` commands
-- You want the ASCII art banner on startup
+```yaml
+# configs/tfo-collector.yaml
 
-### Use OCB (`tfo-collector-ocb`) When:
+receivers:
+  # TFO custom receiver with v1+v2 endpoints
+  tfootlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+    enable_v2_endpoints: true
 
-- You need full OTEL Collector compatibility
-- You're integrating with existing OTEL tooling
-- You need components not in the standalone build
-- You want to use standard OTEL documentation
-- You're validating against OTEL config schemas
+  # Standard OTEL receiver
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+processors:
+  batch:
+    send_batch_size: 8192
+    timeout: 200ms
+
+exporters:
+  # TFO custom exporter with auto-auth
+  tfo:
+    endpoint: "https://api.telemetryflow.id"
+    use_v2_api: true
+    auth:
+      extension: tfoauth
+
+  # Standard OTEL exporter
+  debug:
+    verbosity: detailed
+
+extensions:
+  # TFO custom extensions
+  tfoauth:
+    api_key_id: "${env:TELEMETRYFLOW_API_KEY_ID}"
+    api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
+  tfoidentity:
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
+    name: "Production Collector"
+
+  # Standard OTEL extensions
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+service:
+  extensions: [health_check, tfoauth, tfoidentity]
+  pipelines:
+    traces:
+      receivers: [tfootlp]
+      processors: [batch]
+      exporters: [tfo]
+```
+
+---
+
+## CLI Commands
+
+```bash
+# Show help
+./build/tfo-collector --help
+
+# Run with config
+./build/tfo-collector --config configs/tfo-collector.yaml
+
+# Validate config
+./build/tfo-collector validate --config configs/tfo-collector.yaml
+
+# Show components
+./build/tfo-collector components
+
+# Show version
+./build/tfo-collector --version
+```
 
 ---
 
 ## Troubleshooting
 
-### OCB Build Fails: "builder not found"
+### Build Fails: "undefined: component.Type"
+
+This indicates OTEL API version mismatch. Ensure go.mod has matching versions:
 
 ```bash
-# Install OCB
-make install-ocb
+# Check versions
+grep "go.opentelemetry.io/collector" go.mod
 
-# Or manually
-go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
+# Update to correct version
+go get go.opentelemetry.io/collector@v0.142.0
+go mod tidy
 ```
 
-### OCB Config Error: "has invalid keys: telemetryflow"
+### Build Fails: "MakeFactoryMap undefined"
 
-The OCB build doesn't recognize the TelemetryFlow-specific extension sections. You have two options:
+OTEL 0.142.0 removed `MakeFactoryMap` functions. Use manual map creation:
 
-**Option 1:** Use `otel-collector.yaml` for OCB (recommended)
+```go
+// Old API (deprecated)
+factories.Extensions, err = extension.MakeFactoryMap(...)
 
-```bash
-./build/tfo-collector-ocb --config configs/otel-collector.yaml
+// New API (0.142.0+)
+factories.Extensions = make(map[component.Type]extension.Factory)
+for _, f := range extensionFactories {
+    factories.Extensions[f.Type()] = f
+}
 ```
 
-**Option 2:** Use `tfo-collector.yaml` - OCB will ignore the extension sections
+### Config Error: "unknown component: tfootlp"
 
-```bash
-# OCB ignores unknown top-level keys (telemetryflow, collector)
-./build/tfo-collector-ocb --config configs/tfo-collector.yaml
+Ensure TFO custom components are registered in `cmd/tfo-collector/components.go`:
+
+```go
+factories.Receivers[tfootlpreceiver.NewFactory().Type()] = tfootlpreceiver.NewFactory()
 ```
 
-Both configuration files use standard OTEL format and are compatible with both builds.
+### Go Version Mismatch
 
-### Both Binaries Show Same Output
-
-Make sure you're running the correct binary:
+Clear build cache if switching Go versions:
 
 ```bash
-# Standalone - has custom banner and commands
-./build/tfo-collector version
-
-# OCB - standard OTEL help
-./build/tfo-collector-ocb --help
-```
-
-### Generated Code Not Updating
-
-Clean and regenerate:
-
-```bash
+go clean -cache
+rm -rf $(go env GOCACHE)/*
 make clean
-make generate
 make build
 ```
 

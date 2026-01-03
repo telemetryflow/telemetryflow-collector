@@ -1,31 +1,31 @@
 # =============================================================================
-# TelemetryFlow Collector Configuration (Standalone)
+# TelemetryFlow Collector Configuration (OCB Native v1.1.2)
 # =============================================================================
 # Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 #
-# This configuration is for the TelemetryFlow Standalone binary only:
+# This is the standard configuration for TFO Collector (100% OCB-native build).
 #
-#   Usage: ./tfo-collector start --config tfo-collector.yaml
+#   Usage: ./tfo-collector --config configs/tfo-collector.yaml
 #
-# For OCB builds, use otel-collector.yaml instead:
-#
-#   Usage: ./tfo-collector-ocb --config otel-collector.yaml
-#
-# Copy to: /etc/tfo-collector/tfo-collector.yaml or ~/.tfo-collector/
+# The unified build includes:
+# - All 85+ OpenTelemetry Collector community components
+# - TFO custom components (tfootlp, tfo, tfoauth, tfoidentity)
 #
 # =============================================================================
-# OTLP HTTP Endpoints (TFO Standalone supports BOTH v1 and v2)
+# OTLP HTTP Endpoints - v1 vs v2 Architecture
 # =============================================================================
-#   TelemetryFlow Platform (Recommended):
-#     POST http://localhost:4318/v2/traces
-#     POST http://localhost:4318/v2/metrics
-#     POST http://localhost:4318/v2/logs
 #
-#   OTEL Community (Backwards Compatible):
+#   v1 Endpoints (Community / Open - NO AUTH REQUIRED):
 #     POST http://localhost:4318/v1/traces
 #     POST http://localhost:4318/v1/metrics
 #     POST http://localhost:4318/v1/logs
+#
+#   v2 Endpoints (TFO Platform / Authenticated):
+#     Headers: X-TelemetryFlow-Key-ID, X-TelemetryFlow-Key-Secret
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
 #
 #   gRPC (Both versions via same port):
 #     localhost:4317
@@ -35,76 +35,54 @@
 # =============================================================================
 #   TELEMETRYFLOW_API_KEY_ID      - API Key ID for authentication (tfk_xxx)
 #   TELEMETRYFLOW_API_KEY_SECRET  - API Key Secret for authentication (tfs_xxx)
-#   TELEMETRYFLOW_ENDPOINT        - TelemetryFlow backend endpoint (host:port)
-#   TELEMETRYFLOW_COLLECTOR_ID    - Unique collector identifier (optional)
-#   TELEMETRYFLOW_COLLECTOR_NAME  - Human-readable collector name (optional)
-#   TELEMETRYFLOW_ENVIRONMENT     - Deployment environment (optional)
-#
-# Example .env file:
-#   TELEMETRYFLOW_API_KEY_ID=tfk_your_key_id
-#   TELEMETRYFLOW_API_KEY_SECRET=tfs_your_key_secret
-#   TELEMETRYFLOW_ENDPOINT=collector.telemetryflow.id:4317
+#   TELEMETRYFLOW_ENDPOINT        - TelemetryFlow backend endpoint
+#   TELEMETRYFLOW_COLLECTOR_ID    - Unique collector identifier (auto-generated if empty)
+#   TELEMETRYFLOW_COLLECTOR_NAME  - Human-readable collector name
+#   TELEMETRYFLOW_ENVIRONMENT     - Deployment environment
 #
 # =============================================================================
 
 # =============================================================================
-# TelemetryFlow Extensions (Standalone-specific)
+# EXTENSIONS - TFO Authentication and Identity
 # =============================================================================
-# These sections are TelemetryFlow-specific for collector identification
-# and backend authentication. Only used by the Standalone binary.
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: "0.0.0.0:13133"
 
-telemetryflow:
-  # API Key ID (format: tfk_xxx) - used for collector identification
-  api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
-  # API Key Secret (format: tfs_xxx) - used for authentication
-  api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-  # TelemetryFlow backend endpoint for sending telemetry
-  endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
-  # TLS settings for backend connection
-  tls:
-    enabled: true
-    insecure_skip_verify: false
+  # zPages extension for debugging
+  zpages:
+    endpoint: "0.0.0.0:55679"
 
-# Collector identification
-collector:
-  # Unique collector identifier (auto-generated if empty)
-  id: "${TELEMETRYFLOW_COLLECTOR_ID}"
-  # Collector hostname (auto-detected if empty)
-  hostname: ""
-  # Human-readable collector name
-  name: "${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
-  # Human-readable description
-  description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
-  # Collector version (auto-populated at build time)
-  version: ""
-  # Custom tags for labeling and filtering
-  tags:
-    environment: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
-    datacenter: "tfo-collector"
+  # pprof extension for profiling
+  pprof:
+    endpoint: "0.0.0.0:1777"
+
+  # TFO Authentication Extension - API key management for TFO Platform
+  tfoauth:
+    api_key_id: "${env:TELEMETRYFLOW_API_KEY_ID}"
+    api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
+
+  # TFO Identity Extension - Collector identity and resource enrichment
+  tfoidentity:
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
+    name: "${env:TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
+    description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
+    tags:
+      environment: "${env:TELEMETRYFLOW_ENVIRONMENT:-production}"
+      datacenter: "${env:TELEMETRYFLOW_DATACENTER:-default}"
+    enrich_resources: true
 
 # =============================================================================
 # RECEIVERS - How telemetry data enters the collector
 # =============================================================================
 receivers:
-  # OTLP receiver for OpenTelemetry Protocol (metrics, logs, traces)
-  otlp:
+  # TFO OTLP Receiver - supports both v1 (open) and v2 (authenticated) endpoints
+  tfootlp:
     protocols:
-      # gRPC protocol settings
       grpc:
         endpoint: "0.0.0.0:4317"
         max_recv_msg_size_mib: 4
-        max_concurrent_streams: 100
-        read_buffer_size: 524288
-        write_buffer_size: 524288
-        # Keepalive settings
-        keepalive:
-          server_parameters:
-            max_connection_idle: 15s
-            max_connection_age: 30s
-            max_connection_age_grace: 5s
-            time: 10s
-            timeout: 5s
-      # HTTP protocol settings
       http:
         endpoint: "0.0.0.0:4318"
         cors:
@@ -112,21 +90,19 @@ receivers:
             - "*"
           allowed_headers:
             - "*"
-          max_age: 7200
+    # Enable v2 endpoints with authentication
+    enable_v2_endpoints: true
+    v2_auth:
+      required: true
+      validate_secret: false
 
-  # Prometheus scrape receiver (uncomment to enable)
-  # prometheus:
-  #   config:
-  #     scrape_configs:
-  #       - job_name: "node-exporter"
-  #         scrape_interval: 15s
-  #         scrape_timeout: 10s
-  #         metrics_path: "/metrics"
-  #         static_configs:
-  #           - targets:
-  #               - "localhost:9100"
-  #             labels:
-  #               env: "production"
+  # Standard OTLP receiver (alternative, for v1-only traffic)
+  # otlp:
+  #   protocols:
+  #     grpc:
+  #       endpoint: "0.0.0.0:4319"
+  #     http:
+  #       endpoint: "0.0.0.0:4320"
 
 # =============================================================================
 # PROCESSORS - How telemetry data is processed
@@ -219,16 +195,14 @@ exporters:
     enable_open_metrics: true
     resource_to_telemetry_conversion: true
 
-  # OTLP exporter for forwarding to TelemetryFlow backend (uncomment to enable)
-  # otlp:
-  #   endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
-  #   tls:
-  #     insecure: false
-  #   headers:
-  #     X-TelemetryFlow-Key-ID: "${TELEMETRYFLOW_API_KEY_ID}"
-  #     X-TelemetryFlow-Key-Secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-  #     X-TelemetryFlow-Collector-ID: "${TELEMETRYFLOW_COLLECTOR_ID}"
-  #   compression: gzip
+  # TFO Platform Exporter - auto-injects TFO auth headers (uncomment to enable)
+  # Uses tfoauth extension for authentication and tfoidentity for collector ID
+  # tfo:
+  #   endpoint: "${env:TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}"
+  #   use_v2_api: true
+  #   auth:
+  #     extension: tfoauth
+  #   collector_identity: tfoidentity
   #   timeout: 30s
   #   retry_on_failure:
   #     enabled: true
@@ -240,17 +214,11 @@ exporters:
   #     num_consumers: 10
   #     queue_size: 1000
 
-  # OTLP HTTP exporter (uncomment to enable)
-  # otlphttp:
-  #   endpoint: "https://${TELEMETRYFLOW_ENDPOINT:-localhost:4318}"
+  # Standard OTLP exporter for other backends (uncomment to enable)
+  # otlp:
+  #   endpoint: "other-backend:4317"
   #   tls:
-  #     insecure: false
-  #   headers:
-  #     X-TelemetryFlow-Key-ID: "${TELEMETRYFLOW_API_KEY_ID}"
-  #     X-TelemetryFlow-Key-Secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-  #     X-TelemetryFlow-Collector-ID: "${TELEMETRYFLOW_COLLECTOR_ID}"
-  #   compression: gzip
-  #   timeout: 30s
+  #     insecure: true
 
   # File exporter for local storage (uncomment to enable)
   # file:
@@ -265,37 +233,21 @@ exporters:
   #     localtime: true
 
 # =============================================================================
-# EXTENSIONS - Additional collector capabilities
-# =============================================================================
-extensions:
-  # Health check extension
-  health_check:
-    endpoint: "0.0.0.0:13133"
-
-  # zPages extension for debugging
-  zpages:
-    endpoint: "0.0.0.0:55679"
-
-  # pprof extension for profiling
-  pprof:
-    endpoint: "0.0.0.0:1777"
-
-# =============================================================================
 # SERVICE - Defines active components and pipelines
 # =============================================================================
 service:
-  extensions: [health_check, zpages, pprof]
+  extensions: [health_check, zpages, pprof, tfoauth, tfoidentity]
 
   pipelines:
-    # Traces pipeline - receives traces, exports to debug and spanmetrics connector
+    # Traces pipeline - receives traces via TFO OTLP receiver
     traces:
-      receivers: [otlp]
+      receivers: [tfootlp]
       processors: [memory_limiter, batch, resource]
       exporters: [debug, spanmetrics, servicegraph]
 
-    # Metrics pipeline - receives metrics from OTLP
+    # Metrics pipeline - receives metrics via TFO OTLP receiver
     metrics:
-      receivers: [otlp]
+      receivers: [tfootlp]
       processors: [memory_limiter, batch, resource]
       exporters: [debug, prometheus]
 
@@ -314,7 +266,7 @@ service:
 
     # Logs pipeline
     logs:
-      receivers: [otlp]
+      receivers: [tfootlp]
       processors: [memory_limiter, batch, resource]
       exporters: [debug]
 

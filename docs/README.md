@@ -1,6 +1,6 @@
 # TelemetryFlow Collector Documentation
 
-- **Version:** 1.1.1
+- **Version:** 1.1.2
 - **OTEL Version:** 0.142.0
 - **Last Updated:** January 2026
 - **Status:** Production Ready
@@ -9,22 +9,30 @@
 
 ## Overview
 
-TelemetryFlow Collector (`tfo-collector`) is an enterprise-grade OpenTelemetry Collector distribution with a **dual build system**:
+TelemetryFlow Collector (`tfo-collector`) is an enterprise-grade OpenTelemetry Collector distribution built with **OCB (OpenTelemetry Collector Builder)** that includes:
 
-1. **Standalone Build** - Custom Cobra CLI with TelemetryFlow-specific features
-2. **OCB Build** - Standard OpenTelemetry Collector built with OCB (OpenTelemetry Collector Builder)
+- **85+ OTEL Community Components** - Full ecosystem compatibility
+- **TFO Custom Components** - Platform-specific features for TelemetryFlow
 
-### Build Comparison
+### OCB-Native Architecture
 
-| Feature | Standalone (`tfo-collector`) | OCB (`tfo-collector-ocb`) |
-|---------|------------------------------|---------------------------|
-| Binary | `./build/tfo-collector` | `./build/tfo-collector-ocb` |
-| Dockerfile | `Dockerfile` | `Dockerfile.ocb` |
-| Config Format | Custom with `enabled` flags | Standard OTEL YAML |
-| CLI | Cobra commands (`start`, `version`) | Standard OTEL (`--config`) |
-| Banner | Custom ASCII art | None |
-| Components | Pre-selected essential | Full ecosystem |
-| Use Case | Production deployments | Full compatibility |
+| Feature | Description |
+|---------|-------------|
+| Binary | `tfo-collector` |
+| Build System | OpenTelemetry Collector Builder (OCB) |
+| Config Format | Standard OTEL YAML |
+| CLI | Standard OTEL with TFO branding |
+| Components | 85+ OTEL community + TFO custom |
+| Docker Image | `telemetryflow/telemetryflow-collector` |
+
+### TFO Custom Components
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `tfootlp` | Receiver | OTLP receiver with v1 + v2 endpoint support |
+| `tfo` | Exporter | Auto-injects TFO authentication headers |
+| `tfoauth` | Extension | Centralized API key management |
+| `tfoidentity` | Extension | Collector identity and resource enrichment |
 
 ---
 
@@ -34,41 +42,38 @@ TelemetryFlow Collector (`tfo-collector`) is an enterprise-grade OpenTelemetry C
 |----------|-------------|
 | [README.md](README.md) | This file - Overview and quick reference |
 | [INSTALLATION.md](INSTALLATION.md) | Installation and deployment guide |
-| [CONFIGURATION.md](CONFIGURATION.md) | Configuration reference for both builds |
-| [BUILD-SYSTEM.md](BUILD-SYSTEM.md) | Dual build system explained |
+| [CONFIGURATION.md](CONFIGURATION.md) | Configuration reference |
+| [BUILD-SYSTEM.md](BUILD-SYSTEM.md) | OCB build system explained |
 | [COMPONENTS.md](COMPONENTS.md) | Available receivers, processors, exporters |
-| [PIPELINES.md](PIPELINES.md) | Pipeline configuration guide |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Troubleshooting guide |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture |
+| [GITHUB-WORKFLOWS.md](GITHUB-WORKFLOWS.md) | CI/CD workflow documentation |
 
 ---
 
 ## Quick Start
 
-### Standalone Build (Recommended)
+### Build from Source
 
 ```bash
-# Build
-make build-standalone
-# or just: make
-
-# Run
-./build/tfo-collector start --config configs/tfo-collector.yaml
-
-# Show version
-./build/tfo-collector version
-```
-
-### OCB Build (Full OTEL Compatibility)
-
-```bash
-# Install OCB
-make install-ocb
-
 # Build
 make build
 
 # Run
-./build/tfo-collector-ocb --config configs/otel-collector.yaml
+./tfo-collector --config configs/tfo-collector.yaml
+
+# Show version
+./tfo-collector --version
+```
+
+### Docker
+
+```bash
+# Run with Docker
+docker run -d \
+  --name tfo-collector \
+  -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
+  -v /path/to/config.yaml:/etc/tfo-collector/config.yaml:ro \
+  telemetryflow/telemetryflow-collector:1.1.2
 ```
 
 ---
@@ -87,8 +92,8 @@ graph TB
     subgraph "TelemetryFlow Collector"
         subgraph "Receivers"
             R_OTLP[OTLP<br/>gRPC/HTTP]
+            R_TFO[TFO OTLP<br/>v1+v2]
             R_PROM[Prometheus<br/>Scraper]
-            R_KAFKA[Kafka]
             R_FILE[File Log]
         end
 
@@ -97,73 +102,55 @@ graph TB
             P_BATCH[Batch]
             P_FILTER[Filter]
             P_TRANS[Transform]
-            P_SAMPLE[Tail Sampling]
         end
 
         subgraph "Exporters"
+            E_TFO[TFO Exporter<br/>Auto-Auth]
             E_OTLP[OTLP]
             E_PROM[Prometheus]
-            E_LOKI[Loki]
-            E_ES[Elasticsearch]
+        end
+
+        subgraph "Extensions"
+            EXT_AUTH[TFO Auth]
+            EXT_ID[TFO Identity]
+            EXT_HEALTH[Health Check]
         end
     end
 
     subgraph "Backends"
-        TFO[TelemetryFlow API]
+        TFO[TelemetryFlow Platform]
         PROMETHEUS[Prometheus]
-        LOKI[Grafana Loki]
-        ES[Elasticsearch]
+        OTHER[Other OTEL Backends]
     end
 
     AGENT -->|OTLP| R_OTLP
-    APP -->|OTLP| R_OTLP
+    APP -->|OTLP| R_TFO
     PROM -->|Scrape| R_PROM
-    INFRA --> R_KAFKA
+    INFRA --> R_FILE
 
     R_OTLP --> P_MEM
+    R_TFO --> P_MEM
     R_PROM --> P_MEM
-    R_KAFKA --> P_MEM
     R_FILE --> P_MEM
 
     P_MEM --> P_BATCH
     P_BATCH --> P_FILTER
     P_FILTER --> P_TRANS
-    P_TRANS --> P_SAMPLE
 
-    P_SAMPLE --> E_OTLP
-    P_SAMPLE --> E_PROM
-    P_SAMPLE --> E_LOKI
-    P_SAMPLE --> E_ES
+    P_TRANS --> E_TFO
+    P_TRANS --> E_OTLP
+    P_TRANS --> E_PROM
 
-    E_OTLP --> TFO
+    EXT_AUTH -.->|Credentials| E_TFO
+    EXT_ID -.->|Identity| E_TFO
+
+    E_TFO --> TFO
+    E_OTLP --> OTHER
     E_PROM --> PROMETHEUS
-    E_LOKI --> LOKI
-    E_ES --> ES
 
-    style R_OTLP fill:#E1F5FE,stroke:#0288D1
-    style P_BATCH fill:#FFF9C4,stroke:#F9A825
-    style E_OTLP fill:#C8E6C9,stroke:#388E3C
+    style R_TFO fill:#E1F5FE,stroke:#0288D1
+    style E_TFO fill:#C8E6C9,stroke:#388E3C
     style TFO fill:#64B5F6,stroke:#1976D2,color:#fff
-```
-
-### Data Flow
-
-```mermaid
-sequenceDiagram
-    participant Agent as TFO-Agent
-    participant Collector as TFO-Collector
-    participant API as TelemetryFlow API
-    participant DB as ClickHouse
-
-    Agent->>Collector: OTLP/gRPC (metrics, logs, traces)
-    Collector->>Collector: Process & Enrich
-    Collector->>Collector: Add Tenant Context
-    Collector->>API: OTLP/HTTP + Headers
-    API->>API: Validate & Transform
-    API->>DB: INSERT INTO tables
-    DB-->>API: Success
-    API-->>Collector: 200 OK
-    Collector-->>Agent: ACK
 ```
 
 ---
@@ -176,35 +163,25 @@ sequenceDiagram
 - **Logs**: OTLP, FluentForward, Syslog, File
 - **Traces**: OTLP with sampling
 
-### Rich Component Ecosystem
+### TFO Custom Components
 
-**Receivers:**
+**TFO OTLP Receiver (`tfootlp`)**:
+- v1 endpoints: `/v1/traces`, `/v1/metrics`, `/v1/logs` (OTEL standard)
+- v2 endpoints: `/v2/traces`, `/v2/metrics`, `/v2/logs` (TFO Platform)
+- gRPC and HTTP support on same ports
 
-- OTLP (gRPC/HTTP)
-- Prometheus scraping
-- Host Metrics
-- File Log
-- Kafka
-- Kubernetes cluster/events
+**TFO Exporter (`tfo`)**:
+- Auto-injects authentication headers
+- Supports both cloud SaaS and self-hosted endpoints
+- v2 API support for TelemetryFlow Platform
 
-**Processors:**
+**TFO Auth Extension (`tfoauth`)**:
+- Centralized API key management
+- Environment variable substitution
 
-- Batch
-- Memory Limiter
-- Attributes
-- Resource Detection
-- Filter
-- Transform
-- Tail Sampling
-
-**Exporters:**
-
-- OTLP (gRPC/HTTP)
-- Prometheus
-- Loki
-- Elasticsearch/OpenSearch
-- Kafka
-- File
+**TFO Identity Extension (`tfoidentity`)**:
+- Collector identity management
+- Resource enrichment with collector metadata
 
 ### Enterprise Features
 
@@ -213,64 +190,28 @@ sequenceDiagram
 - pprof profiling
 - zPages debugging
 - Persistent queue for resilience
-- Multi-tenant context handling
 
 ---
 
 ## OTLP Capabilities
 
-TelemetryFlow Collector provides comprehensive OTLP (OpenTelemetry Protocol) support as the primary data ingestion and export mechanism.
-
 ### OTLP Protocol Support
 
-| Protocol | Endpoint | Encoding | Signals |
-|----------|----------|----------|---------|
-| gRPC | `0.0.0.0:4317` | Protocol Buffers | Traces, Metrics, Logs |
-| HTTP/1.1 | `0.0.0.0:4318` | Protocol Buffers, JSON | Traces, Metrics, Logs |
+| Protocol | Port | Encoding | Signals |
+|----------|------|----------|---------|
+| gRPC | 4317 | Protocol Buffers | Traces, Metrics, Logs |
+| HTTP | 4318 | Protocol Buffers, JSON | Traces, Metrics, Logs |
 
-### OTLP Receiver Features
+### OTLP HTTP Endpoints
 
-**gRPC Protocol (Port 4317):**
-- Full bidirectional streaming support
-- Max receive message size: 4 MiB (configurable)
-- Max concurrent streams: 100 (configurable)
-- Keepalive configuration with configurable ping intervals
-- TLS/mTLS support with client certificate authentication
-
-**HTTP Protocol (Port 4318):**
-
-- API endpoints (both versions supported):
-  - Standard OTLP: `/v1/traces`, `/v1/metrics`, `/v1/logs`
-  - TelemetryFlow Platform: `/v2/traces`, `/v2/metrics`, `/v2/logs`
-- Content-Type negotiation: `application/json`, `application/x-protobuf`
-- CORS support with configurable origins and headers
-- Max request body: 10 MiB
-- Keepalive: 30s read/write timeout
-
-### OTLP Exporter Features
-
-**OTLP gRPC Exporter:**
-- Endpoint: Configurable backend target
-- TLS/mTLS support with custom certificates
-- Custom headers for authentication
-- Gzip compression support
-- Retry on failure with exponential backoff
-- Persistent sending queue (configurable)
-
-**OTLP HTTP Exporter:**
-- HTTP/1.1 with Protocol Buffers or JSON encoding
-- TLS/mTLS support
-- Custom headers support
-- Gzip compression
-- Configurable timeout (default: 30s)
-
-### Signal Types
-
-| Signal | Description | Use Case |
-|--------|-------------|----------|
-| **Traces** | Distributed tracing with spans, resources, and instrumentation metadata | Request flow tracking, latency analysis |
-| **Metrics** | Counters, gauges, histograms, summaries with data points | Performance monitoring, alerting |
-| **Logs** | Log records with severity, timestamps, and trace context | Application debugging, audit trails |
+| Endpoint | Version | Description |
+|----------|---------|-------------|
+| `/v1/traces` | v1 | Standard OTEL traces endpoint |
+| `/v1/metrics` | v1 | Standard OTEL metrics endpoint |
+| `/v1/logs` | v1 | Standard OTEL logs endpoint |
+| `/v2/traces` | v2 | TelemetryFlow Platform traces |
+| `/v2/metrics` | v2 | TelemetryFlow Platform metrics |
+| `/v2/logs` | v2 | TelemetryFlow Platform logs |
 
 ### Exemplars Support
 
@@ -280,7 +221,7 @@ TelemetryFlow Collector supports **exemplars** for metrics-to-traces correlation
 connectors:
   spanmetrics:
     exemplars:
-      enabled: true  # Enable exemplars
+      enabled: true
     histogram:
       explicit:
         buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s]
@@ -292,44 +233,24 @@ exporters:
 
 See [EXEMPLARS.md](EXEMPLARS.md) for detailed configuration.
 
-### Connectors for Derived Telemetry
-
-| Connector | Purpose | Output |
-|-----------|---------|--------|
-| `spanmetrics` | Derive metrics from traces with exemplars | `traces_spanmetrics_duration_milliseconds`, `traces_spanmetrics_calls_total` |
-| `servicegraph` | Build service dependency graphs | `traces_service_graph_request_total`, `traces_service_graph_request_duration_seconds` |
-
 ---
 
 ## Configuration Overview
 
-Both builds now use **standard OpenTelemetry Collector YAML format**. The standalone config adds optional TelemetryFlow-specific sections for authentication and collector identification.
+TelemetryFlow Collector uses **standard OpenTelemetry Collector YAML format** with optional TFO-specific extensions.
 
-### Standalone Configuration
+### Basic Configuration
 
 ```yaml
-# configs/tfo-collector.yaml (standard OTEL format + TelemetryFlow extensions)
-
-# TelemetryFlow-specific extensions (optional, ignored by OCB)
-telemetryflow:
-  api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
-  api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-  endpoint: "${TELEMETRYFLOW_ENDPOINT:-localhost:4317}"
-
-collector:
-  id: "${TELEMETRYFLOW_COLLECTOR_ID}"
-  name: "${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
-  tags:
-    environment: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
-
-# Standard OTEL configuration (same format as OCB)
+# Standard OTEL configuration with TFO components
 receivers:
-  otlp:
+  tfootlp:
     protocols:
       grpc:
         endpoint: "0.0.0.0:4317"
       http:
         endpoint: "0.0.0.0:4318"
+    enable_v2_endpoints: true
 
 processors:
   batch:
@@ -337,44 +258,37 @@ processors:
     timeout: 200ms
 
 exporters:
-  debug:
-    verbosity: detailed
+  tfo:
+    endpoint: "https://api.telemetryflow.id"
+    use_v2_api: true
+    auth:
+      extension: tfoauth
+
+extensions:
+  tfoauth:
+    api_key_id: "${env:TELEMETRYFLOW_API_KEY_ID}"
+    api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
+  tfoidentity:
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
+    name: "Production Collector"
+  health_check:
+    endpoint: "0.0.0.0:13133"
 
 service:
+  extensions: [health_check, tfoauth, tfoidentity]
   pipelines:
-    metrics:
-      receivers: [otlp]
+    traces:
+      receivers: [tfootlp]
       processors: [batch]
-      exporters: [debug]
-```
-
-### OCB Configuration
-
-```yaml
-# configs/otel-collector.yaml (standard OTEL format)
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"
-      http:
-        endpoint: "0.0.0.0:4318"
-
-processors:
-  batch:
-    send_batch_size: 8192
-    timeout: 200ms
-
-exporters:
-  debug:
-    verbosity: detailed
-
-service:
-  pipelines:
+      exporters: [tfo]
     metrics:
-      receivers: [otlp]
+      receivers: [tfootlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [tfo]
+    logs:
+      receivers: [tfootlp]
+      processors: [batch]
+      exporters: [tfo]
 ```
 
 ---
@@ -397,31 +311,25 @@ service:
 
 ```text
 tfo-collector/
-├── cmd/tfo-collector/          # Standalone CLI entry point
-│   └── main.go                 # Cobra CLI with commands
+├── cmd/tfo-collector/          # Main entry point
+│   ├── main.go                 # OCB-native main with TFO branding
+│   └── components.go           # Component factory registration
+├── components/                 # TFO custom components
+│   ├── tfootlpreceiver/        # TFO OTLP receiver (v1+v2)
+│   ├── tfoexporter/            # TFO exporter (auto-auth)
+│   └── extension/
+│       ├── tfoauthextension/   # TFO auth extension
+│       └── tfoidentityextension/ # TFO identity extension
 ├── internal/
-│   ├── collector/              # Core collector implementation
-│   ├── config/                 # Configuration management
 │   └── version/                # Version and banner
-├── pkg/                        # Shared packages
-│   ├── banner/                 # Startup banner
-│   ├── config/                 # Config loader utilities
-│   └── plugin/                 # Component registry
 ├── configs/
-│   ├── tfo-collector.yaml      # Standalone config (custom)
-│   ├── otel-collector.yaml      # OCB config (standard OTEL)
-│   └── ocb-collector-minimal.yaml
+│   ├── tfo-collector.yaml      # TFO config with custom components
+│   └── otel-collector.yaml     # Standard OTEL config
 ├── build/                      # Build output directory
-│   ├── tfo-collector           # Standalone binary
-│   ├── tfo-collector-ocb       # OCB binary
-│   └── ocb/                    # OCB generated code
-├── tests/
-│   ├── unit/
-│   └── integration/
+│   └── tfo-collector           # Built binary
 ├── manifest.yaml               # OCB manifest
 ├── Makefile
-├── Dockerfile                  # Standalone build
-├── Dockerfile.ocb              # OCB build
+├── Dockerfile
 └── README.md
 ```
 
@@ -435,27 +343,25 @@ tfo-collector/
 # Show all commands
 make help
 
-# Standalone Build (Default)
-make                    # Build standalone collector
-make build-standalone   # Build standalone collector
-make run-standalone     # Run standalone collector
-make test-standalone    # Run tests
+# Build
+make build              # Build collector
+make build-all          # Build for all platforms
 
-# OCB Build
-make build              # Build with OCB
-make build-all          # Build for all platforms with OCB
-make install-ocb        # Install OpenTelemetry Collector Builder
-make generate           # Generate collector code using OCB
-make run                # Run OCB collector
-make run-debug          # Run OCB with debug logging
-make validate-config    # Validate OCB configuration
+# Run
+make run                # Run collector
+make run-debug          # Run with debug logging
 
-# Common
+# Testing
 make test               # Run tests
 make lint               # Run linters
-make clean              # Clean build artifacts
+make validate-config    # Validate configuration
+
+# Docker
 make docker             # Build Docker image
-make version            # Show version information
+make docker-push        # Push Docker image
+
+# Cleanup
+make clean              # Clean build artifacts
 make tidy               # Tidy go modules
 ```
 
@@ -463,9 +369,7 @@ make tidy               # Tidy go modules
 
 ```text
 ./build/
-├── tfo-collector       # Standalone binary (Cobra CLI)
-├── tfo-collector-ocb   # OCB binary (standard OTEL)
-└── ocb/                # OCB generated code
+└── tfo-collector       # OCB-native binary
 ```
 
 ---
@@ -474,48 +378,21 @@ make tidy               # Tidy go modules
 
 ### Docker
 
-TelemetryFlow Collector provides separate Dockerfiles for each build type:
-
-| Dockerfile | Image | Description |
-|------------|-------|-------------|
-| `Dockerfile` | `telemetryflow/telemetryflow-collector` | Standalone build with Cobra CLI |
-| `Dockerfile.ocb` | `telemetryflow/telemetryflow-collector-ocb` | OCB build with standard OTEL CLI |
-
-#### Build Images
-
 ```bash
-# Build standalone image
+# Build image
 docker build \
-  --build-arg VERSION=1.1.1 \
+  --build-arg VERSION=1.1.2 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
-  --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
-  --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/telemetryflow-collector:1.1.1 .
+  -t telemetryflow/telemetryflow-collector:1.1.2 .
 
-# Build OCB image
-docker build \
-  -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.1 \
-  --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
-```
-
-#### Run Containers
-
-```bash
-# Standalone
+# Run container
 docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
-  -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.1.1
-
-# OCB
-docker run -d \
-  --name tfo-collector-ocb \
-  -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
-  -v /path/to/config.yaml:/etc/tfo-collector/collector.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:1.1.1
+  -v /path/to/config.yaml:/etc/tfo-collector/config.yaml:ro \
+  -e TELEMETRYFLOW_API_KEY_ID=tfk_xxx \
+  -e TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx \
+  telemetryflow/telemetryflow-collector:1.1.2
 ```
 
 ### Kubernetes
@@ -534,12 +411,23 @@ spec:
     spec:
       containers:
       - name: collector
-        image: telemetryflow/telemetryflow-collector:latest
-        args: ["start", "--config", "/etc/tfo-collector/config.yaml"]
+        image: telemetryflow/telemetryflow-collector:1.1.2
+        args: ["--config", "/etc/tfo-collector/config.yaml"]
         ports:
         - containerPort: 4317
         - containerPort: 4318
         - containerPort: 8888
+        env:
+        - name: TELEMETRYFLOW_API_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tfo-credentials
+              key: api-key-id
+        - name: TELEMETRYFLOW_API_KEY_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: tfo-credentials
+              key: api-key-secret
 ```
 
 ### Systemd
@@ -551,9 +439,11 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/tfo-collector start --config /etc/tfo-collector/tfo-collector.yaml
+ExecStart=/usr/local/bin/tfo-collector --config /etc/tfo-collector/config.yaml
 Restart=always
 LimitNOFILE=65536
+Environment="TELEMETRYFLOW_API_KEY_ID=tfk_xxx"
+Environment="TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx"
 
 [Install]
 WantedBy=multi-user.target

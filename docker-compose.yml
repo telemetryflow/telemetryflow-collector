@@ -1,12 +1,11 @@
 # =============================================================================
-# TelemetryFlow Collector - Docker Compose (Standalone Build)
+# TelemetryFlow Collector - Docker Compose (OCB Native Build)
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
-# This docker-compose uses the STANDALONE build (Dockerfile)
-# For OCB build, use docker-compose.ocb.yml
+# This docker-compose uses the OCB Native build with TFO components.
 #
 # Usage:
 #   # Start with default .env
@@ -22,18 +21,19 @@
 #   docker-compose down
 #
 # =============================================================================
-# OTLP HTTP Endpoints (TFO Standalone supports BOTH v1 and v2)
+# OTLP HTTP Endpoints (v1 + v2 on same port 4318)
 # =============================================================================
 #
-#   TelemetryFlow Platform (Recommended):
-#     POST http://localhost:4318/v2/traces
-#     POST http://localhost:4318/v2/metrics
-#     POST http://localhost:4318/v2/logs
-#
-#   OTEL Community (Backwards Compatible):
+#   v1 Endpoints (Community/Open - NO AUTH REQUIRED):
 #     POST http://localhost:4318/v1/traces
 #     POST http://localhost:4318/v1/metrics
 #     POST http://localhost:4318/v1/logs
+#
+#   v2 Endpoints (TFO Platform - AUTH REQUIRED):
+#     Headers: X-TelemetryFlow-Key-ID, X-TelemetryFlow-Key-Secret
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
 #
 #   gRPC (Both versions via same port):
 #     localhost:4317
@@ -43,31 +43,37 @@
 services:
   tfo-collector:
     container_name: ${CONTAINER_NAME:-tfo-collector}
-    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.1}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.2}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.1.1}
+        VERSION: ${VERSION:-1.1.2}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-    hostname: ${COLLECTOR_ID:-tfo-collector}
+        OTEL_VERSION: ${OTEL_VERSION:-0.142.0}
+    hostname: ${TELEMETRYFLOW_COLLECTOR_NAME:-tfo-collector}
     restart: unless-stopped
 
-    # Environment variables
+    # Environment variables for TFO components
     environment:
-      - TELEMETRYFLOW_API_ENDPOINT=${TELEMETRYFLOW_API_ENDPOINT:-http://localhost:3100}
-      - TELEMETRYFLOW_TENANT_ID=${TELEMETRYFLOW_TENANT_ID:-default}
-      - TELEMETRYFLOW_WORKSPACE_ID=${TELEMETRYFLOW_WORKSPACE_ID:-default}
-      - OTLP_EXPORTER_ENDPOINT=${OTLP_EXPORTER_ENDPOINT:-}
-      - LOKI_ENDPOINT=${LOKI_ENDPOINT:-}
+      # TFO Auth Extension (tfoauth)
+      - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID:-}
+      - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET:-}
+      - TELEMETRYFLOW_ENDPOINT=${TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}
+      # TFO Identity Extension (tfoidentity)
+      - TELEMETRYFLOW_COLLECTOR_ID=${TELEMETRYFLOW_COLLECTOR_ID:-}
+      - TELEMETRYFLOW_COLLECTOR_NAME=${TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}
+      - TELEMETRYFLOW_ENVIRONMENT=${TELEMETRYFLOW_ENVIRONMENT:-production}
+      - TELEMETRYFLOW_DATACENTER=${TELEMETRYFLOW_DATACENTER:-default}
+      # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
 
     # Port mappings
     ports:
       - "${OTLP_GRPC_PORT:-4317}:4317"               # OTLP gRPC
-      - "${OTLP_HTTP_PORT:-4318}:4318"               # OTLP HTTP
+      - "${OTLP_HTTP_PORT:-4318}:4318"               # OTLP HTTP (v1 + v2)
       - "${METRICS_PORT:-8888}:8888"                 # Prometheus metrics (self)
       - "${PROMETHEUS_EXPORTER_PORT:-8889}:8889"    # Prometheus exporter
       - "${HEALTH_PORT:-13133}:13133"                # Health check

@@ -3,13 +3,13 @@
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
+# Build Type: OCB Native (100% OpenTelemetry Collector Builder)
 # Build and development commands for TelemetryFlow Collector
 
 # Build configuration
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-BINARY_NAME_OCB := tfo-collector-ocb
-VERSION ?= 1.1.1
+VERSION ?= 1.1.2
 OTEL_VERSION := 0.142.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
@@ -46,6 +46,13 @@ LDFLAGS := -s -w \
 	-X 'main.GitBranch=$(GIT_BRANCH)' \
 	-X 'main.BuildTime=$(BUILD_TIME)'
 
+# LDFLAGS for internal/version package
+LDFLAGS_VERSION := -s -w \
+	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=$(VERSION)' \
+	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=$(GIT_COMMIT)' \
+	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitBranch=$(GIT_BRANCH)' \
+	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=$(BUILD_TIME)'
+
 # Platforms for cross-compilation
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
@@ -55,37 +62,31 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage test-script test-short lint lint-fix fmt vet help install-ocb generate run docker build-standalone run-standalone test-standalone tidy deps deps-update install uninstall validate-config \
-	fmt-check staticcheck verify deps-verify test-unit-ci test-integration-ci test-e2e-ci security govulncheck coverage-merge coverage-report ci-lint ci-test ci-build-standalone ci-build-ocb
+.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage lint lint-fix fmt vet help install-ocb generate run docker tidy deps deps-update install uninstall validate-config \
+	fmt-check staticcheck verify deps-verify test-unit-ci test-integration-ci test-e2e-ci security govulncheck coverage-merge coverage-report ci-lint ci-test ci-build \
+	build-components tidy-components version dev components docker-push
 
-# Default target: build standalone (uses internal packages directly)
-all: build-standalone
+# Default target: build unified OCB-native collector with TFO components
+all: build
 
 # Help target
 help:
-	@echo "$(GREEN)$(PRODUCT_NAME) - Build System$(NC)"
+	@echo "$(GREEN)$(PRODUCT_NAME) - Build System (OCB Native)$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Binaries (all in $(BUILD_DIR)/):$(NC)"
-	@echo "  $(BINARY_NAME)        - Standalone CLI (Cobra commands)"
-	@echo "  $(BINARY_NAME_OCB)    - OCB build (standard OTel Collector)"
+	@echo "$(YELLOW)Primary Build ($(BUILD_DIR)/$(BINARY_NAME)):$(NC)"
+	@echo "  make                  - Build unified OCB-native collector (default)"
+	@echo "  make build            - Build unified OCB-native collector"
+	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME) --config configs/tfo-collector.yaml"
+	@echo "  make tidy             - Tidy all go modules (main + components)"
 	@echo ""
-	@echo "$(YELLOW)Standalone Build ($(BUILD_DIR)/$(BINARY_NAME)):$(NC)"
-	@echo "  make                  - Build standalone collector (default)"
-	@echo "  make build-standalone - Build standalone collector"
-	@echo "  make run-standalone   - Run: $(BUILD_DIR)/$(BINARY_NAME) start --config configs/tfo-collector.yaml"
-	@echo "  make test-standalone  - Run standalone tests"
-	@echo "  make tidy             - Tidy go modules"
-	@echo ""
-	@echo "$(YELLOW)OCB Build ($(BUILD_DIR)/$(BINARY_NAME_OCB)):$(NC)"
-	@echo "  make build-ocb        - Build OCB collector"
-	@echo "  make build-all        - Build OCB for all platforms"
-	@echo "  make install-ocb      - Install OpenTelemetry Collector Builder"
-	@echo "  make generate         - Generate collector code using OCB"
-	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME_OCB) --config configs/otel-collector.yaml"
+	@echo "$(YELLOW)TFO Custom Components:$(NC)"
+	@echo "  make build-components - Build/verify TFO custom components"
+	@echo "  make tidy-components  - Tidy TFO component modules"
 	@echo ""
 	@echo "$(YELLOW)Platform Builds:$(NC)"
 	@echo "  make build-linux      - Build for Linux (amd64 and arm64)"
 	@echo "  make build-darwin     - Build for macOS (amd64 and arm64)"
+	@echo "  make build-all        - Build for all platforms"
 	@echo ""
 	@echo "$(YELLOW)Testing:$(NC)"
 	@echo "  make test             - Run unit and integration tests"
@@ -94,8 +95,6 @@ help:
 	@echo "  make test-e2e         - Run E2E tests only"
 	@echo "  make test-all         - Run all tests"
 	@echo "  make test-coverage    - Generate coverage reports"
-	@echo "  make test-script      - Run test script"
-	@echo "  make test-short       - Run short tests"
 	@echo ""
 	@echo "$(YELLOW)Code Quality:$(NC)"
 	@echo "  make lint             - Run linters"
@@ -116,11 +115,21 @@ help:
 	@echo "  make docker           - Build Docker image"
 	@echo "  make version          - Show version information"
 	@echo ""
+	@echo "$(YELLOW)TFO Components Included:$(NC)"
+	@echo "  tfootlp     - OTLP receiver with v1/v2 endpoints"
+	@echo "  tfo         - TFO Platform exporter with auto-auth"
+	@echo "  tfoauth     - TFO API key management extension"
+	@echo "  tfoidentity - Collector identity extension"
+	@echo ""
 	@echo "$(YELLOW)Configuration:$(NC)"
 	@echo "  VERSION=$(VERSION)"
 	@echo "  OTEL_VERSION=$(OTEL_VERSION)"
 	@echo "  GIT_COMMIT=$(GIT_COMMIT)"
 	@echo "  GIT_BRANCH=$(GIT_BRANCH)"
+
+# =============================================================================
+# OCB (OpenTelemetry Collector Builder) Setup
+# =============================================================================
 
 # Install OCB (OpenTelemetry Collector Builder)
 install-ocb:
@@ -149,7 +158,6 @@ install-ocb:
 	fi
 
 # Helper function to find builder binary at runtime
-# This is needed because the Makefile variables are evaluated at parse time
 define FIND_BUILDER
 $(shell which builder 2>/dev/null || \
 	([ -f "$$(go env GOPATH)/bin/builder" ] && echo "$$(go env GOPATH)/bin/builder") || \
@@ -199,71 +207,114 @@ generate: check-ocb
 	fi; \
 	echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
 
-# Build the collector using OCB (uses OCB-generated main.go)
-build-ocb: generate
-	@echo "$(GREEN)Building $(BINARY_NAME_OCB) v$(VERSION) with OCB...$(NC)"
-	@cd $(BUILD_DIR_OCB) && go build -ldflags "$(LDFLAGS)" -o ../$(BINARY_NAME_OCB) .
-	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME_OCB)$(NC)"
+# =============================================================================
+# Primary Build Targets (OCB Native)
+# =============================================================================
 
-# Build for all platforms using OCB
-build-all: generate
-	@echo "$(GREEN)Building $(BINARY_NAME_OCB) for all platforms...$(NC)"
+# Tidy TFO component modules
+tidy-components:
+	@echo "$(GREEN)Tidying TFO component modules...$(NC)"
+	@for dir in components/tfootlpreceiver components/tfoexporter components/extension/tfoauthextension components/extension/tfoidentityextension; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			echo "$(YELLOW)Tidying $$dir...$(NC)"; \
+			cd $$dir && go mod tidy && cd - > /dev/null; \
+		fi; \
+	done
+	@echo "$(GREEN)Component modules tidied$(NC)"
+
+# Verify TFO component builds
+build-components:
+	@echo "$(GREEN)Verifying TFO component builds...$(NC)"
+	@for dir in components/tfootlpreceiver components/tfoexporter components/extension/tfoauthextension components/extension/tfoidentityextension; do \
+		if [ -f "$$dir/go.mod" ]; then \
+			echo "$(YELLOW)Building $$dir...$(NC)"; \
+			cd $$dir && go build ./... && cd - > /dev/null; \
+		fi; \
+	done
+	@echo "$(GREEN)All TFO components verified$(NC)"
+
+# Build unified OCB-native collector
+build: tidy-components
+	@echo "$(GREEN)Building unified $(BINARY_NAME) v$(VERSION) (OCB-native with TFO components)...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	@go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/tfo-collector
+	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
+	@echo ""
+	@echo "$(GREEN)TFO Components included:$(NC)"
+	@echo "  - tfootlp (receiver)      v1/v2 OTLP endpoints"
+	@echo "  - tfo (exporter)          auto-auth TFO Platform"
+	@echo "  - tfoauth (extension)     API key management"
+	@echo "  - tfoidentity (extension) collector identity"
+
+# Build for all platforms
+build-all: tidy-components
+	@echo "$(GREEN)Building $(BINARY_NAME) for all platforms...$(NC)"
 	@mkdir -p $(DIST_DIR)
 	@for platform in $(PLATFORMS); do \
 		GOOS=$${platform%/*} GOARCH=$${platform#*/} ; \
-		output="$(DIST_DIR)/$(BINARY_NAME_OCB)-$${GOOS}-$${GOARCH}" ; \
+		output="$(DIST_DIR)/$(BINARY_NAME)-$${GOOS}-$${GOARCH}" ; \
 		if [ "$${GOOS}" = "windows" ]; then output="$${output}.exe"; fi ; \
 		echo "$(YELLOW)Building for $${GOOS}/$${GOARCH}...$(NC)" ; \
-		cd $(BUILD_DIR_OCB) && GOOS=$${GOOS} GOARCH=$${GOARCH} go build -ldflags "$(LDFLAGS)" -o ../../$${output} . ; \
+		GOOS=$${GOOS} GOARCH=$${GOARCH} go build -ldflags "$(LDFLAGS_VERSION)" -o $${output} ./cmd/tfo-collector ; \
 	done
 	@echo "$(GREEN)All builds complete in $(DIST_DIR)$(NC)"
 
-# Build standalone for Linux
-build-linux:
+# Build for Linux
+build-linux: tidy-components
 	@echo "$(GREEN)Building $(BINARY_NAME) for Linux...$(NC)"
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/tfo-collector
-	@GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/tfo-collector
+	@GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/tfo-collector
+	@GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/tfo-collector
 	@echo "$(GREEN)Linux builds complete$(NC)"
 
-# Build standalone for macOS
-build-darwin:
+# Build for macOS
+build-darwin: tidy-components
 	@echo "$(GREEN)Building $(BINARY_NAME) for macOS...$(NC)"
 	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/tfo-collector
-	@GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/tfo-collector
+	@GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/tfo-collector
+	@GOOS=darwin GOARCH=arm64 go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/tfo-collector
 	@echo "$(GREEN)macOS builds complete$(NC)"
 
-# Run the OCB collector locally
+# =============================================================================
+# Run & Validate
+# =============================================================================
+
+# Run the collector locally
 run: build
-	@echo "$(GREEN)Starting $(BINARY_NAME_OCB)...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml
+	@echo "$(GREEN)Starting $(BINARY_NAME)...$(NC)"
+	@$(BUILD_DIR)/$(BINARY_NAME) --config $(CONFIG_DIR)/tfo-collector.yaml
 
-# Run OCB with debug output
+# Run with debug output
 run-debug: build
-	@echo "$(GREEN)Starting $(BINARY_NAME_OCB) in debug mode...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) --config $(CONFIG_DIR)/otel-collector.yaml --set=service.telemetry.logs.level=debug
+	@echo "$(GREEN)Starting $(BINARY_NAME) in debug mode...$(NC)"
+	@$(BUILD_DIR)/$(BINARY_NAME) --config $(CONFIG_DIR)/tfo-collector.yaml --set=service.telemetry.logs.level=debug
 
-# Validate OCB configuration
-validate-config-ocb: build
-	@echo "$(GREEN)Validating OCB configuration...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME_OCB) validate --config $(CONFIG_DIR)/otel-collector.yaml
+# Validate configuration
+validate-config: build
+	@echo "$(GREEN)Validating configuration...$(NC)"
+	@$(BUILD_DIR)/$(BINARY_NAME) validate --config $(CONFIG_DIR)/tfo-collector.yaml
 
-# Test targets
+# =============================================================================
+# Testing
+# =============================================================================
+
 test: test-unit test-integration
 	@echo "$(GREEN)All tests completed$(NC)"
 
 test-unit:
 	@echo "$(GREEN)Running unit tests...$(NC)"
-	@go test -v -timeout 5m -coverprofile=coverage-unit.out ./tests/unit/...
+	@cd tests && go test -v -timeout 5m -coverprofile=coverage-unit.out ./unit/components/...
 
 test-integration:
 	@echo "$(GREEN)Running integration tests...$(NC)"
-	@go test -v -timeout 5m -coverprofile=coverage-integration.out ./tests/integration/...
+	@cd tests && go test -v -timeout 5m -coverprofile=coverage-integration.out ./integration/components/...
 
-test-e2e: build-standalone
+test-e2e:
 	@echo "$(GREEN)Running E2E tests...$(NC)"
-	@TFO_COLLECTOR_BINARY=$(BUILD_DIR)/$(BINARY_NAME) go test -v -timeout 10m ./tests/e2e/...
+	@go test -v -timeout 10m ./tests/e2e/...
+
+test-components: test-unit test-integration
+	@echo "$(GREEN)All TFO component tests completed$(NC)"
 
 test-all: test-unit test-integration test-e2e
 	@echo "$(GREEN)All tests completed$(NC)"
@@ -274,15 +325,10 @@ test-coverage:
 	@go tool cover -html=coverage-integration.out -o coverage-integration.html
 	@echo "$(GREEN)Coverage reports generated$(NC)"
 
-test-script:
-	@echo "$(GREEN)Running test script...$(NC)"
-	@./scripts/test.sh
+# =============================================================================
+# Code Quality
+# =============================================================================
 
-test-short:
-	@echo "$(GREEN)Running short tests...$(NC)"
-	@./scripts/test.sh short
-
-# Code quality
 lint:
 	@echo "$(GREEN)Running linters...$(NC)"
 	@if command -v golangci-lint >/dev/null 2>&1; then \
@@ -307,88 +353,10 @@ vet:
 	@echo "$(GREEN)Running go vet...$(NC)"
 	@go vet ./...
 
-# Clean build artifacts
-clean:
-	@echo "$(GREEN)Cleaning build artifacts...$(NC)"
-	@rm -rf $(BUILD_DIR)/*
-	@rm -rf $(DIST_DIR)
-	@rm -f coverage-*.out coverage-*.html
-	@echo "$(GREEN)Clean complete$(NC)"
-
-# Show version information
-version:
-	@echo "$(GREEN)$(PRODUCT_NAME)$(NC)"
-	@echo "  Version:      $(VERSION)"
-	@echo "  OTEL Version: $(OTEL_VERSION)"
-	@echo "  Git Commit:   $(GIT_COMMIT)"
-	@echo "  Git Branch:   $(GIT_BRANCH)"
-	@echo "  Build Time:   $(BUILD_TIME)"
-	@echo "  Go Version:   $(GO_VERSION)"
-
-# Build Docker image
-docker:
-	@echo "$(GREEN)Building Docker image...$(NC)"
-	@docker build -t telemetryflow/telemetryflow-collector:$(VERSION) \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
-		--build-arg BUILD_TIME=$(BUILD_TIME) \
-		.
-	@docker tag telemetryflow/telemetryflow-collector:$(VERSION) telemetryflow/telemetryflow-collector:latest
-	@echo "$(GREEN)Docker image built: telemetryflow/telemetryflow-collector:$(VERSION)$(NC)"
-
-# Push Docker image
-docker-push: docker
-	@echo "$(GREEN)Pushing Docker image...$(NC)"
-	@docker push telemetryflow/telemetryflow-collector:$(VERSION)
-	@docker push telemetryflow/telemetryflow-collector:latest
-
-# Development: watch and rebuild
-dev:
-	@echo "$(GREEN)Starting development mode...$(NC)"
-	@which watchexec > /dev/null || (echo "$(RED)watchexec not found. Install with: brew install watchexec$(NC)" && exit 1)
-	@watchexec -r -e go,yaml -- make run
-
-# Print component list from manifest
-components:
-	@echo "$(GREEN)Components included in $(BINARY_NAME):$(NC)"
-	@echo ""
-	@echo "$(YELLOW)Extensions:$(NC)"
-	@grep -A 100 "^extensions:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
-	@echo ""
-	@echo "$(YELLOW)Receivers:$(NC)"
-	@grep -A 100 "^receivers:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
-	@echo ""
-	@echo "$(YELLOW)Processors:$(NC)"
-	@grep -A 100 "^processors:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
-	@echo ""
-	@echo "$(YELLOW)Exporters:$(NC)"
-	@grep -A 100 "^exporters:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
-
-# LDFLAGS for standalone build (uses internal/version package)
-LDFLAGS_STANDALONE := -s -w \
-	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=$(VERSION)' \
-	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=$(GIT_COMMIT)' \
-	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitBranch=$(GIT_BRANCH)' \
-	-X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=$(BUILD_TIME)'
-
-# Build standalone version (without OCB)
-build-standalone:
-	@echo "$(GREEN)Building standalone $(BINARY_NAME) v$(VERSION)...$(NC)"
-	@mkdir -p $(BUILD_DIR)
-	@go build -ldflags "$(LDFLAGS_STANDALONE)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/tfo-collector
-	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
-
-# Run standalone version
-run-standalone: build-standalone
-	@echo "$(GREEN)Starting standalone $(BINARY_NAME)...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME) start --config $(CONFIG_DIR)/tfo-collector.yaml
-
-# Run standalone tests
-test-standalone:
-	@echo "$(GREEN)Running standalone tests...$(NC)"
-	@go test -v ./...
-
+# =============================================================================
 # Dependencies
+# =============================================================================
+
 deps:
 	@echo "$(GREEN)Downloading dependencies...$(NC)"
 	@go mod download
@@ -406,8 +374,18 @@ tidy:
 	@go mod tidy
 	@echo "$(GREEN)Go modules tidied$(NC)"
 
-# Installation
-install: build-standalone
+# =============================================================================
+# Clean & Install
+# =============================================================================
+
+clean:
+	@echo "$(GREEN)Cleaning build artifacts...$(NC)"
+	@rm -rf $(BUILD_DIR)/*
+	@rm -rf $(DIST_DIR)
+	@rm -f coverage-*.out coverage-*.html
+	@echo "$(GREEN)Clean complete$(NC)"
+
+install: build
 	@echo "$(GREEN)Installing $(BINARY_NAME) to /usr/local/bin...$(NC)"
 	@sudo cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
 	@echo "$(GREEN)Installed successfully$(NC)"
@@ -417,10 +395,65 @@ uninstall:
 	@sudo rm -f /usr/local/bin/$(BINARY_NAME)
 	@echo "$(GREEN)Uninstalled successfully$(NC)"
 
-# Configuration
-validate-config: build-standalone
-	@echo "$(GREEN)Validating configuration...$(NC)"
-	@$(BUILD_DIR)/$(BINARY_NAME) validate --config $(CONFIG_DIR)/tfo-collector.yaml
+# =============================================================================
+# Docker
+# =============================================================================
+
+docker:
+	@echo "$(GREEN)Building Docker image...$(NC)"
+	@docker build -t telemetryflow/telemetryflow-collector:$(VERSION) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		.
+	@docker tag telemetryflow/telemetryflow-collector:$(VERSION) telemetryflow/telemetryflow-collector:latest
+	@echo "$(GREEN)Docker image built: telemetryflow/telemetryflow-collector:$(VERSION)$(NC)"
+
+docker-push: docker
+	@echo "$(GREEN)Pushing Docker image...$(NC)"
+	@docker push telemetryflow/telemetryflow-collector:$(VERSION)
+	@docker push telemetryflow/telemetryflow-collector:latest
+
+# =============================================================================
+# Development
+# =============================================================================
+
+dev:
+	@echo "$(GREEN)Starting development mode...$(NC)"
+	@which watchexec > /dev/null || (echo "$(RED)watchexec not found. Install with: brew install watchexec$(NC)" && exit 1)
+	@watchexec -r -e go,yaml -- make run
+
+# Print component list from manifest
+components:
+	@echo "$(GREEN)Components included in $(BINARY_NAME):$(NC)"
+	@echo ""
+	@echo "$(YELLOW)TFO Custom Components:$(NC)"
+	@echo "  - tfootlp (receiver)      v1/v2 OTLP endpoints"
+	@echo "  - tfo (exporter)          auto-auth TFO Platform"
+	@echo "  - tfoauth (extension)     API key management"
+	@echo "  - tfoidentity (extension) collector identity"
+	@echo ""
+	@echo "$(YELLOW)Extensions:$(NC)"
+	@grep -A 100 "^extensions:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
+	@echo ""
+	@echo "$(YELLOW)Receivers:$(NC)"
+	@grep -A 100 "^receivers:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
+	@echo ""
+	@echo "$(YELLOW)Processors:$(NC)"
+	@grep -A 100 "^processors:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
+	@echo ""
+	@echo "$(YELLOW)Exporters:$(NC)"
+	@grep -A 100 "^exporters:" manifest.yaml | grep "gomod:" | sed 's/.*gomod: /  - /' | head -20
+
+# Show version information
+version:
+	@echo "$(GREEN)$(PRODUCT_NAME) (OCB Native)$(NC)"
+	@echo "  Version:      $(VERSION)"
+	@echo "  OTEL Version: $(OTEL_VERSION)"
+	@echo "  Git Commit:   $(GIT_COMMIT)"
+	@echo "  Git Branch:   $(GIT_BRANCH)"
+	@echo "  Build Time:   $(BUILD_TIME)"
+	@echo "  Go Version:   $(GO_VERSION)"
 
 # =============================================================================
 # CI-Specific Targets
@@ -462,17 +495,17 @@ deps-verify: deps verify
 ## CI: Run unit tests with race detection and coverage
 test-unit-ci:
 	@echo "$(GREEN)Running unit tests (CI mode with race detection)...$(NC)"
-	@go test -v -race -timeout 10m -coverprofile=coverage-unit.out -covermode=atomic ./tests/unit/...
+	@cd tests && go test -v -race -timeout 10m -coverprofile=coverage-unit.out -covermode=atomic ./unit/components/...
 
 ## CI: Run integration tests with race detection and coverage
 test-integration-ci:
 	@echo "$(GREEN)Running integration tests (CI mode)...$(NC)"
-	@go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./tests/integration/...
+	@cd tests && go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./integration/components/...
 
 ## CI: Run E2E tests
-test-e2e-ci: build-standalone
+test-e2e-ci:
 	@echo "$(GREEN)Running E2E tests (CI mode)...$(NC)"
-	@TFO_COLLECTOR_BINARY=$(BUILD_DIR)/$(BINARY_NAME) go test -v -timeout 15m ./tests/e2e/...
+	@go test -v -timeout 15m ./tests/e2e/...
 
 ## CI: Run security scan with gosec
 security:
@@ -529,61 +562,12 @@ ci-lint: deps-verify fmt-check vet staticcheck lint
 ci-test: test-unit-ci test-integration-ci
 	@echo "$(GREEN)CI test pipeline completed$(NC)"
 
-## CI: Build standalone for a specific platform
-ci-build-standalone:
-	@echo "$(GREEN)Building standalone for CI ($(GOOS)/$(GOARCH))...$(NC)"
+## CI: Build for a specific platform (used by GitHub Actions)
+ci-build: tidy-components
+	@echo "$(GREEN)Building $(BINARY_NAME) for CI ($(GOOS)/$(GOARCH))...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	@OUTPUT="$(BUILD_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH)"; \
 	if [ "$(GOOS)" = "windows" ]; then OUTPUT="$${OUTPUT}.exe"; fi; \
-	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS_STANDALONE)" -o $${OUTPUT} ./cmd/tfo-collector; \
-	echo "$(GREEN)Built: $${OUTPUT}$(NC)"
-
-## CI: Build OCB for a specific platform (requires OCB to be installed and code generated)
-ci-build-ocb: check-ocb
-	@echo "$(GREEN)Building OCB for CI ($(GOOS)/$(GOARCH))...$(NC)"
-	@set -e; \
-	mkdir -p $(BUILD_DIR_OCB); \
-	export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
-	BUILDER=$$(which builder 2>/dev/null || true); \
-	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$$(go env GOPATH)/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$(HOME)/go/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		echo "$(RED)Builder not found. Please run 'make install-ocb' first.$(NC)"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
-	$$BUILDER --config manifest.yaml; \
-	echo "$(GREEN)Builder completed, checking generated code...$(NC)"; \
-	if [ ! -d "$(BUILD_DIR_OCB)" ] || [ -z "$$(ls -A $(BUILD_DIR_OCB) 2>/dev/null)" ]; then \
-		echo "$(RED)Builder did not generate code in $(BUILD_DIR_OCB)$(NC)"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)Generated code found in $(BUILD_DIR_OCB)$(NC)"; \
-	ls -la $(BUILD_DIR_OCB)/; \
-	BINARY_OUTPUT="$(BINARY_NAME_OCB)-$(GOOS)-$(GOARCH)"; \
-	if [ "$(GOOS)" = "windows" ]; then BINARY_OUTPUT="$${BINARY_OUTPUT}.exe"; fi; \
-	echo "$(GREEN)Building binary: $(BUILD_DIR)/$${BINARY_OUTPUT}$(NC)"; \
-	echo "$(GREEN)Target OS/Arch: $(GOOS)/$(GOARCH)$(NC)"; \
-	echo "$(GREEN)Working directory: $$(pwd)$(NC)"; \
-	echo "$(GREEN)Go version: $$(go version)$(NC)"; \
-	echo "$(GREEN)Running go build from $(BUILD_DIR_OCB)...$(NC)"; \
-	cd $(BUILD_DIR_OCB) && \
-		CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) \
-		go build -v -ldflags "$(LDFLAGS)" -o "../$${BINARY_OUTPUT}" . || \
-		{ echo "$(RED)go build failed with exit code $$?$(NC)"; exit 1; }; \
-	echo "$(GREEN)Build command completed, checking output...$(NC)"; \
-	ls -la $(BUILD_DIR)/; \
-	if [ ! -f "$(BUILD_DIR)/$${BINARY_OUTPUT}" ]; then \
-		echo "$(RED)Build failed: $(BUILD_DIR)/$${BINARY_OUTPUT} not created$(NC)"; \
-		echo "$(RED)Contents of $(BUILD_DIR):$(NC)"; \
-		ls -la $(BUILD_DIR)/; \
-		echo "$(RED)Contents of $(BUILD_DIR_OCB):$(NC)"; \
-		ls -la $(BUILD_DIR_OCB)/; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)Built successfully: $(BUILD_DIR)/$${BINARY_OUTPUT}$(NC)"; \
-	ls -la "$(BUILD_DIR)/$${BINARY_OUTPUT}"
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "$(LDFLAGS_VERSION)" -o $${OUTPUT} ./cmd/tfo-collector; \
+	echo "$(GREEN)Built: $${OUTPUT}$(NC)"; \
+	ls -la "$${OUTPUT}"

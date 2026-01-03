@@ -1,8 +1,8 @@
 # TelemetryFlow Collector Installation Guide
 
-- **Version:** 1.1.1
+- **Version:** 1.1.2
 - **OTEL Version:** 0.142.0
-- **Last Updated:** December 2025
+- **Last Updated:** January 2026
 
 ---
 
@@ -11,7 +11,6 @@
 - Go 1.24 or later (for building from source)
 - Make (for build automation)
 - Docker (optional, for containerized deployment)
-- OCB (optional, for OCB build)
 
 ---
 
@@ -21,7 +20,7 @@
 
 ```mermaid
 flowchart LR
-    A[Clone Repo] --> B[make build-standalone]
+    A[Clone Repo] --> B[make build]
     B --> C[./build/tfo-collector]
 
     style C fill:#81C784,stroke:#388E3C
@@ -32,53 +31,24 @@ flowchart LR
 git clone https://github.com/telemetryflow/telemetryflow-collector.git
 cd telemetryflow-collector
 
-# Build standalone collector (default)
-make build-standalone
-# or just: make
-
-# Verify the build
-./build/tfo-collector version
-```
-
-### Method 2: Build with OCB
-
-```mermaid
-flowchart LR
-    A[Clone Repo] --> B[make install-ocb]
-    B --> C[make build]
-    C --> D[./build/tfo-collector-ocb]
-
-    style D fill:#64B5F6,stroke:#1976D2
-```
-
-```bash
-# Clone the repository
-git clone https://github.com/telemetryflow/telemetryflow-collector.git
-cd telemetryflow-collector
-
-# Install OCB
-make install-ocb
-
-# Build with OCB
+# Build collector
 make build
 
 # Verify the build
-./build/tfo-collector-ocb --help
+./build/tfo-collector --version
 ```
 
-### Method 3: Docker Image
+### Method 2: Docker Image
 
-TelemetryFlow Collector provides separate Dockerfiles and Docker Compose files for each build type:
+```bash
+# Pull from Docker Hub
+docker pull telemetryflow/telemetryflow-collector:1.1.2
 
-| File | Build Type | Description |
-|------|------------|-------------|
-| `Dockerfile` | Standalone | Custom Cobra CLI build |
-| `Dockerfile.ocb` | OCB | Standard OTEL CLI build |
-| `docker-compose.yml` | Standalone | Docker Compose for standalone |
-| `docker-compose.ocb.yml` | OCB | Docker Compose for OCB |
-| `.env.example` | Both | Environment variables template |
+# Or from GitHub Container Registry
+docker pull ghcr.io/telemetryflow/telemetryflow-collector:1.1.2
+```
 
-#### Using Docker Compose (Recommended)
+### Method 3: Docker Compose
 
 ```bash
 # Copy environment template
@@ -87,73 +57,29 @@ cp .env.example .env
 # Edit .env with your configuration
 vim .env
 
-# Standalone build
-docker-compose up -d --build
-
-# OR OCB build
-docker-compose -f docker-compose.ocb.yml up -d --build
+# Start collector
+docker-compose up -d
 
 # View logs
 docker-compose logs -f tfo-collector
 
 # Check health
 curl http://localhost:13133/
-
-# Stop
-docker-compose down
-```
-
-**Environment Variables (.env.example):**
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VERSION` | Build version | `1.1.1` |
-| `OTEL_VERSION` | OpenTelemetry version (OCB) | `0.142.0` |
-| `IMAGE_NAME` | Docker image name | `telemetryflow/telemetryflow-collector` |
-| `OTLP_GRPC_PORT` | OTLP gRPC port | `4317` |
-| `OTLP_HTTP_PORT` | OTLP HTTP port | `4318` |
-| `METRICS_PORT` | Prometheus metrics port | `8888` |
-| `PROMETHEUS_EXPORTER_PORT` | Prometheus exporter port | `8889` |
-| `HEALTH_PORT` | Health check port | `13133` |
-| `ZPAGES_PORT` | zPages debug port | `55679` |
-| `PPROF_PORT` | pprof profiling port | `1777` |
-| `LOG_LEVEL` | Log level | `info` |
-| `MEMORY_LIMIT` | Container memory limit | `2G` |
-
-#### Using Docker Directly
-
-```bash
-# Build standalone image
-docker build \
-  --build-arg VERSION=1.1.1 \
-  --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
-  --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
-  --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-  -t telemetryflow/telemetryflow-collector:1.1.1 .
-
-# Build OCB image
-docker build \
-  -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.1 \
-  --build-arg OTEL_VERSION=0.142.0 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 ```
 
 ---
 
 ## Quick Start
 
-### Standalone Collector
-
 ```mermaid
 sequenceDiagram
     participant User
     participant Binary as tfo-collector
-    participant Config as tfo-collector.yaml
+    participant Config as config.yaml
 
-    User->>Binary: ./tfo-collector start --config tfo-collector.yaml
+    User->>Binary: ./tfo-collector --config config.yaml
     Binary->>Config: Load configuration
-    Binary->>Binary: Display banner
+    Binary->>Binary: Display TFO banner
     Binary->>Binary: Start receivers
     Binary->>Binary: Start processors
     Binary->>Binary: Start exporters
@@ -162,33 +88,23 @@ sequenceDiagram
 
 ```bash
 # Build
-make build-standalone
+make build
 
 # Run
-./build/tfo-collector start --config configs/tfo-collector.yaml
+./build/tfo-collector --config configs/tfo-collector.yaml
 
 # Expected output:
 #     ___________    .__                        __
 #     \__    ___/___ |  |   ____   _____   _____/  |________ ___.__. ...
 #
-# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.1"}
-```
-
-### OCB Collector
-
-```bash
-# Build
-make build
-
-# Run
-./build/tfo-collector-ocb --config configs/otel-collector.yaml
+# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.2"}
 ```
 
 ---
 
 ## Docker Deployment
 
-### Standalone Docker
+### Using Docker
 
 ```bash
 # Create config directory
@@ -208,8 +124,10 @@ docker run -d \
   -p 13133:13133 \
   -v /etc/tfo-collector/config.yaml:/etc/tfo-collector/config.yaml:ro \
   -v /var/lib/tfo-collector:/var/lib/tfo-collector \
-  telemetryflow/telemetryflow-collector:latest \
-  start --config /etc/tfo-collector/config.yaml
+  -e TELEMETRYFLOW_API_KEY_ID=tfk_xxx \
+  -e TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx \
+  telemetryflow/telemetryflow-collector:1.1.2 \
+  --config /etc/tfo-collector/config.yaml
 
 # Check logs
 docker logs tfo-collector
@@ -218,30 +136,7 @@ docker logs tfo-collector
 curl http://localhost:13133/
 ```
 
-### OCB Docker
-
-```bash
-# Create config directory
-mkdir -p /etc/tfo-collector
-
-# Copy configuration
-cp configs/otel-collector.yaml /etc/tfo-collector/config.yaml
-
-# Run container
-docker run -d \
-  --name tfo-collector-ocb \
-  --restart unless-stopped \
-  -p 4317:4317 \
-  -p 4318:4318 \
-  -p 8888:8888 \
-  -p 8889:8889 \
-  -p 13133:13133 \
-  -v /etc/tfo-collector/config.yaml:/etc/tfo-collector/config.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:latest \
-  --config /etc/otelcol/config.yaml
-```
-
-### Docker Compose
+### Using Docker Compose
 
 ```yaml
 # docker-compose.yml
@@ -249,9 +144,12 @@ version: '3.8'
 
 services:
   tfo-collector:
-    image: telemetryflow/telemetryflow-collector:latest
+    image: telemetryflow/telemetryflow-collector:1.1.2
     container_name: tfo-collector
-    command: ["start", "--config", "/etc/tfo-collector/config.yaml"]
+    command: ["--config", "/etc/tfo-collector/config.yaml"]
+    environment:
+      - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID}
+      - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
     ports:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP
@@ -271,6 +169,16 @@ services:
 volumes:
   collector-data:
 ```
+
+**Environment Variables:**
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TELEMETRYFLOW_API_KEY_ID` | TFO API Key ID (tfk_xxx) | - |
+| `TELEMETRYFLOW_API_KEY_SECRET` | TFO API Key Secret (tfs_xxx) | - |
+| `TELEMETRYFLOW_ENDPOINT` | TFO Platform endpoint | `https://api.telemetryflow.id` |
+| `TELEMETRYFLOW_COLLECTOR_ID` | Collector identifier | - |
+| `TELEMETRYFLOW_COLLECTOR_NAME` | Collector name | `TFO Collector` |
 
 ---
 
@@ -296,7 +204,7 @@ sudo chmod +x /usr/local/bin/tfo-collector
 sudo cp configs/tfo-collector.yaml /etc/tfo-collector/
 
 # Verify
-/usr/local/bin/tfo-collector version
+/usr/local/bin/tfo-collector --version
 ```
 
 ### Create Service File
@@ -313,12 +221,16 @@ Wants=network-online.target
 Type=simple
 User=telemetryflow
 Group=telemetryflow
-ExecStart=/usr/local/bin/tfo-collector start --config /etc/tfo-collector/tfo-collector.yaml
+ExecStart=/usr/local/bin/tfo-collector --config /etc/tfo-collector/tfo-collector.yaml
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=tfo-collector
+
+# Environment variables
+Environment="TELEMETRYFLOW_API_KEY_ID=tfk_xxx"
+Environment="TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx"
 
 # Resource limits
 LimitNOFILE=65536
@@ -378,7 +290,7 @@ graph TB
     subgraph "Kubernetes Cluster"
         subgraph "observability namespace"
             CM[ConfigMap<br/>tfo-collector-config]
-            SECRET[Secret<br/>tfo-secrets]
+            SECRET[Secret<br/>tfo-credentials]
             SVC[Service<br/>tfo-collector]
             DEPLOY[Deployment<br/>tfo-collector<br/>replicas: 3]
         end
@@ -434,25 +346,14 @@ metadata:
   namespace: observability
 data:
   tfo-collector.yaml: |
-    # TelemetryFlow-specific extensions (optional)
-    telemetryflow:
-      api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
-      api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
-
-    collector:
-      id: ""
-      name: "TelemetryFlow Collector - Kubernetes"
-      tags:
-        environment: "kubernetes"
-
-    # Standard OTEL configuration
     receivers:
-      otlp:
+      tfootlp:
         protocols:
           grpc:
             endpoint: "0.0.0.0:4317"
           http:
             endpoint: "0.0.0.0:4318"
+        enable_v2_endpoints: true
 
     processors:
       batch:
@@ -464,32 +365,36 @@ data:
         spike_limit_percentage: 25
 
     exporters:
-      otlp:
-        endpoint: "${BACKEND_ENDPOINT}"
-        headers:
-          X-Tenant-Id: "${TENANT_ID}"
-      debug:
-        verbosity: basic
+      tfo:
+        endpoint: "https://api.telemetryflow.id"
+        use_v2_api: true
+        auth:
+          extension: tfoauth
 
     extensions:
+      tfoauth:
+        api_key_id: "${TELEMETRYFLOW_API_KEY_ID}"
+        api_key_secret: "${TELEMETRYFLOW_API_KEY_SECRET}"
+      tfoidentity:
+        name: "TelemetryFlow Collector - Kubernetes"
       health_check:
         endpoint: "0.0.0.0:13133"
 
     service:
-      extensions: [health_check]
+      extensions: [health_check, tfoauth, tfoidentity]
       pipelines:
-        metrics:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp, debug]
-        logs:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp, debug]
         traces:
-          receivers: [otlp]
+          receivers: [tfootlp]
           processors: [memory_limiter, batch]
-          exporters: [otlp, debug]
+          exporters: [tfo]
+        metrics:
+          receivers: [tfootlp]
+          processors: [memory_limiter, batch]
+          exporters: [tfo]
+        logs:
+          receivers: [tfootlp]
+          processors: [memory_limiter, batch]
+          exporters: [tfo]
 ```
 
 ### Create Secret
@@ -499,12 +404,12 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: tfo-secrets
+  name: tfo-credentials
   namespace: observability
 type: Opaque
 stringData:
-  backend-endpoint: "http://telemetryflow-api:3100"
-  tenant-id: "your-tenant-id"
+  api-key-id: "tfk_your_key_id"
+  api-key-secret: "tfs_your_key_secret"
 ```
 
 ### Create Deployment
@@ -518,7 +423,7 @@ metadata:
   namespace: observability
   labels:
     app: tfo-collector
-    version: "1.1.1"
+    version: "1.1.2"
 spec:
   replicas: 3
   selector:
@@ -528,29 +433,28 @@ spec:
     metadata:
       labels:
         app: tfo-collector
-        version: "1.1.1"
+        version: "1.1.2"
     spec:
       serviceAccountName: tfo-collector
 
       containers:
       - name: tfo-collector
-        image: telemetryflow/telemetryflow-collector:1.1.1
+        image: telemetryflow/telemetryflow-collector:1.1.2
         args:
-          - "start"
           - "--config"
           - "/etc/tfo-collector/tfo-collector.yaml"
 
         env:
-        - name: BACKEND_ENDPOINT
+        - name: TELEMETRYFLOW_API_KEY_ID
           valueFrom:
             secretKeyRef:
-              name: tfo-secrets
-              key: backend-endpoint
-        - name: TENANT_ID
+              name: tfo-credentials
+              key: api-key-id
+        - name: TELEMETRYFLOW_API_KEY_SECRET
           valueFrom:
             secretKeyRef:
-              name: tfo-secrets
-              key: tenant-id
+              name: tfo-credentials
+              key: api-key-secret
 
         ports:
         - name: otlp-grpc
@@ -678,45 +582,19 @@ curl http://localhost:8888/metrics | head -30
 
 ### Send Test Data
 
-**OTLP HTTP Endpoint Versions:**
+**OTLP HTTP Endpoints:**
 
-| Build Type | Recommended Endpoint | Description |
-|------------|---------------------|-------------|
-| TFO Standalone | `/v2/*` | TelemetryFlow Platform endpoints |
-| OCB (OTEL Community) | `/v1/*` | Standard OpenTelemetry endpoints |
-
-**TFO Standalone (v2 endpoint - recommended):**
-
-```bash
-# Send test metrics via OTLP HTTP - TelemetryFlow Platform v2
-curl -X POST http://localhost:4318/v2/metrics \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resourceMetrics": [{
-      "resource": {
-        "attributes": [
-          {"key": "service.name", "value": {"stringValue": "test-service"}}
-        ]
-      },
-      "scopeMetrics": [{
-        "metrics": [{
-          "name": "test.metric",
-          "sum": {
-            "dataPoints": [{
-              "asInt": "100",
-              "timeUnixNano": "'$(date +%s)000000000'"
-            }]
-          }
-        }]
-      }]
-    }]
-  }'
-```
-
-**OCB Build (v1 endpoint - OTEL standard):**
+| Endpoint | Description |
+|----------|-------------|
+| `/v1/traces` | Standard OTEL traces |
+| `/v1/metrics` | Standard OTEL metrics |
+| `/v1/logs` | Standard OTEL logs |
+| `/v2/traces` | TelemetryFlow Platform traces |
+| `/v2/metrics` | TelemetryFlow Platform metrics |
+| `/v2/logs` | TelemetryFlow Platform logs |
 
 ```bash
-# Send test metrics via OTLP HTTP - OTEL Community v1
+# Send test metrics via OTLP HTTP
 curl -X POST http://localhost:4318/v1/metrics \
   -H "Content-Type: application/json" \
   -d '{
@@ -741,8 +619,6 @@ curl -X POST http://localhost:4318/v1/metrics \
   }'
 ```
 
-> **Note:** TFO Standalone supports both v1 and v2 endpoints. OCB build only supports v1 endpoints.
-
 ---
 
 ## Upgrading
@@ -763,21 +639,21 @@ sudo cp ./build/tfo-collector /usr/local/bin/
 sudo systemctl start tfo-collector
 
 # Verify
-tfo-collector version
+tfo-collector --version
 ```
 
 ### Docker Upgrade
 
 ```bash
 # Pull new image
-docker pull telemetryflow/telemetryflow-collector:1.1.1
+docker pull telemetryflow/telemetryflow-collector:1.1.2
 
 # Stop and remove
 docker stop tfo-collector
 docker rm tfo-collector
 
 # Start with new image
-docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.1 ...
+docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.2 ...
 ```
 
 ### Kubernetes Upgrade
@@ -785,7 +661,7 @@ docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1
 ```bash
 # Update image
 kubectl set image deployment/tfo-collector \
-  tfo-collector=telemetryflow/telemetryflow-collector:1.1.1 \
+  tfo-collector=telemetryflow/telemetryflow-collector:1.1.2 \
   -n observability
 
 # Watch rollout
@@ -814,7 +690,7 @@ sudo userdel telemetryflow
 ```bash
 docker stop tfo-collector
 docker rm tfo-collector
-docker rmi telemetryflow/telemetryflow-collector:latest
+docker rmi telemetryflow/telemetryflow-collector:1.1.2
 ```
 
 ### Kubernetes
@@ -823,7 +699,7 @@ docker rmi telemetryflow/telemetryflow-collector:latest
 kubectl delete deployment tfo-collector -n observability
 kubectl delete service tfo-collector -n observability
 kubectl delete configmap tfo-collector-config -n observability
-kubectl delete secret tfo-secrets -n observability
+kubectl delete secret tfo-credentials -n observability
 ```
 
 ---
