@@ -64,13 +64,15 @@ extensions:
     api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
 
   # TFO Identity Extension - Collector identity and resource enrichment
+  # Optional env vars: TELEMETRYFLOW_COLLECTOR_ID, TELEMETRYFLOW_COLLECTOR_NAME,
+  #                    TELEMETRYFLOW_ENVIRONMENT, TELEMETRYFLOW_DATACENTER
   tfoidentity:
     id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
-    name: "${env:TELEMETRYFLOW_COLLECTOR_NAME:-TelemetryFlow Collector}"
+    name: "TelemetryFlow Collector"
     description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
     tags:
-      environment: "${env:TELEMETRYFLOW_ENVIRONMENT:-production}"
-      datacenter: "${env:TELEMETRYFLOW_DATACENTER:-default}"
+      environment: production
+      datacenter: default
     enrich_resources: true
 
 # =============================================================================
@@ -121,13 +123,14 @@ processors:
     spike_limit_percentage: 25
 
   # Resource processor for adding attributes
+  # To customize environment: export TELEMETRYFLOW_ENVIRONMENT=staging
   resource:
     attributes:
       - key: service.namespace
         value: telemetryflow
         action: upsert
       - key: deployment.environment
-        value: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
+        value: production
         action: upsert
 
   # Attributes processor (uncomment to enable)
@@ -193,7 +196,8 @@ exporters:
     send_timestamps: true
     metric_expiration: 5m
     enable_open_metrics: true
-    resource_to_telemetry_conversion: true
+    resource_to_telemetry_conversion:
+      enabled: true
 
   # TFO Platform Exporter - auto-injects TFO auth headers (uncomment to enable)
   # Uses tfoauth extension for authentication and tfoidentity for collector ID

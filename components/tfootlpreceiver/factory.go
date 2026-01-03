@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -46,7 +48,14 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: ProtocolsConfig{
-			GRPC: &GRPCConfig{},
+			GRPC: &GRPCConfig{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  DefaultGRPCEndpoint,
+						Transport: confignet.TransportTypeTCP,
+					},
+				},
+			},
 			HTTP: &HTTPConfig{
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,

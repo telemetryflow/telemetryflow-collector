@@ -130,13 +130,14 @@ processors:
     spike_limit_percentage: 25
 
   # Resource processor - adds/modifies resource attributes
+  # To customize environment: export TELEMETRYFLOW_ENVIRONMENT=staging
   resource:
     attributes:
       - key: service.namespace
         value: telemetryflow
         action: upsert
       - key: deployment.environment
-        value: "${TELEMETRYFLOW_ENVIRONMENT:-production}"
+        value: production
         action: upsert
 
   # Resource detection (uncomment to auto-detect cloud/container resources)

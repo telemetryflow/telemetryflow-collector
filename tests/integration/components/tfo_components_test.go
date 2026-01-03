@@ -192,8 +192,18 @@ func TestTFOComponentConfigValidation(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("tfoauthextension_invalid", func(t *testing.T) {
+	t.Run("tfoauthextension_passthrough", func(t *testing.T) {
+		// Empty config is valid - passthrough mode
 		cfg := &tfoauthextension.Config{}
+		err := cfg.Validate()
+		require.NoError(t, err)
+	})
+
+	t.Run("tfoauthextension_invalid_partial", func(t *testing.T) {
+		// Only API key ID set without secret - invalid
+		cfg := &tfoauthextension.Config{
+			APIKeyID: configopaque.String("tfk_valid_key"),
+		}
 		err := cfg.Validate()
 		require.Error(t, err)
 	})

@@ -28,12 +28,21 @@ type Config struct {
 }
 
 // Validate checks the configuration for errors.
+// If API keys are not set (empty), the extension will start in passthrough mode
+// where it doesn't inject authentication headers.
 func (cfg *Config) Validate() error {
+	// If both API key ID and secret are empty, allow passthrough mode
+	// This enables the collector to start without TFO authentication configured
+	if cfg.APIKeyID == "" && cfg.APIKeySecret == "" {
+		return nil
+	}
+
+	// If one is set, both must be set
 	if cfg.APIKeyID == "" {
-		return errors.New("api_key_id is required")
+		return errors.New("api_key_id is required when api_key_secret is set")
 	}
 	if cfg.APIKeySecret == "" {
-		return errors.New("api_key_secret is required")
+		return errors.New("api_key_secret is required when api_key_id is set")
 	}
 
 	// Validate API key format

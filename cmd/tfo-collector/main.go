@@ -26,56 +26,36 @@ import (
 	"log"
 	"os"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 	"github.com/telemetryflow/telemetryflow-collector/internal/version"
 )
 
 func main() {
-	info := component.BuildInfo{
-		Command:     version.ProductShortName,
-		Description: version.ProductDescription,
-		Version:     version.Version,
-	}
-
-	// Configure the collector settings
-	// Pass the components function directly (not called) - OTEL 0.142.0 API
-	set := otelcol.CollectorSettings{
-		BuildInfo: info,
-		Factories: components,
-		ConfigProviderSettings: otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				ProviderFactories: []confmap.ProviderFactory{
-					fileprovider.NewFactory(),
-					yamlprovider.NewFactory(),
-					envprovider.NewFactory(),
-				},
-			},
-		},
-	}
-
-	// Create and run the collector
-	cmd := otelcol.NewCommand(set)
-	cmd.Use = version.ProductShortName
-	cmd.Short = version.ProductName
-	cmd.Long = fmt.Sprintf(`%s
+	// Create custom root command with Viper
+	rootCmd := &cobra.Command{
+		Use:   version.ProductShortName,
+		Short: version.ProductName,
+		Long: fmt.Sprintf(`%s
 
 %s
 
 Usage Examples:
   # Start with default config
   %s --config /etc/tfo-collector/config.yaml
+  %s -c /etc/tfo-collector/config.yaml
 
   # Start with TFO Platform config (supports v2 endpoints)
   %s --config configs/tfo-collector.yaml
-
-  # Start with multiple configs
-  %s --config base.yaml --config overrides.yaml
+  %s -c configs/tfo-collector.yaml
 
 TFO Custom Components:
   Receivers:
@@ -97,29 +77,33 @@ Environment Variables:
   TELEMETRYFLOW_ENVIRONMENT     - Deployment environment
 
 For more information, visit: %s`,
-		version.ProductName,
-		version.Motto,
-		version.ProductShortName,
-		version.ProductShortName,
-		version.ProductShortName,
-		version.SupportURL,
-	)
+			version.ProductName,
+			version.Motto,
+			version.ProductShortName,
+			version.ProductShortName,
+			version.ProductShortName,
+			version.ProductShortName,
+			version.SupportURL,
+		),
+		Run: runCollector,
+	}
 
-	// Add short flag aliases before execution
-	if f := cmd.Flags().Lookup("config"); f != nil {
-		f.Shorthand = "c"
-	}
-	if f := cmd.Flags().Lookup("set"); f != nil {
-		f.Shorthand = "s"
-	}
-	if f := cmd.Flags().Lookup("feature-gates"); f != nil {
-		f.Shorthand = "f"
+	// Add flags with short aliases using Viper
+	rootCmd.Flags().StringSliceP("config", "c", []string{}, "Locations to the config file(s)")
+	rootCmd.Flags().StringSliceP("set", "s", []string{}, "Set arbitrary component config property")
+	rootCmd.Flags().StringSliceP("feature-gates", "f", []string{}, "Comma-delimited list of feature gate identifiers")
+
+	// Bind flags to Viper
+	if err := viper.BindPFlags(rootCmd.Flags()); err != nil {
+		log.Fatal(err)
 	}
 
 	// Show banner and help if no arguments provided
 	if len(os.Args) == 1 {
 		fmt.Print(version.Banner())
-		cmd.Help()
+		if err := rootCmd.Help(); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
 
@@ -131,7 +115,58 @@ For more information, visit: %s`,
 		}
 	}
 
-	if err := cmd.Execute(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runCollector(cmd *cobra.Command, args []string) {
+	// Show banner when starting the collector
+	fmt.Print(version.Banner())
+
+	info := component.BuildInfo{
+		Command:     version.ProductShortName,
+		Description: version.ProductDescription,
+		Version:     version.Version,
+	}
+
+	// Factories function that returns all component factories including telemetry
+	factoriesFunc := func() (otelcol.Factories, error) {
+		factories, err := components()
+		if err != nil {
+			return otelcol.Factories{}, err
+		}
+		factories.Telemetry = otelconftelemetry.NewFactory()
+		return factories, nil
+	}
+
+	set := otelcol.CollectorSettings{
+		BuildInfo: info,
+		Factories: factoriesFunc,
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				ProviderFactories: []confmap.ProviderFactory{
+					fileprovider.NewFactory(),
+					yamlprovider.NewFactory(),
+					envprovider.NewFactory(),
+				},
+			},
+		},
+	}
+
+	// Get config files from Viper
+	configFiles := viper.GetStringSlice("config")
+	if len(configFiles) == 0 {
+		log.Fatal("at least one config file must be provided")
+	}
+
+	// Create OTEL collector command with config
+	otelCmd := otelcol.NewCommand(set)
+	// Pass config files to OTEL collector
+	os.Args = append([]string{os.Args[0]}, "--config")
+	os.Args = append(os.Args, configFiles...)
+
+	if err := otelCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
