@@ -246,3 +246,14 @@ func BuildInfo() map[string]string {
 		"license":      License,
 	}
 }
+
+// FlagOptions returns available flag options
+func FlagOptions() string {
+	return fmt.Sprintf(`Available flags:
+  --config     Configuration file path
+  --help       Show help information
+  --version    Show version information
+  --set        Set component config property
+  
+For complete flag list, use: %s --help`, ProductShortName)
+}
