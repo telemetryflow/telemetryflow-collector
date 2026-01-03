@@ -30,6 +30,8 @@ on:
       - 'release/**'
     tags:
       - 'v*.*.*'
+      - 'v*.*.*-ocb'
+      - 'v*.*.*-standalone'
     paths:
       - 'cmd/**'
       - 'components/**'

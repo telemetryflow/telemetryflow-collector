@@ -22,6 +22,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+      - 'v*.*.*-ocb'
+      - 'v*.*.*-standalone'
   workflow_dispatch:
     inputs:
       version:
