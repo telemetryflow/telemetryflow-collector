@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -36,9 +37,6 @@ import (
 )
 
 func main() {
-	// Print TFO banner on startup
-	fmt.Print(version.Banner())
-
 	info := component.BuildInfo{
 		Command:     version.ProductShortName,
 		Description: version.ProductDescription,
@@ -106,6 +104,32 @@ For more information, visit: %s`,
 		version.ProductShortName,
 		version.SupportURL,
 	)
+
+	// Add short flag aliases before execution
+	if f := cmd.Flags().Lookup("config"); f != nil {
+		f.Shorthand = "c"
+	}
+	if f := cmd.Flags().Lookup("set"); f != nil {
+		f.Shorthand = "s"
+	}
+	if f := cmd.Flags().Lookup("feature-gates"); f != nil {
+		f.Shorthand = "f"
+	}
+
+	// Show banner and help if no arguments provided
+	if len(os.Args) == 1 {
+		fmt.Print(version.Banner())
+		cmd.Help()
+		return
+	}
+
+	// Show banner for help/version commands
+	for _, arg := range os.Args[1:] {
+		if arg == "--help" || arg == "-h" || arg == "--version" || arg == "-v" {
+			fmt.Print(version.Banner())
+			break
+		}
+	}
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

@@ -142,6 +142,8 @@ make build
 
 # Run with TFO config (v1 + v2 endpoints)
 ./build/tfo-collector --config configs/tfo-collector.yaml
+# Or use short flag
+./build/tfo-collector -c configs/tfo-collector.yaml
 
 # Or run with standard OTEL config (v1 only)
 ./build/tfo-collector --config configs/otel-collector.yaml
@@ -264,27 +266,64 @@ service:
 | 55679 | HTTP | zPages |
 | 1777 | HTTP | pprof |
 
+## CLI Usage
+
+### Command Line Flags
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--config` | `-c` | Configuration file path |
+| `--set` | `-s` | Set component config property |
+| `--feature-gates` | `-f` | Feature gate identifiers |
+| `--help` | `-h` | Show help information |
+| `--version` | `-v` | Show version information |
+
+### Usage Examples
+
+```bash
+# Show help (displays TFO banner)
+tfo-collector
+tfo-collector --help
+tfo-collector -h
+
+# Start with config file
+tfo-collector --config configs/tfo-collector.yaml
+tfo-collector -c configs/tfo-collector.yaml
+
+# Set config properties
+tfo-collector -c config.yaml --set processors.batch.timeout=2s
+tfo-collector -c config.yaml -s processors.batch.timeout=2s
+
+# Enable feature gates
+tfo-collector -c config.yaml --feature-gates gate1,gate2
+tfo-collector -c config.yaml -f gate1,gate2
+
+# Show version
+tfo-collector --version
+tfo-collector -v
+```
+
 ## Project Structure
 
 ```text
 tfo-collector/
-├── cmd/tfo-collector/           # OCB-generated main.go
-├── components/                  # TFO Custom Components
-│   ├── tfootlpreceiver/         # TFO OTLP Receiver (v1/v2)
-│   ├── tfoexporter/             # TFO Platform Exporter
+├── cmd/tfo-collector/               # OCB-generated main.go
+├── components/                      # TFO Custom Components
+│   ├── tfootlpreceiver/             # TFO OTLP Receiver (v1/v2)
+│   ├── tfoexporter/                 # TFO Platform Exporter
 │   └── extension/
-│       ├── tfoauthextension/    # TFO Auth Extension
-│       └── tfoidentityextension/ # TFO Identity Extension
+│       ├── tfoauthextension/        # TFO Auth Extension
+│       └── tfoidentityextension/    # TFO Identity Extension
 ├── configs/
-│   ├── otel-collector.yaml      # Standard OTEL config
-│   ├── otel-collector-minimal.yaml # Minimal config
-│   ├── tfo-collector.yaml       # TFO config (v1/v2)
-│   └── tfo-collector-unified.yaml # Full TFO Platform
+│   ├── otel-collector.yaml          # Standard OTEL config
+│   ├── otel-collector-minimal.yaml  # Minimal config
+│   ├── tfo-collector.yaml           # TFO config (v1/v2)
+│   └── tfo-collector-unified.yaml   # Full TFO Platform
 ├── tests/
-│   ├── unit/                    # Unit tests
-│   └── integration/             # Integration tests
-├── build/                       # Build output
-├── manifest.yaml                # OCB manifest
+│   ├── unit/                        # Unit tests
+│   └── integration/                 # Integration tests
+├── build/                           # Build output
+├── manifest.yaml                    # OCB manifest
 ├── Makefile
 ├── Dockerfile
 ├── docker-compose.yml

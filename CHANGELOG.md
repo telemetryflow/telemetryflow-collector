@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `tfoexporter` - Exporter with auto TFO authentication header injection
   - `tfoauthextension` - Centralized API key management
   - `tfoidentityextension` - Collector identity and resource enrichment
+- **Enhanced CLI Experience**: Improved command-line interface with TFO branding
+  - Professional ASCII art banner on startup
+  - Short flag aliases: `-c` (config), `-s` (set), `-f` (feature-gates)
+  - Automatic help display when no parameters provided
+  - Comprehensive usage examples and component documentation
 - **OTEL 0.142.0 API Compatibility**: Updated all components for latest OTEL Collector API
   - Fixed factory map creation using new map-based approach
   - Updated exporter settings (removed deprecated QueueConfig)
@@ -50,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Single `make build` target for OCB-native build
   - `make ci-build` target for GitHub Actions CI
   - Unified binary name: `tfo-collector` (no more `-ocb` suffix)
+- **CLI User Experience**: Enhanced command-line interface
+  - Banner display logic: shows on help/version commands only
+  - Improved error handling: no more "config flag required" error
+  - Short flags for common operations improve usability
 - **GitHub Workflows**: Consolidated for OCB-native
   - Updated `ci.yml` for OCB-native only builds
   - Updated `release.yml` for unified release workflow
@@ -59,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed dual build references
   - Updated configuration examples
   - Simplified installation instructions
+  - Added CLI usage examples with short flags
 
 ### Removed
 
@@ -73,6 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - OTEL 0.142.0 API compatibility issues in components
 - Build cache conflicts with Go version management
+- CLI error handling: removed "at least one config flag must be provided" error
+- Test suite compatibility with separate test module structure
+- Banner display timing for better user experience
 
 ## [1.1.1] - 2025-01-01
 
