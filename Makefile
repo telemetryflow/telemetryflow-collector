@@ -303,11 +303,11 @@ test: test-unit test-integration
 
 test-unit:
 	@echo "$(GREEN)Running unit tests...$(NC)"
-	@cd tests && go test -v -timeout 5m -coverprofile=coverage-unit.out ./unit/components/...
+	@cd tests && go test -v -timeout 5m -coverprofile=../coverage-unit.out ./unit/components/...
 
 test-integration:
 	@echo "$(GREEN)Running integration tests...$(NC)"
-	@cd tests && go test -v -timeout 5m -coverprofile=coverage-integration.out ./integration/components/...
+	@cd tests && go test -v -timeout 5m -coverprofile=../coverage-integration.out ./integration/components/...
 
 test-e2e:
 	@echo "$(GREEN)Running E2E tests...$(NC)"
@@ -495,12 +495,12 @@ deps-verify: deps verify
 ## CI: Run unit tests with race detection and coverage
 test-unit-ci:
 	@echo "$(GREEN)Running unit tests (CI mode with race detection)...$(NC)"
-	@cd tests && go test -v -race -timeout 10m -coverprofile=coverage-unit.out -covermode=atomic ./unit/components/...
+	@cd tests && go test -v -race -timeout 10m -coverprofile=../coverage-unit.out -covermode=atomic ./unit/components/...
 
 ## CI: Run integration tests with race detection and coverage
 test-integration-ci:
 	@echo "$(GREEN)Running integration tests (CI mode)...$(NC)"
-	@cd tests && go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./integration/components/...
+	@cd tests && go test -v -race -timeout 10m -coverprofile=../coverage-integration.out -covermode=atomic ./integration/components/...
 
 ## CI: Run E2E tests
 test-e2e-ci:

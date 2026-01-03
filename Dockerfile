@@ -1,5 +1,5 @@
 # =============================================================================
-# TelemetryFlow Collector - Dockerfile (OCB Native Build)
+# TelemetryFlow Collector - Dockerfile (Native Go Build)
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
@@ -18,11 +18,11 @@
 # limitations under the License.
 #
 # =============================================================================
-# OCB Native Build: 100% OpenTelemetry Collector Builder with TFO Components
+# Native Go Build with Custom TFO Components
 # =============================================================================
 #
-# This Dockerfile builds the TFO Collector using OCB (OpenTelemetry Collector
-# Builder) with custom TFO components:
+# This Dockerfile builds the TFO Collector directly from source with custom
+# TFO components:
 #   - tfootlp receiver (v1/v2 endpoint support)
 #   - tfo exporter (auto TFO auth injection)
 #   - tfoauth extension (API key management)
@@ -57,27 +57,26 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /build
 
-# Install OCB (OpenTelemetry Collector Builder)
-RUN go install go.opentelemetry.io/collector/cmd/builder@v${OTEL_VERSION}
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
 
-# Copy manifest and components
-COPY manifest.yaml .
+# Copy components (needed for replace directives in go.mod)
 COPY components/ ./components/
 
-# Create output directory for OCB
-RUN mkdir -p ./build/ocb
+# Download dependencies
+RUN go mod download
 
-# Generate collector code with OCB
-RUN builder --config manifest.yaml
+# Copy the rest of the source code
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
-# Build OCB binary
-WORKDIR /build/build/ocb
+# Build the binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags "-s -w \
-        -X 'main.Version=${VERSION}' \
-        -X 'main.GitCommit=${GIT_COMMIT}' \
-        -X 'main.BuildTime=${BUILD_TIME}'" \
-    -o /tfo-collector .
+        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=${VERSION}' \
+        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=${GIT_COMMIT}' \
+        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=${BUILD_TIME}'" \
+    -o /tfo-collector ./cmd/tfo-collector
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
@@ -92,7 +91,7 @@ ARG OTEL_VERSION=0.142.0
 # TelemetryFlow Metadata Labels (OCI Image Spec)
 # =============================================================================
 LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
-      org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector (OCB Native) - Community Enterprise Observability Platform (CEOP)" \
+      org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector - Community Enterprise Observability Platform (CEOP)" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.vendor="TelemetryFlow" \
       org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
@@ -105,7 +104,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
       io.telemetryflow.product="TelemetryFlow Collector" \
       io.telemetryflow.component="tfo-collector" \
       io.telemetryflow.platform="CEOP" \
-      io.telemetryflow.build.type="ocb-native" \
+      io.telemetryflow.build.type="native" \
       io.telemetryflow.otel.version="${OTEL_VERSION}" \
       io.telemetryflow.maintainer="DevOpsCorner Indonesia"
 
@@ -164,10 +163,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:13133/ || exit 1
 
 # =============================================================================
-# Entrypoint & Command (OCB Native - standard OTEL CLI)
+# Entrypoint & Command
 # =============================================================================
 ENTRYPOINT ["/usr/local/bin/tfo-collector"]
-CMD ["--config", "/etc/tfo-collector/tfo-collector.yaml"]
+CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 
 # =============================================================================
 # Build Information
@@ -197,5 +196,5 @@ CMD ["--config", "/etc/tfo-collector/tfo-collector.yaml"]
 #   docker run --rm \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
 #     telemetryflow/telemetryflow-collector:1.1.2 \
-#     validate --config /etc/tfo-collector/tfo-collector.yaml
+#     validate -c /etc/tfo-collector/tfo-collector.yaml
 # =============================================================================
