@@ -29,9 +29,8 @@ on:
       - 'feature/**'
       - 'release/**'
     tags:
+      # OCB Native v1.1.2+ uses unified build - semver only
       - 'v*.*.*'
-      - 'v*.*.*-ocb'
-      - 'v*.*.*-standalone'
     paths:
       - 'cmd/**'
       - 'components/**'

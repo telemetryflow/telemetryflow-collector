@@ -67,12 +67,12 @@ extensions:
   # Optional env vars: TELEMETRYFLOW_COLLECTOR_ID, TELEMETRYFLOW_COLLECTOR_NAME,
   #                    TELEMETRYFLOW_ENVIRONMENT, TELEMETRYFLOW_DATACENTER
   tfoidentity:
-    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
-    name: "TelemetryFlow Collector"
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"   # TELEMETRYFLOW_COLLECTOR_ID
+    name: "TelemetryFlow Collector"           # TELEMETRYFLOW_COLLECTOR_NAME
     description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
     tags:
-      environment: production
-      datacenter: default
+      environment: production                 # TELEMETRYFLOW_ENVIRONMENT
+      datacenter: default                     # TELEMETRYFLOW_DATACENTER
     enrich_resources: true
 
 # =============================================================================

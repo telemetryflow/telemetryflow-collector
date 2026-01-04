@@ -21,9 +21,8 @@ on:
       - main
       - master
     tags:
+      # OCB Native v1.1.2+ uses unified build - semver only
       - 'v*.*.*'
-      - 'v*.*.*-ocb'
-      - 'v*.*.*-standalone'
     paths:
       - 'Dockerfile'
       - 'cmd/**'
@@ -190,13 +189,19 @@ jobs:
         id: version
         run: |
           if [ "${{ github.event.inputs.version }}" != "" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+            RAW_VERSION="${{ github.event.inputs.version }}"
           elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
+            RAW_VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            VERSION="${{ needs.prepare.outputs.commit }}"
+            RAW_VERSION="${{ needs.prepare.outputs.commit }}"
           fi
+
+          # Extract clean semver (strip any suffix like -standalone, -ocb, etc.)
+          # OCB Native v1.1.2+ uses unified build - no suffixes needed
+          VERSION=$(echo "$RAW_VERSION" | sed 's/-[a-zA-Z].*$//')
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Clean Version: $VERSION (from: $RAW_VERSION)"
 
       - name: Build and push
         uses: docker/build-push-action@v6

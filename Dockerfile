@@ -73,9 +73,9 @@ COPY internal/ ./internal/
 # Build the binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags "-s -w \
-        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=${VERSION}' \
-        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=${GIT_COMMIT}' \
-        -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=${BUILD_TIME}'" \
+    -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=${VERSION}' \
+    -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=${GIT_COMMIT}' \
+    -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=${BUILD_TIME}'" \
     -o /tfo-collector ./cmd/tfo-collector
 
 # -----------------------------------------------------------------------------
@@ -91,22 +91,22 @@ ARG OTEL_VERSION=0.142.0
 # TelemetryFlow Metadata Labels (OCI Image Spec)
 # =============================================================================
 LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
-      org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector - Community Enterprise Observability Platform (CEOP)" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.vendor="TelemetryFlow" \
-      org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
-      org.opencontainers.image.url="https://telemetryflow.id" \
-      org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
-      org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.base.name="alpine:3.21" \
-      # TelemetryFlow specific labels
-      io.telemetryflow.product="TelemetryFlow Collector" \
-      io.telemetryflow.component="tfo-collector" \
-      io.telemetryflow.platform="CEOP" \
-      io.telemetryflow.build.type="native" \
-      io.telemetryflow.otel.version="${OTEL_VERSION}" \
-      io.telemetryflow.maintainer="DevOpsCorner Indonesia"
+    org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector - Community Enterprise Observability Platform (CEOP)" \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.vendor="TelemetryFlow" \
+    org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
+    org.opencontainers.image.url="https://telemetryflow.id" \
+    org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
+    org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
+    org.opencontainers.image.licenses="Apache-2.0" \
+    org.opencontainers.image.base.name="alpine:3.21" \
+    # TelemetryFlow specific labels
+    io.telemetryflow.product="TelemetryFlow Collector" \
+    io.telemetryflow.component="tfo-collector" \
+    io.telemetryflow.platform="CEOP" \
+    io.telemetryflow.build.type="native" \
+    io.telemetryflow.otel.version="${OTEL_VERSION}" \
+    io.telemetryflow.maintainer="DevOpsCorner Indonesia"
 
 # Update packages to get security patches (CVE fixes) and install runtime dependencies
 RUN apk upgrade --no-cache && \

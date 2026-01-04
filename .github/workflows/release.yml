@@ -21,9 +21,8 @@ name: Release - TFO Collector
 on:
   push:
     tags:
+      # OCB Native v1.1.2+ uses unified build - semver only
       - 'v*.*.*'
-      - 'v*.*.*-ocb'
-      - 'v*.*.*-standalone'
   workflow_dispatch:
     inputs:
       version:
@@ -74,17 +73,23 @@ jobs:
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+            RAW_VERSION="${{ github.event.inputs.version }}"
           else
-            VERSION="${GITHUB_REF#refs/tags/v}"
+            RAW_VERSION="${GITHUB_REF#refs/tags/v}"
           fi
+
+          # Extract clean semver (strip any suffix like -standalone, -ocb, etc.)
+          # OCB Native v1.1.2+ uses unified build - no suffixes needed
+          VERSION=$(echo "$RAW_VERSION" | sed 's/-[a-zA-Z].*$//')
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
           echo "build_time=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
           echo "=== Release Info ==="
-          echo "Version: $VERSION"
+          echo "Raw Version: $RAW_VERSION"
+          echo "Clean Version: $VERSION"
           echo "Build Type: OCB Native (100% OpenTelemetry Collector Builder)"
           echo "OTEL Version: ${{ env.OTEL_VERSION }}"
 
@@ -307,7 +312,7 @@ jobs:
 
           cat > rpmbuild/SPECS/${{ env.BINARY_NAME }}.spec << EOF
           Name:           ${{ env.BINARY_NAME }}
-          Version:        ${{ needs.prepare.outputs.version }}
+          Version:        ${VERSION}
           Release:        1%{?dist}
           Summary:        ${{ env.DESCRIPTION }}
           License:        ${{ env.LICENSE }}
