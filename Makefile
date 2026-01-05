@@ -105,6 +105,7 @@ help:
 	@echo "$(YELLOW)Dependencies:$(NC)"
 	@echo "  make deps             - Download dependencies"
 	@echo "  make deps-update      - Update dependencies"
+	@echo "  make deps-refresh     - Refresh private module checksums"
 	@echo "  make tidy             - Tidy go modules"
 	@echo ""
 	@echo "$(YELLOW)Other:$(NC)"
@@ -368,6 +369,20 @@ deps-update:
 	@go get -u ./...
 	@go mod tidy
 	@echo "$(GREEN)Dependencies updated$(NC)"
+
+## CI: Refresh private module checksums (for re-tagged modules)
+deps-refresh:
+	@echo "$(GREEN)Refreshing private module checksums...$(NC)"
+	@echo "$(YELLOW)Clearing cached telemetryflow modules...$(NC)"
+	@go clean -modcache -i github.com/telemetryflow/... 2>/dev/null || true
+	@echo "$(YELLOW)Removing old go.sum entries for telemetryflow...$(NC)"
+	@if [ -f go.sum ]; then \
+		grep -v "github.com/telemetryflow/" go.sum > go.sum.tmp && mv go.sum.tmp go.sum || true; \
+	fi
+	@echo "$(GREEN)Re-downloading dependencies with fresh checksums...$(NC)"
+	@go mod download
+	@go mod tidy
+	@echo "$(GREEN)Dependencies refreshed with new checksums$(NC)"
 
 tidy:
 	@echo "$(GREEN)Tidying go modules...$(NC)"
