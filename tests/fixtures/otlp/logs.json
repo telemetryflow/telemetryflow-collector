@@ -1,0 +1,121 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "test-service"
+            }
+          },
+          {
+            "key": "service.version",
+            "value": {
+              "stringValue": "1.0.0"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "test-host"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {
+            "name": "test-logger",
+            "version": "1.0.0"
+          },
+          "logRecords": [
+            {
+              "timeUnixNano": "1704067200000000000",
+              "observedTimeUnixNano": "1704067200001000000",
+              "severityNumber": 9,
+              "severityText": "INFO",
+              "body": {
+                "stringValue": "User login successful"
+              },
+              "attributes": [
+                {
+                  "key": "user.id",
+                  "value": {
+                    "stringValue": "user-12345"
+                  }
+                },
+                {
+                  "key": "user.email",
+                  "value": {
+                    "stringValue": "user@example.com"
+                  }
+                },
+                {
+                  "key": "event.name",
+                  "value": {
+                    "stringValue": "user.login"
+                  }
+                }
+              ],
+              "traceId": "0123456789abcdef0123456789abcdef",
+              "spanId": "0123456789abcdef"
+            },
+            {
+              "timeUnixNano": "1704067201000000000",
+              "observedTimeUnixNano": "1704067201001000000",
+              "severityNumber": 17,
+              "severityText": "ERROR",
+              "body": {
+                "stringValue": "Database connection failed"
+              },
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "error.type",
+                  "value": {
+                    "stringValue": "ConnectionError"
+                  }
+                },
+                {
+                  "key": "error.message",
+                  "value": {
+                    "stringValue": "connection refused"
+                  }
+                }
+              ]
+            },
+            {
+              "timeUnixNano": "1704067202000000000",
+              "observedTimeUnixNano": "1704067202001000000",
+              "severityNumber": 13,
+              "severityText": "WARN",
+              "body": {
+                "stringValue": "High memory usage detected"
+              },
+              "attributes": [
+                {
+                  "key": "memory.used_percent",
+                  "value": {
+                    "doubleValue": 85.5
+                  }
+                },
+                {
+                  "key": "memory.threshold_percent",
+                  "value": {
+                    "doubleValue": 80.0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

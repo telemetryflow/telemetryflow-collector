@@ -1,0 +1,95 @@
+# Full TelemetryFlow Collector Configuration
+# Used for testing all configuration options
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_recv_msg_size_mib: 16
+        max_concurrent_streams: 100
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "*"
+          allowed_headers:
+            - "*"
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'test'
+          static_configs:
+            - targets: ['localhost:9090']
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 8192
+    send_batch_max_size: 16384
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1024
+    spike_limit_mib: 256
+
+  attributes:
+    actions:
+      - key: environment
+        value: test
+        action: upsert
+
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  otlp:
+    endpoint: localhost:4317
+    tls:
+      insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: /health
+    check_collector_pipeline:
+      enabled: true
+      interval: 5s
+
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
+
+  extensions: [health_check, pprof, zpages]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, batch]
+      exporters: [debug, otlp]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [debug, otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, batch]
+      exporters: [debug, otlp]

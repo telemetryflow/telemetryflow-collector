@@ -1,0 +1,21 @@
+# Invalid TelemetryFlow Collector Configuration
+# Used for testing error handling
+
+# Missing required receivers
+receivers:
+
+# Invalid processor config
+processors:
+  batch:
+    timeout: invalid  # Should be duration
+
+# Missing exporters
+exporters:
+
+# Invalid service config - references non-existent components
+service:
+  pipelines:
+    traces:
+      receivers: [nonexistent_receiver]
+      processors: [nonexistent_processor]
+      exporters: [nonexistent_exporter]

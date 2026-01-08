@@ -1,0 +1,12 @@
+{
+  "status": "error",
+  "code": 400,
+  "message": "Invalid request",
+  "details": [
+    {
+      "type": "ValidationError",
+      "field": "resourceMetrics",
+      "message": "resourceMetrics is required"
+    }
+  ]
+}

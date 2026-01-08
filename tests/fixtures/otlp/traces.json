@@ -1,0 +1,106 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "test-service"
+            }
+          },
+          {
+            "key": "service.version",
+            "value": {
+              "stringValue": "1.0.0"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "test-tracer",
+            "version": "1.0.0"
+          },
+          "spans": [
+            {
+              "traceId": "0123456789abcdef0123456789abcdef",
+              "spanId": "0123456789abcdef",
+              "parentSpanId": "",
+              "name": "HTTP GET /api/users",
+              "kind": 2,
+              "startTimeUnixNano": "1704067200000000000",
+              "endTimeUnixNano": "1704067200100000000",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "https://api.example.com/users"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1704067200050000000",
+                  "name": "cache.hit",
+                  "attributes": [
+                    {
+                      "key": "cache.key",
+                      "value": {
+                        "stringValue": "users:list"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "status": {
+                "code": 1,
+                "message": "OK"
+              }
+            },
+            {
+              "traceId": "0123456789abcdef0123456789abcdef",
+              "spanId": "fedcba9876543210",
+              "parentSpanId": "0123456789abcdef",
+              "name": "PostgreSQL SELECT",
+              "kind": 3,
+              "startTimeUnixNano": "1704067200020000000",
+              "endTimeUnixNano": "1704067200080000000",
+              "attributes": [
+                {
+                  "key": "db.system",
+                  "value": {
+                    "stringValue": "postgresql"
+                  }
+                },
+                {
+                  "key": "db.statement",
+                  "value": {
+                    "stringValue": "SELECT * FROM users LIMIT 100"
+                  }
+                }
+              ],
+              "status": {
+                "code": 1,
+                "message": "OK"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

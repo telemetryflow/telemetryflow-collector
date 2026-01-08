@@ -1,0 +1,9 @@
+{
+  "status": "success",
+  "message": "Data received successfully",
+  "partialSuccess": {
+    "rejectedDataPoints": 0,
+    "rejectedSpans": 0,
+    "rejectedLogRecords": 0
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "test-service"
+            }
+          },
+          {
+            "key": "service.version",
+            "value": {
+              "stringValue": "1.0.0"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "test-host"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "test-scope",
+            "version": "1.0.0"
+          },
+          "metrics": [
+            {
+              "name": "http_requests_total",
+              "description": "Total HTTP requests",
+              "unit": "1",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "method",
+                        "value": {
+                          "stringValue": "GET"
+                        }
+                      },
+                      {
+                        "key": "status",
+                        "value": {
+                          "intValue": "200"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1704067200000000000",
+                    "timeUnixNano": "1704070800000000000",
+                    "asInt": "1234"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "http_request_duration_seconds",
+              "description": "HTTP request duration in seconds",
+              "unit": "s",
+              "histogram": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "method",
+                        "value": {
+                          "stringValue": "GET"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1704067200000000000",
+                    "timeUnixNano": "1704070800000000000",
+                    "count": "100",
+                    "sum": 12.5,
+                    "bucketCounts": ["10", "30", "40", "15", "5"],
+                    "explicitBounds": [0.01, 0.05, 0.1, 0.5, 1.0]
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

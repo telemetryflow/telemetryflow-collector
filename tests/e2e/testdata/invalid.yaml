@@ -1,0 +1,10 @@
+# Invalid E2E Test Configuration (for error testing)
+receivers:
+  nonexistent_receiver:
+    endpoint: invalid
+
+service:
+  pipelines:
+    traces:
+      receivers: [nonexistent_receiver]
+      exporters: [nonexistent_exporter]
