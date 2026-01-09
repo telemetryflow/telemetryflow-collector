@@ -372,17 +372,15 @@ deps-update:
 
 ## CI: Refresh private module checksums (for re-tagged modules)
 deps-refresh:
-	@echo "$(GREEN)Refreshing private module checksums...$(NC)"
-	@echo "$(YELLOW)Clearing cached telemetryflow modules...$(NC)"
-	@go clean -modcache -i github.com/telemetryflow/... 2>/dev/null || true
-	@echo "$(YELLOW)Removing old go.sum entries for telemetryflow...$(NC)"
-	@if [ -f go.sum ]; then \
-		grep -v "github.com/telemetryflow/" go.sum > go.sum.tmp && mv go.sum.tmp go.sum || true; \
-	fi
+	@echo "$(GREEN)Refreshing dependencies...$(NC)"
+	@rm -rf vendor go.sum
+	@echo "$(YELLOW)Clearing module cache...$(NC)"
+	@go clean -modcache
 	@echo "$(GREEN)Re-downloading dependencies with fresh checksums...$(NC)"
 	@go mod download
 	@go mod tidy
-	@echo "$(GREEN)Dependencies refreshed with new checksums$(NC)"
+	@go mod verify
+	@echo "$(GREEN)Dependencies refreshed$(NC)"
 
 tidy:
 	@echo "$(GREEN)Tidying go modules...$(NC)"
