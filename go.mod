@@ -349,7 +349,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.142.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.142.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.48.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.48.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.142.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.142.0
