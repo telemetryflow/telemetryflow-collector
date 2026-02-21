@@ -167,7 +167,7 @@ func (r *tfoOTLPReceiver) startGRPC(ctx context.Context) error {
 
 // startHTTP starts the HTTP server with v1 and v2 endpoints.
 func (r *tfoOTLPReceiver) startHTTP(ctx context.Context) error {
-	endpoint := r.cfg.Protocols.HTTP.Endpoint
+	endpoint := r.cfg.Protocols.HTTP.NetAddr.Endpoint
 	if endpoint == "" {
 		endpoint = DefaultHTTPEndpoint
 	}

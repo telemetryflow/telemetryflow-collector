@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - Configuration Guide
 
 - **Version:** 1.1.2
-- **OTEL Version:** 0.142.0
+- **OTEL Version:** 0.146.1
 - **Last Updated:** January 2026
 
 This guide provides configuration examples and best practices for the TelemetryFlow Collector.

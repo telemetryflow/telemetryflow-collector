@@ -9,8 +9,8 @@
 # Build configuration
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.1.2
-OTEL_VERSION := 0.142.0
+VERSION ?= 1.1.4
+OTEL_VERSION := 0.146.1
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -37,7 +37,7 @@ ifeq ($(OCB),)
   # Fallback to HOME/go/bin
   OCB := $(HOME)/go/bin/builder
 endif
-OCB_VERSION := 0.142.0
+OCB_VERSION := 0.146.1
 
 # Go build flags (for main package variables)
 LDFLAGS := -s -w \

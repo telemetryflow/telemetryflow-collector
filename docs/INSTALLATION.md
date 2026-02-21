@@ -1,14 +1,14 @@
 # TelemetryFlow Collector Installation Guide
 
 - **Version:** 1.1.2
-- **OTEL Version:** 0.142.0
+- **OTEL Version:** 0.146.1
 - **Last Updated:** January 2026
 
 ---
 
 ## Prerequisites
 
-- Go 1.24 or later (for building from source)
+- Go 1.25 or later (for building from source)
 - Make (for build automation)
 - Docker (optional, for containerized deployment)
 
@@ -42,10 +42,10 @@ make build
 
 ```bash
 # Pull from Docker Hub
-docker pull telemetryflow/telemetryflow-collector:1.1.2
+docker pull telemetryflow/telemetryflow-collector:1.1.4
 
 # Or from GitHub Container Registry
-docker pull ghcr.io/telemetryflow/telemetryflow-collector:1.1.2
+docker pull ghcr.io/telemetryflow/telemetryflow-collector:1.1.4
 ```
 
 ### Method 3: Docker Compose
@@ -126,7 +126,7 @@ docker run -d \
   -v /var/lib/tfo-collector:/var/lib/tfo-collector \
   -e TELEMETRYFLOW_API_KEY_ID=tfk_xxx \
   -e TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx \
-  telemetryflow/telemetryflow-collector:1.1.2 \
+  telemetryflow/telemetryflow-collector:1.1.4 \
   --config /etc/tfo-collector/config.yaml
 
 # Check logs
@@ -140,21 +140,21 @@ curl http://localhost:13133/
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   tfo-collector:
-    image: telemetryflow/telemetryflow-collector:1.1.2
+    image: telemetryflow/telemetryflow-collector:1.1.4
     container_name: tfo-collector
     command: ["--config", "/etc/tfo-collector/config.yaml"]
     environment:
       - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID}
       - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Prometheus metrics
-      - "8889:8889"   # Prometheus exporter
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Prometheus metrics
+      - "8889:8889" # Prometheus exporter
       - "13133:13133" # Health check
     volumes:
       - ./configs/tfo-collector.yaml:/etc/tfo-collector/config.yaml:ro
@@ -172,13 +172,13 @@ volumes:
 
 **Environment Variables:**
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TELEMETRYFLOW_API_KEY_ID` | TFO API Key ID (tfk_xxx) | - |
-| `TELEMETRYFLOW_API_KEY_SECRET` | TFO API Key Secret (tfs_xxx) | - |
-| `TELEMETRYFLOW_ENDPOINT` | TFO Platform endpoint | `https://api.telemetryflow.id` |
-| `TELEMETRYFLOW_COLLECTOR_ID` | Collector identifier | - |
-| `TELEMETRYFLOW_COLLECTOR_NAME` | Collector name | `TFO Collector` |
+| Variable                       | Description                  | Default                        |
+| ------------------------------ | ---------------------------- | ------------------------------ |
+| `TELEMETRYFLOW_API_KEY_ID`     | TFO API Key ID (tfk_xxx)     | -                              |
+| `TELEMETRYFLOW_API_KEY_SECRET` | TFO API Key Secret (tfs_xxx) | -                              |
+| `TELEMETRYFLOW_ENDPOINT`       | TFO Platform endpoint        | `https://api.telemetryflow.id` |
+| `TELEMETRYFLOW_COLLECTOR_ID`   | Collector identifier         | -                              |
+| `TELEMETRYFLOW_COLLECTOR_NAME` | Collector name               | `TFO Collector`                |
 
 ---
 
@@ -438,75 +438,75 @@ spec:
       serviceAccountName: tfo-collector
 
       containers:
-      - name: tfo-collector
-        image: telemetryflow/telemetryflow-collector:1.1.2
-        args:
-          - "--config"
-          - "/etc/tfo-collector/tfo-collector.yaml"
+        - name: tfo-collector
+          image: telemetryflow/telemetryflow-collector:1.1.4
+          args:
+            - "--config"
+            - "/etc/tfo-collector/tfo-collector.yaml"
 
-        env:
-        - name: TELEMETRYFLOW_API_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tfo-credentials
-              key: api-key-id
-        - name: TELEMETRYFLOW_API_KEY_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: tfo-credentials
-              key: api-key-secret
+          env:
+            - name: TELEMETRYFLOW_API_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tfo-credentials
+                  key: api-key-id
+            - name: TELEMETRYFLOW_API_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tfo-credentials
+                  key: api-key-secret
 
-        ports:
-        - name: otlp-grpc
-          containerPort: 4317
-          protocol: TCP
-        - name: otlp-http
-          containerPort: 4318
-          protocol: TCP
-        - name: metrics
-          containerPort: 8888
-          protocol: TCP
-        - name: prometheus
-          containerPort: 8889
-          protocol: TCP
-        - name: health
-          containerPort: 13133
-          protocol: TCP
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: metrics
+              containerPort: 8888
+              protocol: TCP
+            - name: prometheus
+              containerPort: 8889
+              protocol: TCP
+            - name: health
+              containerPort: 13133
+              protocol: TCP
 
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133
-          initialDelaySeconds: 30
-          periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133
-          initialDelaySeconds: 10
-          periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 10
 
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "2000m"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
 
-        volumeMounts:
-        - name: config
-          mountPath: /etc/tfo-collector
-        - name: queue
-          mountPath: /var/lib/tfo-collector
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tfo-collector
+            - name: queue
+              mountPath: /var/lib/tfo-collector
 
       volumes:
-      - name: config
-        configMap:
-          name: tfo-collector-config
-      - name: queue
-        emptyDir: {}
+        - name: config
+          configMap:
+            name: tfo-collector-config
+        - name: queue
+          emptyDir: {}
 ```
 
 ### Create Service
@@ -523,26 +523,26 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: otlp-grpc
-    port: 4317
-    targetPort: 4317
-    protocol: TCP
-  - name: otlp-http
-    port: 4318
-    targetPort: 4318
-    protocol: TCP
-  - name: metrics
-    port: 8888
-    targetPort: 8888
-    protocol: TCP
-  - name: prometheus
-    port: 8889
-    targetPort: 8889
-    protocol: TCP
-  - name: health
-    port: 13133
-    targetPort: 13133
-    protocol: TCP
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP
+    - name: metrics
+      port: 8888
+      targetPort: 8888
+      protocol: TCP
+    - name: prometheus
+      port: 8889
+      targetPort: 8889
+      protocol: TCP
+    - name: health
+      port: 13133
+      targetPort: 13133
+      protocol: TCP
   selector:
     app: tfo-collector
 ```
@@ -584,14 +584,14 @@ curl http://localhost:8888/metrics | head -30
 
 **OTLP HTTP Endpoints:**
 
-| Endpoint | Description |
-|----------|-------------|
-| `/v1/traces` | Standard OTEL traces |
-| `/v1/metrics` | Standard OTEL metrics |
-| `/v1/logs` | Standard OTEL logs |
-| `/v2/traces` | TelemetryFlow Platform traces |
+| Endpoint      | Description                    |
+| ------------- | ------------------------------ |
+| `/v1/traces`  | Standard OTEL traces           |
+| `/v1/metrics` | Standard OTEL metrics          |
+| `/v1/logs`    | Standard OTEL logs             |
+| `/v2/traces`  | TelemetryFlow Platform traces  |
 | `/v2/metrics` | TelemetryFlow Platform metrics |
-| `/v2/logs` | TelemetryFlow Platform logs |
+| `/v2/logs`    | TelemetryFlow Platform logs    |
 
 ```bash
 # Send test metrics via OTLP HTTP
@@ -646,14 +646,14 @@ tfo-collector --version
 
 ```bash
 # Pull new image
-docker pull telemetryflow/telemetryflow-collector:1.1.2
+docker pull telemetryflow/telemetryflow-collector:1.1.4
 
 # Stop and remove
 docker stop tfo-collector
 docker rm tfo-collector
 
 # Start with new image
-docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.2 ...
+docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.4 ...
 ```
 
 ### Kubernetes Upgrade
@@ -661,7 +661,7 @@ docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1
 ```bash
 # Update image
 kubectl set image deployment/tfo-collector \
-  tfo-collector=telemetryflow/telemetryflow-collector:1.1.2 \
+  tfo-collector=telemetryflow/telemetryflow-collector:1.1.4 \
   -n observability
 
 # Watch rollout
@@ -690,7 +690,7 @@ sudo userdel telemetryflow
 ```bash
 docker stop tfo-collector
 docker rm tfo-collector
-docker rmi telemetryflow/telemetryflow-collector:1.1.2
+docker rmi telemetryflow/telemetryflow-collector:1.1.4
 ```
 
 ### Kubernetes

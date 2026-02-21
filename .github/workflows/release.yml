@@ -26,9 +26,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.1.2)'
+        description: 'Version to release (e.g., 1.1.4)'
         required: true
-        default: '1.1.2'
+        default: '1.1.4'
       prerelease:
         description: 'Mark as pre-release'
         required: false
@@ -36,9 +36,9 @@ on:
         default: false
 
 env:
-  GO_VERSION: '1.24'
-  OCB_VERSION: '0.142.0'
-  OTEL_VERSION: '0.142.0'
+  GO_VERSION: '1.25'
+  OCB_VERSION: '0.146.1'
+  OTEL_VERSION: '0.146.1'
   BINARY_NAME: tfo-collector
   PRODUCT_NAME: TelemetryFlow Collector
   VENDOR: DevOpsCorner Indonesia

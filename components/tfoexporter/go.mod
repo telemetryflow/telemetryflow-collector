@@ -1,14 +1,14 @@
 module github.com/telemetryflow/telemetryflow-collector/components/tfoexporter
 
-go 1.24.0
+go 1.25.7
 
 require (
 	go.opentelemetry.io/collector/component v1.48.0
-	go.opentelemetry.io/collector/config/confighttp v0.142.0
+	go.opentelemetry.io/collector/config/confighttp v0.146.1
 	go.opentelemetry.io/collector/config/configopaque v1.48.0
 	go.opentelemetry.io/collector/config/configretry v1.48.0
 	go.opentelemetry.io/collector/exporter v1.48.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.142.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.146.1
 	go.opentelemetry.io/collector/pdata v1.48.0
 	go.uber.org/zap v1.27.1
 )
@@ -48,16 +48,16 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.48.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.48.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.48.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.146.1 // indirect
 	go.opentelemetry.io/collector/consumer v1.48.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.146.1 // indirect
 	go.opentelemetry.io/collector/extension v1.48.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.48.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.142.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.142.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.146.1 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.146.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.142.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.146.1 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.146.1 // indirect
 	go.opentelemetry.io/collector/pipeline v1.48.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect

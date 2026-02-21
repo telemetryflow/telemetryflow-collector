@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.3-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.4-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -23,6 +23,29 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.4] - 2026-02-21
+
+### Added
+
+- **golangci-lint v2 Support**: Updated linting pipeline to golangci-lint v2.10.1
+  - Resolved v1/v2 config format incompatibility
+  - Linter now runs cleanly with 0 issues
+
+### Changed
+
+- **OpenTelemetry Upgrade**: Bumped OTEL Collector from v0.146.1 to v0.146.1
+  - Updated all component dependencies accordingly
+  - `go mod tidy` applied across all modules
+- **Docker Images**: Updated default image tags and build args to v1.1.4 / OTEL 0.146.1
+  - `docker-compose.yml` — production image
+  - `docker-compose.e2e.yml` — E2E test image
+
+### Fixed
+
+- `components/tfootlpreceiver/receiver.go`: Fixed `r.cfg.Protocols.HTTP.Endpoint` → `r.cfg.Protocols.HTTP.NetAddr.Endpoint` to match `confighttp.ServerConfig` struct layout
+- `components/tfootlpreceiver/go.mod`: Fixed capitalized `Go` directive → lowercase `go`
+- Dependency vulnerability: upgraded `github.com/expr-lang/expr` to v1.17.7
 
 ## [1.1.2] - 2026-01-03
 
@@ -42,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Short flag aliases: `-c` (config), `-s` (set), `-f` (feature-gates)
   - Automatic help display when no parameters provided
   - Comprehensive usage examples and component documentation
-- **OTEL 0.142.0 API Compatibility**: Updated all components for latest OTEL Collector API
+- **OTEL 0.146.1 API Compatibility**: Updated all components for latest OTEL Collector API
   - Fixed factory map creation using new map-based approach
   - Updated exporter settings (removed deprecated QueueConfig)
   - Fixed `component.ID` API changes (String() vs Type())
@@ -81,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- OTEL 0.142.0 API compatibility issues in components
+- OTEL 0.146.1 API compatibility issues in components
 - Build cache conflicts with Go version management
 - CLI error handling: removed "at least one config flag must be provided" error
 - Test suite compatibility with separate test module structure
@@ -156,7 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **OpenTelemetry Collector v0.142.0**: Upgraded from v0.114.0 to v0.142.0
+- **OpenTelemetry Collector v0.146.1**: Upgraded from v0.114.0 to v0.146.1
 - **TelemetryFlow Configuration Section**: New `telemetryflow:` config section for platform authentication
   - `api_key_id` and `api_key_secret` for TelemetryFlow authentication
   - `endpoint` for backend connectivity
@@ -176,7 +199,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Configuration Format**: Standalone config now uses standard OTEL format with optional TelemetryFlow extensions
-- **Build System**: Updated OCB builder to v0.142.0
+- **Build System**: Updated OCB builder to v0.146.1
 - **Environment Variables**: Standardized to use `TELEMETRYFLOW_*` prefix
 - **GitHub Workflows**:
   - Updated CodeQL Action from v3 to v4
@@ -191,7 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependencies
 
-- OpenTelemetry Collector: v0.142.0
+- OpenTelemetry Collector: v0.146.1
 - Go: 1.24+
 
 ### Breaking Changes
@@ -304,6 +327,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.4 | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes |
 | 1.1.2 | 2026-01-03 | OCB-native architecture, unified build system |
 | 1.1.1 | 2025-01-01 | Documentation improvements, DDD test reorganization |
 | 1.1.0 | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
@@ -333,6 +357,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tfoidentity` | Extension | Collector identity |
 
 ## Upgrade Guide
+
+### From v1.1.2 to v1.1.4
+
+1. **golangci-lint**: Upgrade to v2.10.1 (`go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1`)
+2. **OTEL**: Dependencies updated to v0.146.1 — run `go mod tidy`
+3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.1.4`
 
 ### From v1.1.1 to v1.1.2
 

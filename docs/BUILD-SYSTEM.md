@@ -1,7 +1,7 @@
 # TelemetryFlow Collector Build System
 
 - **Version:** 1.1.2
-- **OTEL Version:** 0.142.0
+- **OTEL Version:** 0.146.1
 - **Last Updated:** January 2026
 
 ---
@@ -206,7 +206,7 @@ tfo-collector/
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 VERSION ?= 1.1.2
-OTEL_VERSION := 0.142.0
+OTEL_VERSION := 0.146.1
 
 BUILD_DIR := ./build
 CONFIG_DIR := ./configs
@@ -377,19 +377,19 @@ This indicates OTEL API version mismatch. Ensure go.mod has matching versions:
 grep "go.opentelemetry.io/collector" go.mod
 
 # Update to correct version
-go get go.opentelemetry.io/collector@v0.142.0
+go get go.opentelemetry.io/collector@v0.146.1
 go mod tidy
 ```
 
 ### Build Fails: "MakeFactoryMap undefined"
 
-OTEL 0.142.0 removed `MakeFactoryMap` functions. Use manual map creation:
+OTEL 0.146.1 removed `MakeFactoryMap` functions. Use manual map creation:
 
 ```go
 // Old API (deprecated)
 factories.Extensions, err = extension.MakeFactoryMap(...)
 
-// New API (0.142.0+)
+// New API (0.146.1+)
 factories.Extensions = make(map[component.Type]extension.Factory)
 for _, f := range extensionFactories {
     factories.Extensions[f.Type()] = f

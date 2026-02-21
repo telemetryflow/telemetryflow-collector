@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.2-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.4-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -21,7 +21,7 @@ Enterprise-grade OpenTelemetry Collector distribution for the **TelemetryFlow Pl
 
 ## Features
 
-- **100% OCB Native**: Built with OpenTelemetry Collector Builder v0.142.0
+- **100% OCB Native**: Built with OpenTelemetry Collector Builder v0.146.1
 - **TFO Custom Components**: tfootlp receiver, tfo exporter, tfoauth/tfoidentity extensions
 - **Dual Endpoint Support**: v1 (open) and v2 (authenticated) on same port
 - **Multi-Signal Support**: Metrics, logs, and traces
@@ -100,12 +100,13 @@ flowchart TB
 
 TelemetryFlow Collector supports **dual v1/v2 endpoints on the same port (4318)**:
 
-| Version | Endpoint | Auth Required | Description |
-|---------|----------|---------------|-------------|
-| **v1** | `/v1/traces`, `/v1/metrics`, `/v1/logs` | No | Community/Open - OTEL standard |
-| **v2** | `/v2/traces`, `/v2/metrics`, `/v2/logs` | Yes | TFO Platform - requires `tfk_` key |
+| Version | Endpoint                                | Auth Required | Description                        |
+| ------- | --------------------------------------- | ------------- | ---------------------------------- |
+| **v1**  | `/v1/traces`, `/v1/metrics`, `/v1/logs` | No            | Community/Open - OTEL standard     |
+| **v2**  | `/v2/traces`, `/v2/metrics`, `/v2/logs` | Yes           | TFO Platform - requires `tfk_` key |
 
 ### v1 Endpoints (Community/Open)
+
 ```bash
 # No authentication required
 curl -X POST http://localhost:4318/v1/traces \
@@ -114,6 +115,7 @@ curl -X POST http://localhost:4318/v1/traces \
 ```
 
 ### v2 Endpoints (TFO Platform)
+
 ```bash
 # Requires TFO authentication headers
 curl -X POST http://localhost:4318/v2/traces \
@@ -127,8 +129,8 @@ curl -X POST http://localhost:4318/v2/traces \
 
 ### Prerequisites
 
-- Go 1.24 or later
-- OpenTelemetry Collector Builder (OCB) v0.142.0
+- Go 1.25 or later
+- OpenTelemetry Collector Builder (OCB) v0.146.1
 
 ### Build & Run
 
@@ -167,12 +169,12 @@ docker-compose logs -f tfo-collector
 
 ## Configuration Files
 
-| File | Purpose | v2 Auth | TFO Exporter |
-|------|---------|---------|--------------|
-| `configs/otel-collector.yaml` | **Default community config** - standard OTEL | No | No |
-| `configs/otel-collector-minimal.yaml` | Minimal config for quick start | No | No |
-| `configs/tfo-collector.yaml` | TFO config with v1/v2 endpoints | v2 only | No |
-| `configs/tfo-collector-unified.yaml` | Full TFO Platform config | v2 only | Yes |
+| File                                  | Purpose                                      | v2 Auth | TFO Exporter |
+| ------------------------------------- | -------------------------------------------- | ------- | ------------ |
+| `configs/otel-collector.yaml`         | **Default community config** - standard OTEL | No      | No           |
+| `configs/otel-collector-minimal.yaml` | Minimal config for quick start               | No      | No           |
+| `configs/tfo-collector.yaml`          | TFO config with v1/v2 endpoints              | v2 only | No           |
+| `configs/tfo-collector-unified.yaml`  | Full TFO Platform config                     | v2 only | Yes          |
 
 ### Standard OTEL Config (No Auth)
 
@@ -236,47 +238,47 @@ service:
 
 ## TFO Custom Components
 
-| Component | Type | Purpose |
-|-----------|------|---------|
-| `tfootlp` | Receiver | OTLP receiver with v1/v2 endpoint support |
-| `tfo` | Exporter | Auto-injects TFO auth headers |
-| `tfoauth` | Extension | TFO API key management |
+| Component     | Type      | Purpose                                    |
+| ------------- | --------- | ------------------------------------------ |
+| `tfootlp`     | Receiver  | OTLP receiver with v1/v2 endpoint support  |
+| `tfo`         | Exporter  | Auto-injects TFO auth headers              |
+| `tfoauth`     | Extension | TFO API key management                     |
 | `tfoidentity` | Extension | Collector identity and resource enrichment |
 
 ## Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `TELEMETRYFLOW_API_KEY_ID` | TFO API Key ID | `tfk_prod_key_001` |
-| `TELEMETRYFLOW_API_KEY_SECRET` | TFO API Key Secret | `tfs_xxxxx` |
-| `TELEMETRYFLOW_COLLECTOR_ID` | Unique collector ID | `collector-prod-01` |
-| `TELEMETRYFLOW_COLLECTOR_NAME` | Human-readable name | `Production Collector` |
-| `TELEMETRYFLOW_ENVIRONMENT` | Deployment environment | `production` |
-| `TELEMETRYFLOW_ENDPOINT` | TFO Platform endpoint | `https://api.telemetryflow.id` |
+| Variable                       | Description            | Example                        |
+| ------------------------------ | ---------------------- | ------------------------------ |
+| `TELEMETRYFLOW_API_KEY_ID`     | TFO API Key ID         | `tfk_prod_key_001`             |
+| `TELEMETRYFLOW_API_KEY_SECRET` | TFO API Key Secret     | `tfs_xxxxx`                    |
+| `TELEMETRYFLOW_COLLECTOR_ID`   | Unique collector ID    | `collector-prod-01`            |
+| `TELEMETRYFLOW_COLLECTOR_NAME` | Human-readable name    | `Production Collector`         |
+| `TELEMETRYFLOW_ENVIRONMENT`    | Deployment environment | `production`                   |
+| `TELEMETRYFLOW_ENDPOINT`       | TFO Platform endpoint  | `https://api.telemetryflow.id` |
 
 ## Exposed Ports
 
-| Port | Protocol | Description |
-|------|----------|-------------|
-| 4317 | gRPC | OTLP gRPC receiver |
-| 4318 | HTTP | OTLP HTTP receiver (v1 + v2) |
-| 8888 | HTTP | Prometheus metrics (self) |
-| 8889 | HTTP | Prometheus exporter |
-| 13133 | HTTP | Health check |
-| 55679 | HTTP | zPages |
-| 1777 | HTTP | pprof |
+| Port  | Protocol | Description                  |
+| ----- | -------- | ---------------------------- |
+| 4317  | gRPC     | OTLP gRPC receiver           |
+| 4318  | HTTP     | OTLP HTTP receiver (v1 + v2) |
+| 8888  | HTTP     | Prometheus metrics (self)    |
+| 8889  | HTTP     | Prometheus exporter          |
+| 13133 | HTTP     | Health check                 |
+| 55679 | HTTP     | zPages                       |
+| 1777  | HTTP     | pprof                        |
 
 ## CLI Usage
 
 ### Command Line Flags
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--config` | `-c` | Configuration file path |
-| `--set` | `-s` | Set component config property |
-| `--feature-gates` | `-f` | Feature gate identifiers |
-| `--help` | `-h` | Show help information |
-| `--version` | `-v` | Show version information |
+| Flag              | Short | Description                   |
+| ----------------- | ----- | ----------------------------- |
+| `--config`        | `-c`  | Configuration file path       |
+| `--set`           | `-s`  | Set component config property |
+| `--feature-gates` | `-f`  | Feature gate identifiers      |
+| `--help`          | `-h`  | Show help information         |
+| `--version`       | `-v`  | Show version information      |
 
 ### Usage Examples
 
@@ -363,14 +365,14 @@ go test -cover ./tests/...
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [README](docs/README.md) | Documentation overview |
-| [INSTALLATION](docs/INSTALLATION.md) | Installation guide |
-| [CONFIGURATION](docs/CONFIGURATION.md) | Configuration options |
-| [COMPONENTS](docs/COMPONENTS.md) | Available components |
-| [EXEMPLARS](docs/EXEMPLARS.md) | Exemplars and metrics-to-traces |
-| [CHANGELOG](CHANGELOG.md) | Version history |
+| Document                               | Description                     |
+| -------------------------------------- | ------------------------------- |
+| [README](docs/README.md)               | Documentation overview          |
+| [INSTALLATION](docs/INSTALLATION.md)   | Installation guide              |
+| [CONFIGURATION](docs/CONFIGURATION.md) | Configuration options           |
+| [COMPONENTS](docs/COMPONENTS.md)       | Available components            |
+| [EXEMPLARS](docs/EXEMPLARS.md)         | Exemplars and metrics-to-traces |
+| [CHANGELOG](CHANGELOG.md)              | Version history                 |
 
 ## License
 

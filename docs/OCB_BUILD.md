@@ -66,15 +66,15 @@ graph TB
     style Standalone fill:#E8F5E9,stroke:#388E3C
 ```
 
-| Approach | CLI Command | Config Format | Use Case |
-|----------|-------------|---------------|----------|
-| **OCB Build** | `tfo-collector --config config.yaml` | Standard OTEL | Full OTEL ecosystem |
+| Approach             | CLI Command                                | Config Format        | Use Case                |
+| -------------------- | ------------------------------------------ | -------------------- | ----------------------- |
+| **OCB Build**        | `tfo-collector --config config.yaml`       | Standard OTEL        | Full OTEL ecosystem     |
 | **Standalone Build** | `tfo-collector start --config config.yaml` | TelemetryFlow format | Lightweight, custom CLI |
 
 ## Prerequisites
 
-- Go 1.24 or later
-- OCB (OpenTelemetry Collector Builder) v0.142.0
+- Go 1.25 or later
+- OCB (OpenTelemetry Collector Builder) v0.146.1
 
 ## Installation
 
@@ -82,7 +82,7 @@ graph TB
 
 ```bash
 # Install OCB matching your OTEL version
-go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
+go install go.opentelemetry.io/collector/cmd/builder@v0.146.1
 
 # Verify installation
 builder version
@@ -93,7 +93,7 @@ builder version
 ```bash
 # Linux/macOS
 curl -L -o ocb \
-  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.142.0/ocb_0.142.0_$(uname -s)_$(uname -m)"
+  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.146.1/ocb_0.146.1_$(uname -s)_$(uname -m)"
 chmod +x ocb
 sudo mv ocb /usr/local/bin/
 ```
@@ -180,26 +180,26 @@ dist:
   description: TelemetryFlow Collector OCB
   output_path: ./build/ocb
   module: github.com/telemetryflow/telemetryflow-collector-ocb
-  skip_compilation: true  # We compile manually
+  skip_compilation: true # We compile manually
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.142.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.146.1
   # ... more extensions
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.142.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.146.1
   # ... more receivers
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.142.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.146.1
   # ... more processors
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.142.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.146.1
   # ... more exporters
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.142.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.146.1
   # ... more connectors
 ```
 
@@ -235,7 +235,7 @@ Browse available components:
 ```yaml
 receivers:
   # Add new receiver
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.142.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.146.1
 ```
 
 ### 3. Rebuild
@@ -271,7 +271,7 @@ service:
 ```bash
 docker build -f Dockerfile.ocb \
   --build-arg VERSION=1.1.1 \
-  --build-arg OTEL_VERSION=0.142.0 \
+  --build-arg OTEL_VERSION=0.146.1 \
   -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
 ```
 
@@ -298,9 +298,9 @@ docker-compose -f docker-compose.ocb.yml up -d
 ## Version Compatibility
 
 | TelemetryFlow | OTEL Version | OCB Version |
-|---------------|--------------|-------------|
-| 1.1.x | 0.142.0 | v0.142.0 |
-| 1.0.x | 0.114.0 | v0.114.0 |
+| ------------- | ------------ | ----------- |
+| 1.1.x         | 0.146.1      | v0.146.1    |
+| 1.0.x         | 0.114.0      | v0.114.0    |
 
 **Important**: All components in `manifest.yaml` must use the same OTEL version to ensure compatibility.
 
@@ -310,11 +310,11 @@ docker-compose -f docker-compose.ocb.yml up -d
 
 The OCB build uses the **standard OpenTelemetry OTLP receiver** which supports **v1 endpoints only**:
 
-| Signal | Endpoint | Content-Type |
-|--------|----------|--------------|
-| Traces | `/v1/traces` | `application/x-protobuf`, `application/json` |
+| Signal  | Endpoint      | Content-Type                                 |
+| ------- | ------------- | -------------------------------------------- |
+| Traces  | `/v1/traces`  | `application/x-protobuf`, `application/json` |
 | Metrics | `/v1/metrics` | `application/x-protobuf`, `application/json` |
-| Logs | `/v1/logs` | `application/x-protobuf`, `application/json` |
+| Logs    | `/v1/logs`    | `application/x-protobuf`, `application/json` |
 
 This ensures full compatibility with the OpenTelemetry specification and all OTEL SDKs.
 
@@ -322,10 +322,10 @@ This ensures full compatibility with the OpenTelemetry specification and all OTE
 
 The standalone TFO build uses a **custom OTLP receiver** that supports **both v1 and v2** endpoints:
 
-| Version | Endpoint | Description |
-|---------|----------|-------------|
-| **v1** (OTEL Community) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | Standard OpenTelemetry spec |
-| **v2** (TFO Platform) | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform-specific |
+| Version                 | Endpoint                                | Description                     |
+| ----------------------- | --------------------------------------- | ------------------------------- |
+| **v1** (OTEL Community) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | Standard OpenTelemetry spec     |
+| **v2** (TFO Platform)   | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform-specific |
 
 > **Recommendation:** Use **v2 endpoints** for TFO Standalone build for TelemetryFlow Platform features. Use **v1 endpoints** when compatibility with standard OTEL tooling is required.
 
@@ -334,6 +334,7 @@ The standalone TFO build uses a **custom OTLP receiver** that supports **both v1
 ### Build Errors
 
 **"module not found"**
+
 ```bash
 # Update Go module cache
 cd build/ocb
@@ -341,6 +342,7 @@ go mod tidy
 ```
 
 **"incompatible versions"**
+
 ```bash
 # Ensure all components use same version in manifest.yaml
 # All gomod entries should end with v0.114.0
@@ -349,10 +351,12 @@ go mod tidy
 ### Runtime Errors
 
 **"unknown receiver type"**
+
 - Component not included in manifest.yaml
 - Rebuild with the component added
 
 **"failed to create pipeline"**
+
 - Check YAML syntax in config file
 - Validate with: `./tfo-collector-ocb validate --config config.yaml`
 

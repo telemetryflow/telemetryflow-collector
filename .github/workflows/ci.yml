@@ -67,9 +67,9 @@ on:
         default: false
 
 env:
-  GO_VERSION: '1.24'
-  OCB_VERSION: '0.142.0'
-  OTEL_VERSION: '0.142.0'
+  GO_VERSION: '1.25'
+  OCB_VERSION: '0.146.1'
+  OTEL_VERSION: '0.146.1'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME: tfo-collector
 

@@ -64,7 +64,7 @@ env:
   REGISTRY_DOCKER: docker.io
   IMAGE_NAME: telemetryflow/telemetryflow-collector
   PRODUCT_NAME: TelemetryFlow Collector
-  OTEL_VERSION: '0.142.0'
+  OTEL_VERSION: '0.146.1'
 
 permissions:
   contents: read

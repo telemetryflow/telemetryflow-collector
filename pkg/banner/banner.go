@@ -15,7 +15,7 @@ import (
 type Config struct {
 	ProductName string
 	Version     string
-	BasedOn     string // e.g., "OTEL Collector 0.142.0"
+	BasedOn     string // e.g., "OTEL Collector 0.146.1"
 	Motto       string
 	GitCommit   string
 	BuildTime   string
@@ -33,8 +33,8 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		ProductName: "TelemetryFlow Collector",
-		Version:     "1.1.1",
-		BasedOn:     "OTEL Collector 0.142.0",
+		Version:     "1.1.4",
+		BasedOn:     "OTEL Collector 0.146.1",
 		Motto:       "Community Enterprise Observability Platform (CEOP)",
 		GitCommit:   "unknown",
 		BuildTime:   "unknown",

@@ -37,14 +37,14 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Builder
 # -----------------------------------------------------------------------------
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Build arguments
-ARG VERSION=1.1.3
+ARG VERSION=1.1.4
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
-ARG OTEL_VERSION=0.142.0
+ARG OTEL_VERSION=0.146.1
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -81,11 +81,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime
 # -----------------------------------------------------------------------------
-FROM alpine:3.21
+FROM alpine:3.23
 
 # Build arguments for labels
-ARG VERSION=1.1.3
-ARG OTEL_VERSION=0.142.0
+ARG VERSION=1.1.4
+ARG OTEL_VERSION=0.146.1
 
 # =============================================================================
 # TelemetryFlow Metadata Labels (OCI Image Spec)
@@ -99,7 +99,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
     org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
     org.opencontainers.image.licenses="Apache-2.0" \
-    org.opencontainers.image.base.name="alpine:3.21" \
+    org.opencontainers.image.base.name="alpine:3.23" \
     # TelemetryFlow specific labels
     io.telemetryflow.product="TelemetryFlow Collector" \
     io.telemetryflow.component="tfo-collector" \
@@ -173,12 +173,12 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 # =============================================================================
 # Build with:
 #   docker build \
-#     --build-arg VERSION=1.1.3 \
+#     --build-arg VERSION=1.1.4 \
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-#     --build-arg OTEL_VERSION=0.142.0 \
-#     -t telemetryflow/telemetryflow-collector:1.1.3 .
+#     --build-arg OTEL_VERSION=0.146.1 \
+#     -t telemetryflow/telemetryflow-collector:1.1.4 .
 #
 # Run with:
 #   docker run -d \
@@ -190,11 +190,11 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 #     -e TELEMETRYFLOW_API_KEY_ID=tfk_your_key \
 #     -e TELEMETRYFLOW_API_KEY_SECRET=tfs_your_secret \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.1.3
+#     telemetryflow/telemetryflow-collector:1.1.4
 #
 # Validate config:
 #   docker run --rm \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.1.3 \
+#     telemetryflow/telemetryflow-collector:1.1.4 \
 #     validate -c /etc/tfo-collector/tfo-collector.yaml
 # =============================================================================

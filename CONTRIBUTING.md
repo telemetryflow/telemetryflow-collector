@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.3-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.4-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.142.0-blueviolet)](https://opentelemetry.io/)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -44,7 +44,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](https://www.c
 
 ### Prerequisites
 
-- **Go 1.24** or later
+- **Go 1.25** or later
 - **Git**
 - **Make**
 - **Docker** (optional, for container builds)
@@ -87,7 +87,7 @@ go mod tidy
 make install-ocb
 
 # Or manually
-go install go.opentelemetry.io/collector/cmd/builder@v0.142.0
+go install go.opentelemetry.io/collector/cmd/builder@v0.146.1
 ```
 
 ### Build the Collector

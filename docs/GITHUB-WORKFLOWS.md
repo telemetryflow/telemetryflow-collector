@@ -362,7 +362,7 @@ flowchart LR
 
     subgraph "Environment"
         GO[GO_VERSION: 1.24]
-        OTEL[OTEL_VERSION: 0.142.0]
+        OTEL[OTEL_VERSION: 0.146.1]
     end
 
     GH --> |Required| ALL[All Workflows]
@@ -441,7 +441,7 @@ git push origin v1.1.2
 docker pull telemetryflow/telemetryflow-collector:latest
 
 # Specific version
-docker pull telemetryflow/telemetryflow-collector:1.1.2
+docker pull telemetryflow/telemetryflow-collector:1.1.4
 ```
 
 ### Run Command
@@ -451,7 +451,7 @@ docker pull telemetryflow/telemetryflow-collector:1.1.2
 docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
-  telemetryflow/telemetryflow-collector:1.1.2
+  telemetryflow/telemetryflow-collector:1.1.4
 ```
 
 ---
