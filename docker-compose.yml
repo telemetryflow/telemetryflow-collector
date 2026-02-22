@@ -1,11 +1,11 @@
 # =============================================================================
-# TelemetryFlow Collector - Docker Compose (OCB Native Build)
+# TelemetryFlow Collector - Docker Compose
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
-# This docker-compose uses the OCB Native build with TFO components.
+# This docker-compose uses the Direct Go Build with TFO components.
 #
 # Usage:
 #   # Start with default .env
@@ -43,12 +43,12 @@
 services:
   tfo-collector:
     container_name: ${CONTAINER_NAME:-tfo-collector}
-    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.4}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.5}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.1.4}
+        VERSION: ${VERSION:-1.1.5}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}

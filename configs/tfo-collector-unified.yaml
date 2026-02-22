@@ -84,6 +84,7 @@ receivers:
         max_recv_msg_size_mib: 4
       http:
         endpoint: "0.0.0.0:4318"
+        transport: tcp
         cors:
           allowed_origins:
             - "*"
@@ -213,7 +214,7 @@ exporters:
       queue_size: 1000
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Unified/1.1.2"
+      User-Agent: "TFO-Collector-Unified/1.1.5"
 
   # TFO Exporter for Traces (dedicated instance with trace-specific settings)
   tfo/traces:

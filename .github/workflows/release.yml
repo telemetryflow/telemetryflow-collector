@@ -10,8 +10,7 @@
 # - Windows: EXE (64-bit)
 # - macOS: DMG (Intel and Apple Silicon)
 #
-# Build Type: OCB Native (100% OpenTelemetry Collector Builder)
-# - Uses manifest.yaml to generate collector with TFO custom components
+# Build Type: Direct Go Build with TFO Custom Components
 # - Single unified binary with all 85+ OTEL components + TFO components
 #
 # =============================================================================
@@ -21,14 +20,14 @@ name: Release - TFO Collector
 on:
   push:
     tags:
-      # OCB Native v1.1.2+ uses unified build - semver only
+      # Unified build - semver only
       - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.1.4)'
+        description: 'Version to release (e.g., 1.1.5)'
         required: true
-        default: '1.1.4'
+        default: '1.1.5'
       prerelease:
         description: 'Mark as pre-release'
         required: false
@@ -37,7 +36,6 @@ on:
 
 env:
   GO_VERSION: '1.25'
-  OCB_VERSION: '0.146.1'
   OTEL_VERSION: '0.146.1'
   BINARY_NAME: tfo-collector
   PRODUCT_NAME: TelemetryFlow Collector
@@ -79,7 +77,7 @@ jobs:
           fi
 
           # Extract clean semver (strip any suffix like -standalone, -ocb, etc.)
-          # OCB Native v1.1.2+ uses unified build - no suffixes needed
+          # Unified build - no suffixes needed
           VERSION=$(echo "$RAW_VERSION" | sed 's/-[a-zA-Z].*$//')
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
@@ -90,7 +88,7 @@ jobs:
           echo "=== Release Info ==="
           echo "Raw Version: $RAW_VERSION"
           echo "Clean Version: $VERSION"
-          echo "Build Type: OCB Native (100% OpenTelemetry Collector Builder)"
+          echo "Build Type: Direct Go Build with TFO Custom Components"
           echo "OTEL Version: ${{ env.OTEL_VERSION }}"
 
   # ===========================================================================
@@ -131,9 +129,6 @@ jobs:
 
       - name: Download dependencies
         run: make deps
-
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
 
       - name: Build binary
         run: make ci-build
@@ -187,9 +182,6 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
-
       - name: Build binary
         run: make ci-build
         env:
@@ -231,9 +223,6 @@ jobs:
 
       - name: Download dependencies
         run: make deps
-
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
 
       - name: Build binary
         run: make ci-build
@@ -320,12 +309,11 @@ jobs:
           Source0:        %{name}-%{version}.tar.gz
 
           %description
-          ${{ env.PRODUCT_NAME }} (OCB Native) is an enterprise-grade OpenTelemetry
-          Collector distribution for the TelemetryFlow platform. Built 100% natively
-          with OpenTelemetry Collector Builder featuring custom TFO components.
+          ${{ env.PRODUCT_NAME }} is an enterprise-grade OpenTelemetry
+          Collector distribution for the TelemetryFlow platform featuring custom TFO components.
 
           Features:
-          - 100% OCB Native: Built with OpenTelemetry Collector Builder v${{ env.OTEL_VERSION }}
+          - Built with OpenTelemetry Collector v${{ env.OTEL_VERSION }}
           - TFO Custom Components: tfootlp receiver, tfo exporter, tfoauth/tfoidentity extensions
           - Dual Endpoint Support: v1 (open) and v2 (authenticated) on same port
 
@@ -344,7 +332,7 @@ jobs:
 
           cat > %{buildroot}/usr/lib/systemd/system/tfo-collector.service << 'SYSTEMD'
           [Unit]
-          Description=${{ env.PRODUCT_NAME }} (OCB Native) - Community Enterprise Observability Platform
+          Description=${{ env.PRODUCT_NAME }} - Community Enterprise Observability Platform
           Documentation=${{ env.HOMEPAGE }}
           After=network-online.target
           Wants=network-online.target
@@ -396,8 +384,8 @@ jobs:
 
           %changelog
           * ${CHANGELOG_DATE} ${{ env.VENDOR }} <${{ env.MAINTAINER }}> - ${{ needs.prepare.outputs.version }}-1
-          - Release version ${{ needs.prepare.outputs.version }} (OCB Native build)
-          - Built with OpenTelemetry Collector Builder v${{ env.OTEL_VERSION }}
+          - Release version ${{ needs.prepare.outputs.version }}
+          - Built with OpenTelemetry Collector v${{ env.OTEL_VERSION }}
           EOF
 
       - name: Build RPM
@@ -468,9 +456,8 @@ jobs:
           Architecture: ${{ matrix.arch }}
           Maintainer: ${{ env.VENDOR }} <${{ env.MAINTAINER }}>
           Description: ${{ env.DESCRIPTION }}
-           ${{ env.PRODUCT_NAME }} (OCB Native) is an enterprise-grade OpenTelemetry
-           Collector distribution for the TelemetryFlow platform. Built 100% natively
-           with OpenTelemetry Collector Builder v${{ env.OTEL_VERSION }}.
+           ${{ env.PRODUCT_NAME }} is an enterprise-grade OpenTelemetry
+           Collector distribution for the TelemetryFlow platform featuring custom TFO components.
           Homepage: ${{ env.HOMEPAGE }}
           EOF
 
@@ -493,7 +480,7 @@ jobs:
           chown -R telemetryflow:telemetryflow /var/lib/tfo-collector
           chown -R telemetryflow:telemetryflow /var/log/tfo-collector
           systemctl daemon-reload
-          echo "TelemetryFlow Collector (OCB Native) installed successfully!"
+          echo "TelemetryFlow Collector installed successfully!"
           echo "To start: sudo systemctl start tfo-collector"
           echo "To enable on boot: sudo systemctl enable tfo-collector"
           exit 0
@@ -533,7 +520,7 @@ jobs:
           PKG_DIR=${{ env.BINARY_NAME }}_${VERSION}_${{ matrix.arch }}
           cat > ${PKG_DIR}/lib/systemd/system/tfo-collector.service << EOF
           [Unit]
-          Description=${{ env.PRODUCT_NAME }} (OCB Native) - Community Enterprise Observability Platform
+          Description=${{ env.PRODUCT_NAME }} - Community Enterprise Observability Platform
           Documentation=${{ env.HOMEPAGE }}
           After=network-online.target
           Wants=network-online.target
@@ -603,7 +590,7 @@ jobs:
 
           # Create install script
           cat > ${PKG_DIR}/install.ps1 << 'EOF'
-          # TelemetryFlow Collector (OCB Native) Windows Installer
+          # TelemetryFlow Collector Windows Installer
           # Run as Administrator
 
           $ErrorActionPreference = "Stop"
@@ -614,7 +601,7 @@ jobs:
           $QueueDir = "C:\ProgramData\TelemetryFlow\Collector\queue"
           $ServiceName = "TelemetryFlowCollector"
 
-          Write-Host "Installing TelemetryFlow Collector (OCB Native)..." -ForegroundColor Green
+          Write-Host "Installing TelemetryFlow Collector..." -ForegroundColor Green
 
           # Create directories
           New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
@@ -641,11 +628,11 @@ jobs:
           $binPath = "`"$InstallDir\tfo-collector.exe`" --config `"$ConfigDir\tfo-collector.yaml`""
           New-Service -Name $ServiceName `
                       -DisplayName "TelemetryFlow Collector" `
-                      -Description "TelemetryFlow Collector (OCB Native) - Community Enterprise Observability Platform" `
+                      -Description "TelemetryFlow Collector - Community Enterprise Observability Platform" `
                       -BinaryPathName $binPath `
                       -StartupType Automatic
 
-          Write-Host "TelemetryFlow Collector (OCB Native) installed successfully!" -ForegroundColor Green
+          Write-Host "TelemetryFlow Collector installed successfully!" -ForegroundColor Green
           Write-Host "To start: Start-Service $ServiceName" -ForegroundColor Yellow
           Write-Host "To check status: Get-Service $ServiceName" -ForegroundColor Yellow
           EOF
@@ -681,10 +668,10 @@ jobs:
 
           # Create README
           cat > ${PKG_DIR}/README.txt << EOF
-          TelemetryFlow Collector v${VERSION} (OCB Native)
+          TelemetryFlow Collector v${VERSION}
           ================================================
 
-          Build Type: OCB Native (100% OpenTelemetry Collector Builder)
+          Build Type: Direct Go Build with TFO Custom Components
           OTEL Version: ${{ env.OTEL_VERSION }}
 
           TFO Custom Components:
@@ -773,7 +760,7 @@ jobs:
           # Create install script
           cat > "${DMG_DIR}/install.sh" << 'EOF'
           #!/bin/bash
-          # TelemetryFlow Collector (OCB Native) macOS Installer
+          # TelemetryFlow Collector macOS Installer
 
           set -e
 
@@ -783,7 +770,7 @@ jobs:
           LOG_DIR="/var/log/tfo-collector"
           LAUNCH_DAEMON="/Library/LaunchDaemons/id.telemetryflow.collector.plist"
 
-          echo "Installing TelemetryFlow Collector (OCB Native)..."
+          echo "Installing TelemetryFlow Collector..."
 
           # Create directories
           sudo mkdir -p "${CONFIG_DIR}"
@@ -825,7 +812,7 @@ jobs:
           PLIST
 
           echo ""
-          echo "TelemetryFlow Collector (OCB Native) installed successfully!"
+          echo "TelemetryFlow Collector installed successfully!"
           echo ""
           echo "To start the service:"
           echo "  sudo launchctl load ${LAUNCH_DAEMON}"
@@ -865,10 +852,10 @@ jobs:
 
           # Create README
           cat > "${DMG_DIR}/README.txt" << EOF
-          TelemetryFlow Collector v${VERSION} (OCB Native)
+          TelemetryFlow Collector v${VERSION}
           =================================================
           Architecture: ${{ matrix.display_name }} (${{ matrix.macos_arch }})
-          Build Type: OCB Native (100% OpenTelemetry Collector Builder)
+          Build Type: Direct Go Build with TFO Custom Components
           OTEL Version: ${{ env.OTEL_VERSION }}
 
           TFO Custom Components:
@@ -1103,10 +1090,10 @@ jobs:
           body: |
             ## ${{ env.PRODUCT_NAME }} v${{ needs.prepare.outputs.version }}
 
-            **Build Type:** OCB Native (100% OpenTelemetry Collector Builder)
+            **Build Type:** Direct Go Build with TFO Custom Components
             **OTEL Version:** ${{ env.OTEL_VERSION }}
 
-            Built with OpenTelemetry Collector Builder featuring custom TFO components
+            Built with direct Go build featuring custom TFO components
             for enterprise-grade observability platform integration.
 
             ### TFO Custom Components

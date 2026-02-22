@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -56,11 +57,17 @@ func createDefaultConfig() component.Config {
 					},
 				},
 			},
-			HTTP: &HTTPConfig{
-				TracesURLPath:  defaultTracesURLPath,
-				MetricsURLPath: defaultMetricsURLPath,
-				LogsURLPath:    defaultLogsURLPath,
-			},
+			HTTP: func() *HTTPConfig {
+				httpServerCfg := confighttp.NewDefaultServerConfig()
+				httpServerCfg.NetAddr.Endpoint = DefaultHTTPEndpoint
+				httpServerCfg.NetAddr.Transport = confignet.TransportTypeTCP
+				return &HTTPConfig{
+					ServerConfig:   httpServerCfg,
+					TracesURLPath:  defaultTracesURLPath,
+					MetricsURLPath: defaultMetricsURLPath,
+					LogsURLPath:    defaultLogsURLPath,
+				}
+			}(),
 		},
 		EnableV2Endpoints: true,
 		V2Auth: V2AuthConfig{

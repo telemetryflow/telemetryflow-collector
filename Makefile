@@ -3,13 +3,13 @@
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
-# Build Type: OCB Native (100% OpenTelemetry Collector Builder)
+# Build Type: Direct Go Build with TFO Custom Components
 # Build and development commands for TelemetryFlow Collector
 
 # Build configuration
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.1.4
+VERSION ?= 1.1.5
 OTEL_VERSION := 0.146.1
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
@@ -18,26 +18,8 @@ GO_VERSION := $(shell go version | cut -d ' ' -f 3)
 
 # Directories
 BUILD_DIR := ./build
-BUILD_DIR_OCB := ./build/ocb
 CONFIG_DIR := ./configs
 DIST_DIR := ./dist
-
-# OCB (OpenTelemetry Collector Builder) - binary name is "builder"
-# Try to find builder in PATH first
-OCB := $(shell which builder 2>/dev/null || echo "")
-ifeq ($(OCB),)
-  # Try GVM package sets
-  OCB := $(shell ls $(HOME)/.gvm/pkgsets/*/global/bin/builder 2>/dev/null | head -1)
-endif
-ifeq ($(OCB),)
-  # Try GOPATH/bin (from go env)
-  OCB := $(shell go env GOPATH 2>/dev/null)/bin/builder
-endif
-ifeq ($(OCB),)
-  # Fallback to HOME/go/bin
-  OCB := $(HOME)/go/bin/builder
-endif
-OCB_VERSION := 0.146.1
 
 # Go build flags (for main package variables)
 LDFLAGS := -s -w \
@@ -62,20 +44,20 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage lint lint-fix fmt vet help install-ocb generate run docker tidy deps deps-update install uninstall validate-config \
+.PHONY: all build build-all build-linux build-darwin clean test test-unit test-integration test-e2e test-all test-coverage lint lint-fix fmt vet help run docker tidy deps deps-update install uninstall validate-config \
 	fmt-check staticcheck verify deps-verify test-unit-ci test-integration-ci test-e2e-ci security govulncheck coverage-merge coverage-report ci-lint ci-test ci-build \
 	build-components tidy-components version dev components docker-push
 
-# Default target: build unified OCB-native collector with TFO components
+# Default target: build unified collector with TFO components
 all: build
 
 # Help target
 help:
-	@echo "$(GREEN)$(PRODUCT_NAME) - Build System (OCB Native)$(NC)"
+	@echo "$(GREEN)$(PRODUCT_NAME) - Build System$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Primary Build ($(BUILD_DIR)/$(BINARY_NAME)):$(NC)"
-	@echo "  make                  - Build unified OCB-native collector (default)"
-	@echo "  make build            - Build unified OCB-native collector"
+	@echo "  make                  - Build unified collector (default)"
+	@echo "  make build            - Build unified collector"
 	@echo "  make run              - Run: $(BUILD_DIR)/$(BINARY_NAME) --config configs/tfo-collector.yaml"
 	@echo "  make tidy             - Tidy all go modules (main + components)"
 	@echo ""
@@ -129,87 +111,7 @@ help:
 	@echo "  GIT_BRANCH=$(GIT_BRANCH)"
 
 # =============================================================================
-# OCB (OpenTelemetry Collector Builder) Setup
-# =============================================================================
-
-# Install OCB (OpenTelemetry Collector Builder)
-install-ocb:
-	@echo "$(GREEN)Installing OpenTelemetry Collector Builder v$(OCB_VERSION)...$(NC)"
-	@echo "$(YELLOW)GOPATH: $$(go env GOPATH)$(NC)"
-	@echo "$(YELLOW)GOBIN: $$(go env GOBIN)$(NC)"
-	@echo "$(YELLOW)HOME: $(HOME)$(NC)"
-	@go install go.opentelemetry.io/collector/cmd/builder@v$(OCB_VERSION)
-	@GOPATH_BIN="$$(go env GOPATH)/bin"; \
-	GOBIN="$$(go env GOBIN)"; \
-	if [ -n "$$GOBIN" ] && [ -f "$$GOBIN/builder" ]; then \
-		echo "$(GREEN)Builder installed successfully at $$GOBIN/builder$(NC)"; \
-	elif [ -f "$$GOPATH_BIN/builder" ]; then \
-		echo "$(GREEN)Builder installed successfully at $$GOPATH_BIN/builder$(NC)"; \
-	elif [ -f "$(HOME)/go/bin/builder" ]; then \
-		echo "$(GREEN)Builder installed successfully at $(HOME)/go/bin/builder$(NC)"; \
-	else \
-		echo "$(RED)Builder installation failed - binary not found$(NC)"; \
-		echo "$(RED)Checked locations:$(NC)"; \
-		echo "$(RED)  - $$GOBIN/builder$(NC)"; \
-		echo "$(RED)  - $$GOPATH_BIN/builder$(NC)"; \
-		echo "$(RED)  - $(HOME)/go/bin/builder$(NC)"; \
-		echo "$(YELLOW)Searching for builder binary...$(NC)"; \
-		find $(HOME) -name "builder" -type f 2>/dev/null | head -5 || true; \
-		exit 1; \
-	fi
-
-# Helper function to find builder binary at runtime
-define FIND_BUILDER
-$(shell which builder 2>/dev/null || \
-	([ -f "$$(go env GOPATH)/bin/builder" ] && echo "$$(go env GOPATH)/bin/builder") || \
-	([ -f "$(HOME)/go/bin/builder" ] && echo "$(HOME)/go/bin/builder") || \
-	echo "")
-endef
-
-# Check if OCB is installed
-check-ocb:
-	@export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
-	BUILDER=$$(which builder 2>/dev/null); \
-	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$$(go env GOPATH)/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$(HOME)/go/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		echo "$(YELLOW)Builder not found. Installing...$(NC)"; \
-		$(MAKE) install-ocb; \
-	else \
-		echo "$(GREEN)Builder found at: $$BUILDER$(NC)"; \
-	fi
-
-# Generate collector code using OCB
-generate: check-ocb
-	@echo "$(GREEN)Generating collector code...$(NC)"
-	@set -e; \
-	mkdir -p $(BUILD_DIR_OCB); \
-	export PATH="$$(go env GOPATH)/bin:$(HOME)/go/bin:$$PATH"; \
-	BUILDER=$$(which builder 2>/dev/null || true); \
-	if [ -z "$$BUILDER" ] || [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$$(go env GOPATH)/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		BUILDER="$(HOME)/go/bin/builder"; \
-	fi; \
-	if [ ! -f "$$BUILDER" ]; then \
-		echo "$(RED)Builder not found. Please run 'make install-ocb' first.$(NC)"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)Using builder at: $$BUILDER$(NC)"; \
-	$$BUILDER --config manifest.yaml; \
-	if [ ! -d "$(BUILD_DIR_OCB)" ] || [ -z "$$(ls -A $(BUILD_DIR_OCB) 2>/dev/null)" ]; then \
-		echo "$(RED)Builder did not generate code in $(BUILD_DIR_OCB)$(NC)"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)Collector code generated in $(BUILD_DIR_OCB)$(NC)"
-
-# =============================================================================
-# Primary Build Targets (OCB Native)
+# Primary Build Targets
 # =============================================================================
 
 # Tidy TFO component modules
@@ -234,9 +136,9 @@ build-components:
 	done
 	@echo "$(GREEN)All TFO components verified$(NC)"
 
-# Build unified OCB-native collector
+# Build unified collector
 build: tidy-components
-	@echo "$(GREEN)Building unified $(BINARY_NAME) v$(VERSION) (OCB-native with TFO components)...$(NC)"
+	@echo "$(GREEN)Building unified $(BINARY_NAME) v$(VERSION) (with TFO components)...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	@go build -ldflags "$(LDFLAGS_VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/tfo-collector
 	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
@@ -460,7 +362,7 @@ components:
 
 # Show version information
 version:
-	@echo "$(GREEN)$(PRODUCT_NAME) (OCB Native)$(NC)"
+	@echo "$(GREEN)$(PRODUCT_NAME)$(NC)"
 	@echo "  Version:      $(VERSION)"
 	@echo "  OTEL Version: $(OTEL_VERSION)"
 	@echo "  Git Commit:   $(GIT_COMMIT)"

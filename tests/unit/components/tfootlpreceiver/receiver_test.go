@@ -33,7 +33,7 @@ func TestReceiverStartStop(t *testing.T) {
 	factory := tfootlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*tfootlpreceiver.Config)
 
-	// Use random ports to avoid conflicts
+	// Disable protocols to avoid port binding issues in tests
 	cfg.Protocols.GRPC = nil
 	cfg.Protocols.HTTP = nil
 

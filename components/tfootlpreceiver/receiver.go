@@ -62,7 +62,20 @@ func newTFOOTLPReceiver(cfg *Config, set *receiver.Settings) (*tfoOTLPReceiver, 
 	receiverInstanceLock.Lock()
 	defer receiverInstanceLock.Unlock()
 
+	// If an instance exists and is already started, return it
 	if receiverInstance != nil {
+		receiverInstance.mu.RLock()
+		started := receiverInstance.started
+		receiverInstance.mu.RUnlock()
+
+		if started {
+			return receiverInstance, nil
+		}
+
+		// If not started yet, allow config update (useful for tests)
+		receiverInstance.cfg = cfg
+		receiverInstance.settings = set
+		receiverInstance.logger = set.Logger
 		return receiverInstance, nil
 	}
 
