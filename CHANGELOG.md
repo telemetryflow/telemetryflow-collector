@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **build/go.mod**: Resolved Datadog ambiguous import conflict (`pkg/util/system/socket`)
 - **build/go.mod**: Fixed TFO component version mismatch in require vs replace directives
 - **release.yml**: Removed `make install-ocb` steps that referenced removed Makefile target
+- **ci.yml**: Removed `OCB_VERSION` env and `make install-ocb` steps from integration, e2e, and build jobs
+- **CONTRIBUTING.md**: Removed obsolete "Install OCB" section
 - **.env.example**: Fixed stale `OTEL_VERSION=0.142.0` → `0.146.1` and `IMAGE_TAG=1.1.3` → `1.1.5`
 
 ## [1.1.4] - 2026-02-21

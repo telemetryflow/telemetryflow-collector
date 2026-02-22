@@ -8,12 +8,11 @@
 # This workflow provides continuous integration for TelemetryFlow Collector:
 # - Code quality checks (lint, vet, fmt)
 # - Unit and integration tests
-# - Build verification (OCB Native, multi-platform)
+# - Build verification (multi-platform)
 # - Security scanning
 # - Coverage reporting
 #
-# Build Type: OCB Native (100% OpenTelemetry Collector Builder)
-# - Uses manifest.yaml to generate collector with TFO custom components
+# Build Type: Direct Go Build with TFO Custom Components
 # - Single unified binary with all 85+ OTEL components + TFO components
 #
 # =============================================================================
@@ -68,7 +67,6 @@ on:
 
 env:
   GO_VERSION: '1.25'
-  OCB_VERSION: '0.146.1'
   OTEL_VERSION: '0.146.1'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME: tfo-collector
@@ -122,7 +120,7 @@ jobs:
           echo "Version: $VERSION"
           echo "Commit: $COMMIT"
           echo "Branch: $BRANCH"
-          echo "Build Type: OCB Native (100% OpenTelemetry Collector Builder)"
+          echo "Build Type: Direct Go Build with TFO Custom Components"
 
   # ===========================================================================
   # Code Quality - Lint, Vet, Format
@@ -156,7 +154,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.7.2
+          version: v2.10.1
           args: --timeout=5m
           skip-cache: true
           verify: false
@@ -229,10 +227,7 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
-
-      - name: Build collector binary (OCB Native)
+      - name: Build collector binary
         run: make build
 
       - name: Run integration tests
@@ -284,10 +279,7 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
-
-      - name: Build collector binary (OCB Native)
+      - name: Build collector binary
         run: make build
 
       - name: Run E2E tests
@@ -296,7 +288,7 @@ jobs:
           TFO_COLLECTOR_BINARY: ./build/tfo-collector
 
   # ===========================================================================
-  # Build Verification - OCB Native (Multi-Platform)
+  # Build Verification (Multi-Platform)
   # ===========================================================================
   build:
     name: Build (${{ matrix.os }}/${{ matrix.arch }})
@@ -343,10 +335,7 @@ jobs:
       - name: Download dependencies
         run: make deps
 
-      - name: Install OCB (OpenTelemetry Collector Builder)
-        run: make install-ocb
-
-      - name: Build OCB Native binary
+      - name: Build binary
         run: make ci-build
         env:
           GOOS: ${{ matrix.os }}
@@ -491,7 +480,7 @@ jobs:
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| **Version** | ${{ needs.prepare.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Build Type** | OCB Native (100% OpenTelemetry Collector Builder) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Type** | Direct Go Build with TFO Custom Components |" >> $GITHUB_STEP_SUMMARY
           echo "| **OTEL Version** | ${{ env.OTEL_VERSION }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Commit** | ${{ needs.prepare.outputs.commit }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Branch** | ${{ needs.prepare.outputs.branch }} |" >> $GITHUB_STEP_SUMMARY
@@ -502,7 +491,7 @@ jobs:
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Unit Tests | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build (OCB Native) | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Coverage | ${{ needs.coverage.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

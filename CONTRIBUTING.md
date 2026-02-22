@@ -80,23 +80,13 @@ go mod download
 go mod tidy
 ```
 
-### Install OCB (for OCB builds)
-
-```bash
-# Install OpenTelemetry Collector Builder
-make install-ocb
-
-# Or manually
-go install go.opentelemetry.io/collector/cmd/builder@v0.146.1
-```
-
 ### Build the Collector
 
 ```bash
-# Build standalone collector (default)
+# Build collector (default)
 make
 
-# Build with OCB
+# Or explicitly
 make build
 
 # Build for all platforms
