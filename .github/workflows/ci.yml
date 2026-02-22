@@ -389,13 +389,20 @@ jobs:
         run: make deps
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: '-no-fail -fmt sarif -out gosec-results.sarif -exclude-dir=vendor -exclude-generated ./...'
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -no-fail -fmt sarif -out gosec-results.sarif -exclude-dir=vendor -exclude-generated ./...
+
+      - name: Sanitize SARIF for CodeQL
+        if: always() && hashFiles('gosec-results.sarif') != ''
+        run: |
+          jq 'walk(if type == "array" then map(select(. != null)) else . end)' \
+            gosec-results.sarif > gosec-results-clean.sarif
+          mv gosec-results-clean.sarif gosec-results.sarif
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('gosec-results.sarif') != ''
         with:
           sarif_file: gosec-results.sarif
 
