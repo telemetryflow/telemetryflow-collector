@@ -29,7 +29,7 @@ on:
       - 'feature/**'
       - 'release/**'
     tags:
-      # OCB Native v1.1.2+ uses unified build - semver only
+      # Unified build - semver only
       - 'v*.*.*'
     paths:
       - 'cmd/**'

@@ -21,7 +21,7 @@ on:
       - main
       - master
     tags:
-      # OCB Native v1.1.2+ uses unified build - semver only
+      # Unified build - semver only
       - 'v*.*.*'
     paths:
       - 'Dockerfile'
@@ -47,7 +47,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.1.2)'
+        description: 'Version tag (e.g., 1.1.5)'
         required: false
         default: ''
       push:
@@ -197,7 +197,7 @@ jobs:
           fi
 
           # Extract clean semver (strip any suffix like -standalone, -ocb, etc.)
-          # OCB Native v1.1.2+ uses unified build - no suffixes needed
+          # Unified build - no suffixes needed
           VERSION=$(echo "$RAW_VERSION" | sed 's/-[a-zA-Z].*$//')
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT

@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.4-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.5-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
@@ -23,6 +23,31 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.5] - 2026-02-22
+
+### Changed
+
+- **Build System Cleanup**: Removed legacy OCB (OpenTelemetry Collector Builder) targets from Makefile
+  - Removed `install-ocb`, `check-ocb`, `generate` targets (dead code)
+  - Removed `BUILD_DIR_OCB`, `OCB`, `OCB_VERSION`, `FIND_BUILDER` variables
+  - Updated header to "Direct Go Build with TFO Custom Components"
+  - Build now uses `go build ./cmd/tfo-collector` directly
+- **Go Module Alignment**: Updated all component `go.mod` files to stable OTEL SDK v1.52.0
+  - Core stable modules: `go.opentelemetry.io/otel` v1.52.0
+  - Core unstable modules: v0.146.1
+  - Contrib modules: v0.146.0
+- **Version Bump**: Updated version from 1.1.4 to 1.1.5 across all files
+  - Makefile, Dockerfile, docker-compose files, .env.example
+  - banner.go, version.go, release workflow
+  - All documentation files
+
+### Fixed
+
+- **build/go.mod**: Resolved Datadog ambiguous import conflict (`pkg/util/system/socket`)
+- **build/go.mod**: Fixed TFO component version mismatch in require vs replace directives
+- **release.yml**: Removed `make install-ocb` steps that referenced removed Makefile target
+- **.env.example**: Fixed stale `OTEL_VERSION=0.142.0` → `0.146.1` and `IMAGE_TAG=1.1.3` → `1.1.5`
 
 ## [1.1.4] - 2026-02-21
 
@@ -327,6 +352,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.5 | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump |
 | 1.1.4 | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes |
 | 1.1.2 | 2026-01-03 | OCB-native architecture, unified build system |
 | 1.1.1 | 2025-01-01 | Documentation improvements, DDD test reorganization |
@@ -357,6 +383,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tfoidentity` | Extension | Collector identity |
 
 ## Upgrade Guide
+
+### From v1.1.4 to v1.1.5
+
+1. **Makefile**: OCB targets removed — if you used `make install-ocb` or `make generate`, use `make build` instead
+2. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.1.5`
+3. **CI/CD**: Remove any `make install-ocb` steps from custom pipelines
 
 ### From v1.1.2 to v1.1.4
 

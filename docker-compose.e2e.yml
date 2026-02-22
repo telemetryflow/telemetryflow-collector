@@ -5,7 +5,7 @@
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
 #
-# This docker-compose is for End-to-End testing using the OCB Native build.
+# This docker-compose is for End-to-End testing using the Direct Go Build.
 #
 # Usage:
 #   # Start E2E test environment
@@ -44,7 +44,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.1.4}
+        VERSION: ${VERSION:-1.1.5}
         OTEL_VERSION: ${OTEL_VERSION:-0.146.1}
     environment:
       - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID:-tfk_e2e_test_key}

@@ -1,5 +1,5 @@
 # =============================================================================
-# TelemetryFlow Collector Configuration (OCB Native v1.1.2)
+# TelemetryFlow Collector Configuration (v1.1.5)
 # =============================================================================
 # Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
@@ -87,6 +87,7 @@ receivers:
         max_recv_msg_size_mib: 4
       http:
         endpoint: "0.0.0.0:4318"
+        transport: tcp
         cors:
           allowed_origins:
             - "*"
