@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.5-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.6-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -23,6 +23,35 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.6] - 2026-03-04
+
+### Added
+
+- **Kubernetes Attributes Processor**: Added `k8sattributesprocessor` to components
+  - Enriches telemetry with Kubernetes metadata (pod name, namespace, node, deployment)
+  - Registered in `cmd/tfo-collector/components.go` via `k8sattributesprocessor.NewFactory()`
+  - Example configuration added to `configs/otel-collector.yaml` (commented out)
+  - Requires RBAC: get/list/watch on pods, namespaces, nodes when running in Kubernetes
+
+### Changed
+
+- **OTEL Core Stable Modules**: Upgraded from v1.52.0 → v1.53.0
+  - `go.opentelemetry.io/collector/component`, `consumer`, `extension`, `pdata`, `processor`, `receiver`, `pipeline`, `client`, and related stable packages
+- **OTEL Collector Unstable Modules**: Partial upgrade to v0.147.0
+  - `receiver/otlpreceiver`, `receiver/receivertest`, `component/componentstatus`, `consumer/consumertest`, and related packages
+- **Contrib Modules**: Selective upgrade to v0.147.0
+  - `internal/common`, `internal/coreinternal`, `internal/k8sconfig`, `pkg/pdatautil`
+  - `processor/k8sattributesprocessor` v0.147.0 added as direct dependency
+- **gRPC Instrumentation**: `otelgrpc` upgraded v0.63.0 → v0.65.0
+- **Config Exporter Names**: Renamed commented exporter aliases in `otel-collector.yaml`
+  - `otlp` → `otlp_grpc`, `otlphttp` → `otlp_http` for clarity
+- **Version Bump**: Updated version from 1.1.5 to 1.1.6 across all files
+
+### Fixed
+
+- `golang.org/x/net`: Bumped v0.50.0 → v0.51.0 (security/bug fix)
+- `google.golang.org/genproto/googleapis/rpc`: Updated to 2026-01-28 release
 
 ## [1.1.5] - 2026-02-22
 
@@ -354,6 +383,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.6 | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade |
 | 1.1.5 | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump |
 | 1.1.4 | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes |
 | 1.1.2 | 2026-01-03 | OCB-native architecture, unified build system |
@@ -385,6 +415,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tfoidentity` | Extension | Collector identity |
 
 ## Upgrade Guide
+
+### From v1.1.5 to v1.1.6
+
+1. **Kubernetes**: Enable `k8sattributes` processor in config when running in Kubernetes (requires RBAC)
+2. **go.mod**: Run `go mod tidy` to pull updated OTEL v1.53.0 / v0.147.0 dependencies
+3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.1.6`
 
 ### From v1.1.4 to v1.1.5
 

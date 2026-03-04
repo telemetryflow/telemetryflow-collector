@@ -147,6 +147,25 @@ processors:
   #   timeout: 5s
   #   override: false
 
+  # Kubernetes attributes processor (uncomment when running in Kubernetes)
+  # Requires RBAC: get/list/watch on pods, namespaces, nodes
+  # k8sattributes:
+  #   passthrough: false
+  #   auth_type: serviceAccount
+  #   pod_association:
+  #     - sources:
+  #         - from: resource_attribute
+  #           name: k8s.pod.ip
+  #     - sources:
+  #         - from: connection
+  #   extract:
+  #     metadata:
+  #       - k8s.pod.name
+  #       - k8s.pod.uid
+  #       - k8s.deployment.name
+  #       - k8s.namespace.name
+  #       - k8s.node.name
+
   # Attributes processor (uncomment to modify span/metric attributes)
   # attributes:
   #   actions:
@@ -230,8 +249,8 @@ exporters:
     resource_to_telemetry_conversion:
       enabled: true
 
-  # OTLP exporter (uncomment to forward to other backends)
-  # otlp:
+  # OTLP gRPC exporter (uncomment to forward to other backends)
+  # otlp_grpc:
   #   endpoint: "your-backend:4317"
   #   tls:
   #     insecure: true
@@ -247,7 +266,7 @@ exporters:
   #     queue_size: 1000
 
   # OTLP HTTP exporter (uncomment to forward via HTTP)
-  # otlphttp:
+  # otlp_http:
   #   endpoint: "https://your-backend:4318"
   #   compression: gzip
 

@@ -44,8 +44,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.1.5}
-        OTEL_VERSION: ${OTEL_VERSION:-0.146.1}
+        VERSION: ${VERSION:-1.1.6}
+        OTEL_VERSION: ${OTEL_VERSION:-0.147.0}
     environment:
       - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID:-tfk_e2e_test_key}
       - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET:-tfs_e2e_test_secret}

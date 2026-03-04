@@ -60,13 +60,13 @@ const (
 	SupportURL = "https://docs.telemetryflow.id"
 
 	// OTELVersion is the OpenTelemetry Collector version this is based on
-	OTELVersion = "0.146.1"
+	OTELVersion = "0.147.0"
 )
 
 // Build-time variables (set via ldflags)
 var (
 	// Version is the semantic version of the collector
-	Version = "1.1.5"
+	Version = "1.1.6"
 
 	// GitCommit is the git commit hash
 	GitCommit = "unknown"

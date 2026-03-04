@@ -72,6 +72,7 @@ import (
 	// Contrib Processors
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
@@ -141,6 +142,7 @@ func components() (otelcol.Factories, error) {
 		attributesprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
+		k8sattributesprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),

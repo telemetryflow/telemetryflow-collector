@@ -214,7 +214,7 @@ exporters:
       queue_size: 1000
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Unified/1.1.5"
+      User-Agent: "TFO-Collector-Unified/1.1.6"
 
   # TFO Exporter for Traces (dedicated instance with trace-specific settings)
   tfo/traces:

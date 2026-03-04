@@ -1,5 +1,5 @@
 # =============================================================================
-# TelemetryFlow Collector Configuration (v1.1.5)
+# TelemetryFlow Collector Configuration (v1.1.6)
 # =============================================================================
 # Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
@@ -134,6 +134,25 @@ processors:
         value: production
         action: upsert
 
+  # Kubernetes attributes processor (uncomment when running in Kubernetes)
+  # Requires RBAC: get/list/watch on pods, namespaces, nodes
+  # k8sattributes:
+  #   passthrough: false
+  #   auth_type: serviceAccount
+  #   pod_association:
+  #     - sources:
+  #         - from: resource_attribute
+  #           name: k8s.pod.ip
+  #     - sources:
+  #         - from: connection
+  #   extract:
+  #     metadata:
+  #       - k8s.pod.name
+  #       - k8s.pod.uid
+  #       - k8s.deployment.name
+  #       - k8s.namespace.name
+  #       - k8s.node.name
+
   # Attributes processor (uncomment to enable)
   # attributes:
   #   actions:
@@ -219,8 +238,8 @@ exporters:
   #     num_consumers: 10
   #     queue_size: 1000
 
-  # Standard OTLP exporter for other backends (uncomment to enable)
-  # otlp:
+  # Standard OTLP gRPC exporter for other backends (uncomment to enable)
+  # otlp_grpc:
   #   endpoint: "other-backend:4317"
   #   tls:
   #     insecure: true

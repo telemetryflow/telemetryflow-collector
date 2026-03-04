@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.5-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.6-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.146.1-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -21,7 +21,7 @@ Enterprise-grade OpenTelemetry Collector distribution for the **TelemetryFlow Pl
 
 ## Features
 
-- **100% OCB Native**: Built with OpenTelemetry Collector Builder v0.146.1
+- **100% OCB Native**: Built with OpenTelemetry Collector Builder v0.147.0
 - **TFO Custom Components**: tfootlp receiver, tfo exporter, tfoauth/tfoidentity extensions
 - **Dual Endpoint Support**: v1 (open) and v2 (authenticated) on same port
 - **Multi-Signal Support**: Metrics, logs, and traces
@@ -130,7 +130,7 @@ curl -X POST http://localhost:4318/v2/traces \
 ### Prerequisites
 
 - Go 1.25 or later
-- OpenTelemetry Collector Builder (OCB) v0.146.1
+- OpenTelemetry Collector Builder (OCB) v0.147.0
 
 ### Build & Run
 
