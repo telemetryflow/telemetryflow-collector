@@ -134,24 +134,35 @@ processors:
         value: production
         action: upsert
 
-  # Kubernetes attributes processor (uncomment when running in Kubernetes)
-  # Requires RBAC: get/list/watch on pods, namespaces, nodes
-  # k8sattributes:
-  #   passthrough: false
-  #   auth_type: serviceAccount
-  #   pod_association:
-  #     - sources:
-  #         - from: resource_attribute
-  #           name: k8s.pod.ip
-  #     - sources:
-  #         - from: connection
-  #   extract:
-  #     metadata:
-  #       - k8s.pod.name
-  #       - k8s.pod.uid
-  #       - k8s.deployment.name
-  #       - k8s.namespace.name
-  #       - k8s.node.name
+  # Kubernetes attributes processor
+  # Enriches traces/metrics/logs with k8s.pod.name, k8s.namespace.name, k8s.deployment.name, etc.
+  # Active when running inside Kubernetes (auth_type: serviceAccount uses the pod's ServiceAccount).
+  # The tfo-collector ServiceAccount must have RBAC get/list/watch on pods, namespaces, nodes.
+  # When running locally (non-K8s), set OTEL_K8S_ATTRIBUTES_DISABLED=true or remove from pipelines.
+  k8sattributes:
+    passthrough: false
+    auth_type: serviceAccount
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: connection
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.pod.start_time
+      labels:
+        - tag_name: app
+          key: app
+          from: pod
+        - tag_name: version
+          key: version
+          from: pod
 
   # Attributes processor (uncomment to enable)
   # attributes:
@@ -219,24 +230,24 @@ exporters:
     resource_to_telemetry_conversion:
       enabled: true
 
-  # TFO Platform Exporter - auto-injects TFO auth headers (uncomment to enable)
+  # TFO Platform Exporter - forwards all signals to TFO backend (ClickHouse ingestion)
   # Uses tfoauth extension for authentication and tfoidentity for collector ID
-  # tfo:
-  #   endpoint: "${env:TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}"
-  #   use_v2_api: true
-  #   auth:
-  #     extension: tfoauth
-  #   collector_identity: tfoidentity
-  #   timeout: 30s
-  #   retry_on_failure:
-  #     enabled: true
-  #     initial_interval: 5s
-  #     max_interval: 30s
-  #     max_elapsed_time: 300s
-  #   sending_queue:
-  #     enabled: true
-  #     num_consumers: 10
-  #     queue_size: 1000
+  tfo:
+    endpoint: "${env:TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}"
+    use_v2_api: true
+    auth:
+      extension: tfoauth
+    collector_identity: tfoidentity
+    timeout: 30s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
 
   # Standard OTLP gRPC exporter for other backends (uncomment to enable)
   # otlp_grpc:
@@ -263,36 +274,36 @@ service:
   extensions: [health_check, zpages, pprof, tfoauth, tfoidentity]
 
   pipelines:
-    # Traces pipeline - receives traces via TFO OTLP receiver
+    # Traces pipeline - receives traces via TFO OTLP receiver → forwards to backend (ClickHouse)
     traces:
       receivers: [tfootlp]
-      processors: [memory_limiter, batch, resource]
-      exporters: [debug, spanmetrics, servicegraph]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [debug, tfo, spanmetrics, servicegraph]
 
-    # Metrics pipeline - receives metrics via TFO OTLP receiver
+    # Metrics pipeline - receives metrics via TFO OTLP receiver → forwards to backend
     metrics:
       receivers: [tfootlp]
-      processors: [memory_limiter, batch, resource]
-      exporters: [debug, prometheus]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [debug, tfo, prometheus]
 
     # Metrics from traces pipeline - receives derived metrics from spanmetrics connector
     # These metrics include EXEMPLARS for correlation with traces
     metrics/spanmetrics:
       receivers: [spanmetrics]
       processors: [memory_limiter, batch]
-      exporters: [prometheus]
+      exporters: [tfo, prometheus]
 
     # Metrics from service graph - receives service dependency metrics
     metrics/servicegraph:
       receivers: [servicegraph]
       processors: [memory_limiter, batch]
-      exporters: [prometheus]
+      exporters: [tfo, prometheus]
 
-    # Logs pipeline
+    # Logs pipeline - forwards to backend (ClickHouse)
     logs:
       receivers: [tfootlp]
-      processors: [memory_limiter, batch, resource]
-      exporters: [debug]
+      processors: [memory_limiter, k8sattributes, resource, batch]
+      exporters: [debug, tfo]
 
   # Internal telemetry configuration
   telemetry:
