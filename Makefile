@@ -9,7 +9,7 @@
 # Build configuration
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.1.6
+VERSION ?= 1.1.7
 OTEL_VERSION := 0.147.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
@@ -389,13 +389,12 @@ fmt-check:
 ## CI: Run staticcheck
 staticcheck:
 	@echo "$(GREEN)Running staticcheck...$(NC)"
-	@if command -v staticcheck >/dev/null 2>&1; then \
-		staticcheck ./...; \
-	else \
-		echo "$(YELLOW)Installing staticcheck...$(NC)"; \
-		go install honnef.co/go/tools/cmd/staticcheck@latest; \
-		staticcheck ./...; \
-	fi
+	@STATICCHECK="$$(go env GOPATH)/bin/staticcheck"; \
+	if ! $$STATICCHECK -version 2>/dev/null | grep -q "v0\.7\|2026\."; then \
+		echo "$(YELLOW)Installing staticcheck v0.7.0...$(NC)"; \
+		go install honnef.co/go/tools/cmd/staticcheck@v0.7.0; \
+	fi; \
+	$$STATICCHECK ./...
 
 ## CI: Verify dependencies
 verify:

@@ -381,7 +381,7 @@ make tidy               # Tidy go modules
 ```bash
 # Build image
 docker build \
-  --build-arg VERSION=1.1.6 \
+  --build-arg VERSION=1.1.7 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
   -t telemetryflow/telemetryflow-collector:1.1.6 .
 

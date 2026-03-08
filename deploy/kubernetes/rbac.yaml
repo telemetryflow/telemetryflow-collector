@@ -1,0 +1,65 @@
+---
+# TFO-Collector RBAC Configuration
+# Provides read-only access to Kubernetes resources for the k8sattributes processor.
+# The processor enriches telemetry with pod/namespace/node metadata from the K8s API.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tfo-collector
+  namespace: telemetryflow
+  labels:
+    app.kubernetes.io/name: tfo-collector
+    app.kubernetes.io/component: collector
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tfo-collector
+  labels:
+    app.kubernetes.io/name: tfo-collector
+    app.kubernetes.io/component: collector
+rules:
+  # Core resources — required by k8sattributes processor for pod/namespace/node enrichment
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - pods
+      - namespaces
+      - endpoints
+      - services
+      - replicationcontrollers
+    verbs: ["get", "list", "watch"]
+
+  # Apps workloads — for k8s.deployment.name enrichment
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+
+  # Non-resource URLs — Prometheus metrics from kubelet/cAdvisor
+  - nonResourceURLs:
+      - /metrics
+      - /metrics/cadvisor
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tfo-collector
+  labels:
+    app.kubernetes.io/name: tfo-collector
+    app.kubernetes.io/component: collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tfo-collector
+subjects:
+  - kind: ServiceAccount
+    name: tfo-collector
+    namespace: telemetryflow

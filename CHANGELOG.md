@@ -7,9 +7,9 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.6-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.7-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
@@ -23,6 +23,17 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.7] - 2026-03-08
+
+### Security
+
+- **Go toolchain upgraded 1.25 → 1.26** (`Dockerfile`, `go.mod`): addresses two Go `crypto/x509` vulnerabilities in the stdlib fixed in Go 1.26
+  - **CVE-2026-27138** (UNKNOWN): certificate chain verification could panic when a certificate contained certain malformed fields
+  - **CVE-2026-27137** (UNKNOWN): certificate chain containing a crafted certificate could trigger incorrect verification behaviour
+- **zlib upgraded to 1.3.2-r0** via `apk upgrade --no-cache` in the runtime Alpine stage (already present): addresses two zlib vulnerabilities fixed in Alpine package `zlib 1.3.2-r0`
+  - **CVE-2026-22184** (CRITICAL): arbitrary code execution via buffer overflow in the `untgz` utility
+  - **CVE-2026-27171** (MEDIUM): denial of service via infinite loop in CRC32 combine functions
 
 ## [1.1.6] - 2026-03-04
 
@@ -381,38 +392,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Date | Description |
-|---------|------|-------------|
-| 1.1.6 | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade |
-| 1.1.5 | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump |
-| 1.1.4 | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes |
-| 1.1.2 | 2026-01-03 | OCB-native architecture, unified build system |
-| 1.1.1 | 2025-01-01 | Documentation improvements, DDD test reorganization |
-| 1.1.0 | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
-| 1.0.1 | 2024-12-17 | Docker workflows, SBOM, multi-platform support |
-| 1.0.0 | 2024-12-17 | Initial release |
+| Version | Date       | Description                                               |
+| ------- | ---------- | --------------------------------------------------------- |
+| 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster  |
+| 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade    |
+| 1.1.5   | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump      |
+| 1.1.4   | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes                |
+| 1.1.2   | 2026-01-03 | OCB-native architecture, unified build system             |
+| 1.1.1   | 2025-01-01 | Documentation improvements, DDD test reorganization       |
+| 1.1.0   | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format |
+| 1.0.1   | 2024-12-17 | Docker workflows, SBOM, multi-platform support            |
+| 1.0.0   | 2024-12-17 | Initial release                                           |
 
 ## Build Architecture
 
 ### OCB-Native Build (v1.1.2+)
 
-| Feature | Description |
-|---------|-------------|
-| Binary | `tfo-collector` |
-| Build | OpenTelemetry Collector Builder (OCB) |
+| Feature    | Description                                |
+| ---------- | ------------------------------------------ |
+| Binary     | `tfo-collector`                            |
+| Build      | OpenTelemetry Collector Builder (OCB)      |
 | Components | 85+ OTEL community + TFO custom components |
-| CLI | Standard OTEL CLI with TFO branding |
-| Config | Standard OTEL YAML format |
-| Docker | `telemetryflow/telemetryflow-collector` |
+| CLI        | Standard OTEL CLI with TFO branding        |
+| Config     | Standard OTEL YAML format                  |
+| Docker     | `telemetryflow/telemetryflow-collector`    |
 
 ### TFO Custom Components
 
-| Component | Type | Description |
-|-----------|------|-------------|
-| `tfootlp` | Receiver | OTLP with v1+v2 endpoint support |
-| `tfo` | Exporter | Auto TFO auth header injection |
-| `tfoauth` | Extension | API key management |
-| `tfoidentity` | Extension | Collector identity |
+| Component     | Type      | Description                      |
+| ------------- | --------- | -------------------------------- |
+| `tfootlp`     | Receiver  | OTLP with v1+v2 endpoint support |
+| `tfo`         | Exporter  | Auto TFO auth header injection   |
+| `tfoauth`     | Extension | API key management               |
+| `tfoidentity` | Extension | Collector identity               |
 
 ## Upgrade Guide
 

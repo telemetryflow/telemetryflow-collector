@@ -1,0 +1,185 @@
+---
+# TFO-Collector ConfigMap
+# OTLP gateway: receives traces/metrics/logs → forwards to TFO Platform backend.
+# Auth and endpoint are injected via env vars (TELEMETRYFLOW_API_KEY_ID/SECRET/ENDPOINT).
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tfo-collector-config
+  namespace: telemetryflow
+  labels:
+    app.kubernetes.io/name: tfo-collector
+    app.kubernetes.io/component: collector
+data:
+  tfo-collector.yaml: |
+    extensions:
+      health_check:
+        endpoint: "0.0.0.0:13133"
+      zpages:
+        endpoint: "0.0.0.0:55679"
+      pprof:
+        endpoint: "0.0.0.0:1777"
+      tfoauth:
+        api_key_id: "${env:TELEMETRYFLOW_API_KEY_ID}"
+        api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
+      tfoidentity:
+        id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
+        name: "${env:TELEMETRYFLOW_COLLECTOR_NAME}"
+        description: "TFO Collector - Community Enterprise Observability Platform"
+        tags:
+          environment: "${env:TELEMETRYFLOW_ENVIRONMENT}"
+          datacenter: "${env:TELEMETRYFLOW_DATACENTER}"
+        enrich_resources: true
+
+    receivers:
+      tfootlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+            max_recv_msg_size_mib: 4
+          http:
+            endpoint: "0.0.0.0:4318"
+            transport: tcp
+            cors:
+              allowed_origins:
+                - "*"
+              allowed_headers:
+                - "*"
+        enable_v2_endpoints: true
+        v2_auth:
+          required: true
+          validate_secret: false
+
+    processors:
+      batch:
+        timeout: 200ms
+        send_batch_size: 8192
+        send_batch_max_size: 0
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      resource:
+        attributes:
+          - key: service.namespace
+            value: telemetryflow
+            action: upsert
+          - key: deployment.environment
+            value: "${env:TELEMETRYFLOW_ENVIRONMENT}"
+            action: upsert
+      k8sattributes:
+        passthrough: false
+        auth_type: serviceAccount
+        pod_association:
+          - sources:
+              - from: resource_attribute
+                name: k8s.pod.ip
+          - sources:
+              - from: connection
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.deployment.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.pod.start_time
+          labels:
+            - tag_name: app
+              key: app
+              from: pod
+            - tag_name: version
+              key: version
+              from: pod
+
+    connectors:
+      spanmetrics:
+        histogram:
+          explicit:
+            buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        dimensions:
+          - name: http.method
+            default: GET
+          - name: http.status_code
+          - name: http.route
+          - name: rpc.method
+          - name: rpc.service
+        exemplars:
+          enabled: true
+        namespace: traces
+        metrics_flush_interval: 15s
+      servicegraph:
+        latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        dimensions:
+          - http.method
+          - http.status_code
+        store:
+          ttl: 2s
+          max_items: 1000
+        cache_loop: 1s
+        store_expiration_loop: 2s
+
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: telemetryflow
+        const_labels:
+          collector: tfo-collector
+        send_timestamps: true
+        metric_expiration: 5m
+        enable_open_metrics: true
+        resource_to_telemetry_conversion:
+          enabled: true
+      tfo:
+        endpoint: "${env:TELEMETRYFLOW_ENDPOINT}"
+        use_v2_api: true
+        auth:
+          extension: tfoauth
+        collector_identity: tfoidentity
+        timeout: 30s
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
+
+    service:
+      extensions: [health_check, zpages, pprof, tfoauth, tfoidentity]
+      pipelines:
+        traces:
+          receivers: [tfootlp]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [tfo, spanmetrics, servicegraph]
+        metrics:
+          receivers: [tfootlp]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [tfo, prometheus]
+        metrics/spanmetrics:
+          receivers: [spanmetrics]
+          processors: [memory_limiter, batch]
+          exporters: [tfo, prometheus]
+        metrics/servicegraph:
+          receivers: [servicegraph]
+          processors: [memory_limiter, batch]
+          exporters: [tfo, prometheus]
+        logs:
+          receivers: [tfootlp]
+          processors: [memory_limiter, k8sattributes, resource, batch]
+          exporters: [tfo]
+      telemetry:
+        logs:
+          level: info
+          encoding: json
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: "0.0.0.0"
+                    port: 8888

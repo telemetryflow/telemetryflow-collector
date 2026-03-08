@@ -7,9 +7,9 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.6-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.7-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
@@ -141,21 +141,21 @@ telemetryflow-collector/
 
 ### Key Packages
 
-| Package | Description |
-|---------|-------------|
-| `cmd/tfo-collector` | Main entry point with Cobra CLI |
-| `internal/collector` | Core collector implementation |
-| `internal/config` | Configuration parsing and validation |
-| `pkg/plugin` | Component registry for extensibility |
+| Package              | Description                          |
+| -------------------- | ------------------------------------ |
+| `cmd/tfo-collector`  | Main entry point with Cobra CLI      |
+| `internal/collector` | Core collector implementation        |
+| `internal/config`    | Configuration parsing and validation |
+| `pkg/plugin`         | Component registry for extensibility |
 
 ## Build Options
 
 TelemetryFlow Collector supports two build modes:
 
-| Build Type | Command | Binary | Description |
-|------------|---------|--------|-------------|
-| **Standalone** | `make` | `tfo-collector` | Custom CLI with Cobra commands |
-| **OCB** | `make build` | `tfo-collector-ocb` | Standard OpenTelemetry Collector |
+| Build Type     | Command      | Binary              | Description                      |
+| -------------- | ------------ | ------------------- | -------------------------------- |
+| **Standalone** | `make`       | `tfo-collector`     | Custom CLI with Cobra commands   |
+| **OCB**        | `make build` | `tfo-collector-ocb` | Standard OpenTelemetry Collector |
 
 ### When to Use Each Build
 
@@ -198,6 +198,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -338,9 +339,11 @@ make test-all
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
@@ -348,17 +351,20 @@ Brief description of changes
 - [ ] New component (receiver/processor/exporter)
 
 ## Build Type Affected
+
 - [ ] Standalone build
 - [ ] OCB build
 - [ ] Both
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] E2E tests added/updated
 - [ ] Configuration validated
 
 ## Checklist
+
 - [ ] Code follows project style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
@@ -506,6 +512,7 @@ func NewCollector(config *Config) (*Collector, error) {
 ### Recognition
 
 Contributors are recognized in:
+
 - Release notes
 - CONTRIBUTORS.md file
 - GitHub contributors page

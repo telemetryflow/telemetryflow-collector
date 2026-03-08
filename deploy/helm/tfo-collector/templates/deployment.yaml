@@ -1,0 +1,220 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tfo-collector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tfo-collector.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tfo-collector.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "tfo-collector.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ toYaml .Values.config | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "tfo-collector.serviceAccountName" . }}
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: tfo-collector
+          image: {{ include "tfo-collector.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - -c
+            - /etc/tfo-collector/tfo-collector.yaml
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # Auth + endpoint — read by tfoauth/tfoidentity extensions via env
+            - name: TELEMETRYFLOW_ENDPOINT
+              value: {{ required "telemetryflow.endpoint is required" .Values.telemetryflow.endpoint | quote }}
+            - name: TELEMETRYFLOW_API_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tfo-collector.secretName" . }}
+                  key: TELEMETRYFLOW_API_KEY_ID
+            - name: TELEMETRYFLOW_API_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tfo-collector.secretName" . }}
+                  key: TELEMETRYFLOW_API_KEY_SECRET
+            {{- if .Values.telemetryflow.workspaceId }}
+            - name: TELEMETRYFLOW_WORKSPACE_ID
+              value: {{ .Values.telemetryflow.workspaceId | quote }}
+            {{- end }}
+            {{- if .Values.telemetryflow.tenantId }}
+            - name: TELEMETRYFLOW_TENANT_ID
+              value: {{ .Values.telemetryflow.tenantId | quote }}
+            {{- end }}
+            # Collector identity
+            - name: TELEMETRYFLOW_COLLECTOR_NAME
+              value: {{ .Values.collectorName | quote }}
+            - name: TELEMETRYFLOW_ENVIRONMENT
+              value: {{ .Values.environment | quote }}
+            - name: TELEMETRYFLOW_DATACENTER
+              value: {{ .Values.datacenter | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: otlp-grpc
+              containerPort: {{ .Values.ports.otlpGrpc }}
+              protocol: TCP
+            - name: otlp-http
+              containerPort: {{ .Values.ports.otlpHttp }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.ports.metrics }}
+              protocol: TCP
+            - name: prom-exp
+              containerPort: {{ .Values.ports.prometheusExporter }}
+              protocol: TCP
+            - name: health
+              containerPort: {{ .Values.ports.health }}
+              protocol: TCP
+            - name: zpages
+              containerPort: {{ .Values.ports.zpages }}
+              protocol: TCP
+            - name: pprof
+              containerPort: {{ .Values.ports.pprof }}
+              protocol: TCP
+          # startupProbe: up to 90s (18×5s) for cold start
+          startupProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.ports.health }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.ports.health }}
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.ports.health }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tfo-collector
+              readOnly: true
+            - name: queue
+              mountPath: /var/lib/tfo-collector/queue
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "tfo-collector.configMapName" . }}
+        - name: queue
+          {{- if .Values.queue.pvc.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "tfo-collector.queuePvcName" . }}
+          {{- else }}
+          emptyDir:
+            sizeLimit: {{ .Values.queue.emptyDir.sizeLimit }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "tfo-collector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tfo-collector.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "tfo-collector.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "tfo-collector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tfo-collector.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "tfo-collector.selectorLabels" . | nindent 6 }}
+{{- end }}

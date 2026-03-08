@@ -66,7 +66,7 @@ on:
         default: false
 
 env:
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.26'
   OTEL_VERSION: '0.146.1'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME: tfo-collector
@@ -147,6 +147,9 @@ jobs:
 
       - name: Run go vet
         run: make vet
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
 
       - name: Run staticcheck
         run: make staticcheck

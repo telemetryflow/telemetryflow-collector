@@ -1,0 +1,16 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "tfo-collector.fullname" . }}
+  labels:
+    {{- include "tfo-collector.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "tfo-collector.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "tfo-collector.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

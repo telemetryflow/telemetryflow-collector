@@ -43,7 +43,7 @@
 services:
   tfo-collector:
     container_name: ${CONTAINER_NAME:-tfo-collector}
-    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.6}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.1.7}
     build:
       context: .
       dockerfile: Dockerfile

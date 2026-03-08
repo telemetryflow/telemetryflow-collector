@@ -1,0 +1,49 @@
+---
+# TFO-Collector Service
+# Exposes OTLP receiver ports within the cluster so that instrumented
+# applications can send traces/metrics/logs to the collector.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tfo-collector
+  namespace: telemetryflow
+  labels:
+    app.kubernetes.io/name: tfo-collector
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/part-of: telemetryflow
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tfo-collector
+  ports:
+    # OTLP gRPC — used by SDKs with gRPC transport
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP
+    # OTLP HTTP — used by SDKs with HTTP transport (v1 open + v2 authenticated)
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+      protocol: TCP
+    # Prometheus self-observability metrics (OTel collector internal telemetry)
+    - name: metrics
+      port: 8888
+      targetPort: metrics
+      protocol: TCP
+    # Prometheus exporter (scraped metrics from received telemetry)
+    - name: prom-exp
+      port: 8889
+      targetPort: prom-exp
+      protocol: TCP
+    # Health check endpoint
+    - name: health
+      port: 13133
+      targetPort: health
+      protocol: TCP
+    # zPages debug UI
+    - name: zpages
+      port: 55679
+      targetPort: zpages
+      protocol: TCP

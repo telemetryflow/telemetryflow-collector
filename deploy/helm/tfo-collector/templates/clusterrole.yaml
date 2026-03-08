@@ -1,0 +1,34 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "tfo-collector.fullname" . }}
+  labels:
+    {{- include "tfo-collector.labels" . | nindent 4 }}
+rules:
+  # Core resources — required by k8sattributes processor for pod/namespace/node enrichment
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - pods
+      - namespaces
+      - endpoints
+      - services
+      - replicationcontrollers
+    verbs: ["get", "list", "watch"]
+
+  # Apps workloads — for k8s.deployment.name enrichment
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+
+  # Non-resource URLs — Prometheus metrics
+  - nonResourceURLs:
+      - /metrics
+      - /metrics/cadvisor
+    verbs: ["get"]
+{{- end }}

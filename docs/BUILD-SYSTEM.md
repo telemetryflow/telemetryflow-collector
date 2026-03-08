@@ -205,7 +205,7 @@ tfo-collector/
 ```makefile
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.1.6
+VERSION ?= 1.1.7
 OTEL_VERSION := 0.147.0
 
 BUILD_DIR := ./build
