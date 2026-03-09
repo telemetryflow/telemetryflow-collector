@@ -203,6 +203,76 @@ config:
           - tag_name: version
             key: version
             from: pod
+    # TFO-Agent: Normalize cAdvisor Prometheus-style metric names
+    transform/cadvisor:
+      error_mode: ignore
+      metric_statements:
+        - context: metric
+          statements:
+            # CPU
+            - replace_pattern(name, "^container_cpu_usage_seconds_total$", "container.cadvisor.cpu.usage_seconds_total")
+            - replace_pattern(name, "^container_cpu_system_seconds_total$", "container.cadvisor.cpu.system_seconds_total")
+            - replace_pattern(name, "^container_cpu_user_seconds_total$", "container.cadvisor.cpu.user_seconds_total")
+            - replace_pattern(name, "^container_cpu_cfs_throttled_seconds_total$", "container.cadvisor.cpu.cfs.throttled_seconds_total")
+            - replace_pattern(name, "^container_cpu_cfs_periods_total$", "container.cadvisor.cpu.cfs.periods_total")
+            - replace_pattern(name, "^container_cpu_cfs_throttled_periods_total$", "container.cadvisor.cpu.cfs.throttled_periods_total")
+            # Memory
+            - replace_pattern(name, "^container_memory_usage_bytes$", "container.cadvisor.memory.usage_bytes")
+            - replace_pattern(name, "^container_memory_working_set_bytes$", "container.cadvisor.memory.working_set_bytes")
+            - replace_pattern(name, "^container_memory_rss$", "container.cadvisor.memory.rss_bytes")
+            - replace_pattern(name, "^container_memory_cache$", "container.cadvisor.memory.cache_bytes")
+            - replace_pattern(name, "^container_memory_swap$", "container.cadvisor.memory.swap_bytes")
+            - replace_pattern(name, "^container_memory_failures_total$", "container.cadvisor.memory.failures_total")
+            # Network
+            - replace_pattern(name, "^container_network_receive_bytes_total$", "container.cadvisor.network.receive_bytes_total")
+            - replace_pattern(name, "^container_network_transmit_bytes_total$", "container.cadvisor.network.transmit_bytes_total")
+            - replace_pattern(name, "^container_network_receive_errors_total$", "container.cadvisor.network.receive_errors_total")
+            - replace_pattern(name, "^container_network_transmit_errors_total$", "container.cadvisor.network.transmit_errors_total")
+            - replace_pattern(name, "^container_network_receive_packets_dropped_total$", "container.cadvisor.network.receive_drops_total")
+            - replace_pattern(name, "^container_network_transmit_packets_dropped_total$", "container.cadvisor.network.transmit_drops_total")
+            # Filesystem
+            - replace_pattern(name, "^container_fs_usage_bytes$", "container.cadvisor.fs.usage_bytes")
+            - replace_pattern(name, "^container_fs_limit_bytes$", "container.cadvisor.fs.limit_bytes")
+            - replace_pattern(name, "^container_fs_reads_bytes_total$", "container.cadvisor.fs.read_bytes_total")
+            - replace_pattern(name, "^container_fs_writes_bytes_total$", "container.cadvisor.fs.write_bytes_total")
+            # Machine
+            - replace_pattern(name, "^machine_cpu_cores$", "machine.cpu.cores")
+            - replace_pattern(name, "^machine_memory_bytes$", "machine.memory.bytes")
+            - replace_pattern(name, "^machine_cpu_cache_capacity_kilobytes$", "machine.cpu.cache.capacity_kilobytes")
+    # TFO-Agent: Normalize Cilium Hubble Prometheus-style metric names
+    transform/hubble:
+      error_mode: ignore
+      metric_statements:
+        - context: metric
+          statements:
+            - replace_pattern(name, "^hubble_flows_processed_total$", "hubble.flows.processed_total")
+            - replace_pattern(name, "^hubble_drop_total$", "hubble.drop_total")
+            - replace_pattern(name, "^hubble_tcp_flags_total$", "hubble.tcp.flags_total")
+            - replace_pattern(name, "^hubble_dns_queries_total$", "hubble.dns.queries_total")
+            - replace_pattern(name, "^hubble_dns_responses_total$", "hubble.dns.responses_total")
+            - replace_pattern(name, "^hubble_http_requests_total$", "hubble.http.requests_total")
+            - replace_pattern(name, "^hubble_http_responses_total$", "hubble.http.responses_total")
+            - replace_pattern(name, "^hubble_http_request_duration_seconds$", "hubble.http.request_duration_seconds")
+    # TFO-Agent: Group Kubernetes metrics by resource identity
+    groupbyattrs/k8s:
+      keys:
+        - k8s.cluster.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.pod.name
+        - k8s.container.name
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.replicaset.name
+        - k8s.job.name
+        - k8s.cronjob.name
+    # TFO-Agent: Tag all agent-sourced telemetry
+    attributes/agent:
+      actions:
+        - key: tfo.source
+          value: "tfo-agent"
+          action: insert
 
   connectors:
     spanmetrics:
@@ -264,11 +334,20 @@ config:
     pipelines:
       traces:
         receivers: [tfootlp]
-        processors: [memory_limiter, k8sattributes, resource, batch]
+        processors: [memory_limiter, k8sattributes, resource, attributes/agent, batch]
         exporters: [tfo, spanmetrics, servicegraph]
+      # Metrics — all 16 TFO-Agent collectors + app metrics
       metrics:
         receivers: [tfootlp]
-        processors: [memory_limiter, k8sattributes, resource, batch]
+        processors:
+          - memory_limiter
+          - k8sattributes       # enrich app metrics with K8s context from connection
+          - groupbyattrs/k8s    # scope K8s collector metrics to resource identity
+          - resource            # add service.namespace, deployment.environment
+          - transform/cadvisor  # normalize container_* / machine_* → container.cadvisor.*
+          - transform/hubble    # normalize hubble_* → hubble.*
+          - attributes/agent    # tag with tfo.source=tfo-agent
+          - batch
         exporters: [tfo, prometheus]
       metrics/spanmetrics:
         receivers: [spanmetrics]
@@ -278,9 +357,15 @@ config:
         receivers: [servicegraph]
         processors: [memory_limiter, batch]
         exporters: [tfo, prometheus]
+      # Logs — pod container logs (k8s-pod-logs) + eBPF Hubble events
       logs:
         receivers: [tfootlp]
-        processors: [memory_limiter, k8sattributes, resource, batch]
+        processors:
+          - memory_limiter
+          - k8sattributes
+          - resource
+          - attributes/agent
+          - batch
         exporters: [tfo]
     telemetry:
       logs:
