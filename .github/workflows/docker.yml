@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 #
 # This workflow builds and publishes Docker images for TelemetryFlow Collector:
 # - Build Type: OCB Native (100% OpenTelemetry Collector Builder)
@@ -47,7 +47,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., 1.1.5)'
+        description: 'Version tag (e.g., 1.1.8)'
         required: false
         default: ''
       push:
@@ -64,7 +64,7 @@ env:
   REGISTRY_DOCKER: docker.io
   IMAGE_NAME: telemetryflow/telemetryflow-collector
   PRODUCT_NAME: TelemetryFlow Collector
-  OTEL_VERSION: '0.146.1'
+  OTEL_VERSION: '0.147.0'
 
 permissions:
   contents: read

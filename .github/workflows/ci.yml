@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 #
 # This workflow provides continuous integration for TelemetryFlow Collector:
 # - Code quality checks (lint, vet, fmt)
@@ -67,7 +67,7 @@ on:
 
 env:
   GO_VERSION: '1.26'
-  OTEL_VERSION: '0.146.1'
+  OTEL_VERSION: '0.147.0'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME: tfo-collector
 
