@@ -66,7 +66,7 @@ spec:
 
       containers:
         - name: tfo-collector
-          image: telemetryflow/telemetryflow-collector:1.1.7
+          image: telemetryflow/telemetryflow-collector:1.1.8
           imagePullPolicy: Always
 
           args:

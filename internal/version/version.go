@@ -1,7 +1,7 @@
 // Package version provides build and version information for TelemetryFlow Collector.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-// Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+// Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ const (
 // Build-time variables (set via ldflags)
 var (
 	// Version is the semantic version of the collector
-	Version = "1.1.7"
+	Version = "1.1.8"
 
 	// GitCommit is the git commit hash
 	GitCommit = "unknown"

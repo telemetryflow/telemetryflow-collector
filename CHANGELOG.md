@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.7-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.8-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
@@ -23,6 +23,31 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.8] - 2026-03-12
+
+### Added
+
+- **Helm Chart (`deploy/helm/telemetryflow-collector/`)**: New production-grade Helm chart for deploying TFO-Collector on Kubernetes clusters
+  - Full `values.yaml` with TFO Platform connection settings, resource limits, ingress, autoscaling, health probes, tolerations/affinity
+  - Templates: Deployment, Service, ConfigMap, Secret, ServiceAccount, HPA, PodMonitor, Ingress, `NOTES.txt`, `_helpers.tpl`
+  - Renamed from `tfo-collector` to `telemetryflow-collector` for naming consistency with TFO-Agent Helm chart
+
+### Changed
+
+- **License Headers Standardized**: Updated all `*.go` files with full Apache License 2.0 header block (38 files)
+  - Added complete Apache License 2.0 SPDX block to all non-generated Go source files
+  - Replaced short copyright-only headers with full license preamble matching Apache 2.0 requirements
+  - Skipped auto-generated `build/` files (OCB-generated, not hand-authored)
+- **Copyright Owner Corrected**: Updated `DevOpsCorner Indonesia` → `TelemetryFlow` in copyright lines
+  - `internal/version/version.go`: copyright line updated
+  - `pkg/banner/banner.go`: copyright line updated
+  - `Makefile`: copyright comment header updated
+- **Version Bump**: Updated version from 1.1.7 to 1.1.8 across all files
+  - `internal/version/version.go`, `pkg/banner/banner.go`, `Makefile`
+  - `Dockerfile`, `.env.example`, `docker-compose.yml`, `docker-compose.e2e.yml`
+  - `deploy/helm/telemetryflow-collector/Chart.yaml`, `deploy/kubernetes/deployment.yaml`
+  - All configs and documentation files
 
 ## [1.1.7] - 2026-03-08
 
@@ -394,7 +419,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                               |
 | ------- | ---------- | --------------------------------------------------------- |
-| 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster  |
+| 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected  |
+| 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster                                 |
 | 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade    |
 | 1.1.5   | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump      |
 | 1.1.4   | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes                |

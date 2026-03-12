@@ -1,6 +1,6 @@
 # TelemetryFlow Collector - Component Reference
 
-- **Version:** 1.1.6
+- **Version:** 1.1.8
 - **OTEL Version:** 0.147.0
 - **Last Updated:** March 2026
 

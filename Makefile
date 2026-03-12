@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - Makefile
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
 #
 # Build Type: Direct Go Build with TFO Custom Components
 # Build and development commands for TelemetryFlow Collector
@@ -9,7 +9,7 @@
 # Build configuration
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.1.7
+VERSION ?= 1.1.8
 OTEL_VERSION := 0.147.0
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")

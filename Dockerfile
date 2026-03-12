@@ -40,7 +40,7 @@
 FROM golang:1.26-alpine AS builder
 
 # Build arguments
-ARG VERSION=1.1.7
+ARG VERSION=1.1.8
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
@@ -84,7 +84,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 FROM alpine:3.23
 
 # Build arguments for labels
-ARG VERSION=1.1.7
+ARG VERSION=1.1.8
 ARG OTEL_VERSION=0.147.0
 
 # =============================================================================
@@ -173,12 +173,12 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 # =============================================================================
 # Build with:
 #   docker build \
-#     --build-arg VERSION=1.1.7 \
+#     --build-arg VERSION=1.1.8 \
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
 #     --build-arg OTEL_VERSION=0.146.1 \
-#     -t telemetryflow/telemetryflow-collector:1.1.6 .
+#     -t telemetryflow/telemetryflow-collector:1.1.8 .
 #
 # Run with:
 #   docker run -d \
@@ -190,11 +190,11 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 #     -e TELEMETRYFLOW_API_KEY_ID=tfk_your_key \
 #     -e TELEMETRYFLOW_API_KEY_SECRET=tfs_your_secret \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.1.6
+#     telemetryflow/telemetryflow-collector:1.1.8
 #
 # Validate config:
 #   docker run --rm \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.1.6 \
+#     telemetryflow/telemetryflow-collector:1.1.8 \
 #     validate -c /etc/tfo-collector/tfo-collector.yaml
 # =============================================================================

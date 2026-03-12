@@ -1,5 +1,5 @@
 # =============================================================================
-# TelemetryFlow Collector — Agent-Optimized Configuration (v1.1.6)
+# TelemetryFlow Collector — Agent-Optimized Configuration (v1.1.8)
 # =============================================================================
 # Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
@@ -325,7 +325,7 @@ exporters:
       queue_size: 2000   # larger queue for 16-collector metric volume
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.1.6"
+      User-Agent: "TFO-Collector-Agent/1.1.8"
 
   # TFO Platform exporter for logs (pod logs + eBPF Hubble events)
   tfo/logs:
@@ -346,7 +346,7 @@ exporters:
       queue_size: 2000   # larger queue for pod logs from all namespaces
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.1.6"
+      User-Agent: "TFO-Collector-Agent/1.1.8"
 
   # TFO Platform exporter for traces (app instrumentation, spanmetrics, servicegraph)
   tfo/traces:
@@ -367,7 +367,7 @@ exporters:
       queue_size: 2000
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.1.6"
+      User-Agent: "TFO-Collector-Agent/1.1.8"
 
 # =============================================================================
 # SERVICE — Agent-Optimized Pipelines

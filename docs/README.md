@@ -1,6 +1,6 @@
 # TelemetryFlow Collector Documentation
 
-- **Version:** 1.1.6
+- **Version:** 1.1.8
 - **OTEL Version:** 0.147.0
 - **Last Updated:** March 2026
 - **Status:** Production Ready
@@ -73,7 +73,7 @@ docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
   -v /path/to/config.yaml:/etc/tfo-collector/config.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.1.6
+  telemetryflow/telemetryflow-collector:1.1.8
 ```
 
 ---
@@ -381,9 +381,9 @@ make tidy               # Tidy go modules
 ```bash
 # Build image
 docker build \
-  --build-arg VERSION=1.1.7 \
+  --build-arg VERSION=1.1.8 \
   --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
-  -t telemetryflow/telemetryflow-collector:1.1.6 .
+  -t telemetryflow/telemetryflow-collector:1.1.8 .
 
 # Run container
 docker run -d \
@@ -392,7 +392,7 @@ docker run -d \
   -v /path/to/config.yaml:/etc/tfo-collector/config.yaml:ro \
   -e TELEMETRYFLOW_API_KEY_ID=tfk_xxx \
   -e TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx \
-  telemetryflow/telemetryflow-collector:1.1.6
+  telemetryflow/telemetryflow-collector:1.1.8
 ```
 
 ### Kubernetes
@@ -411,7 +411,7 @@ spec:
     spec:
       containers:
       - name: collector
-        image: telemetryflow/telemetryflow-collector:1.1.6
+        image: telemetryflow/telemetryflow-collector:1.1.8
         args: ["--config", "/etc/tfo-collector/config.yaml"]
         ports:
         - containerPort: 4317
