@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.52.0
 	go.opentelemetry.io/collector/receiver v1.52.0
 	go.uber.org/zap v1.27.1
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.3
 )
 
 require (
