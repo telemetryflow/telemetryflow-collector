@@ -320,7 +320,7 @@ require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.83 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/antchfx/xmlquery v1.5.0 // indirect
-	github.com/antchfx/xpath v1.3.5 // indirect
+	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/apache/arrow-go/v18 v18.4.0 // indirect
 	github.com/apache/cassandra-gocql-driver/v2 v2.0.0 // indirect
 	github.com/apache/pulsar-client-go v0.18.0 // indirect
