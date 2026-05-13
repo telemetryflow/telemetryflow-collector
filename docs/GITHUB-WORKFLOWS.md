@@ -1,6 +1,6 @@
 # TelemetryFlow Collector - GitHub Workflows
 
-- **Version:** 1.1.9
+- **Version:** 1.2.0
 - **Last Updated:** March 2026
 
 This document describes the GitHub Actions workflows available for TelemetryFlow Collector with OCB-native architecture.
@@ -259,12 +259,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "Git Tag v1.1.9"
-        GT[v1.1.9]
+    subgraph "Git Tag v1.2.0"
+        GT[v1.2.0]
     end
 
     subgraph "Docker Tags"
-        T1[1.1.9]
+        T1[1.2.0]
         T2[1.1]
         T3[1]
         T4[latest]
@@ -362,7 +362,7 @@ flowchart LR
 
     subgraph "Environment"
         GO[GO_VERSION: 1.24]
-        OTEL[OTEL_VERSION: 0.147.0]
+        OTEL[OTEL_VERSION: 0.152.0]
     end
 
     GH --> |Required| ALL[All Workflows]
@@ -430,8 +430,8 @@ flowchart LR
 
 ```bash
 # Create release
-git tag v1.1.9
-git push origin v1.1.9
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 ### Docker Pull Commands
@@ -441,7 +441,7 @@ git push origin v1.1.9
 docker pull telemetryflow/telemetryflow-collector:latest
 
 # Specific version
-docker pull telemetryflow/telemetryflow-collector:1.1.9
+docker pull telemetryflow/telemetryflow-collector:1.2.0
 ```
 
 ### Run Command
@@ -451,7 +451,7 @@ docker pull telemetryflow/telemetryflow-collector:1.1.9
 docker run -d \
   --name tfo-collector \
   -p 4317:4317 -p 4318:4318 -p 8888:8888 -p 13133:13133 \
-  telemetryflow/telemetryflow-collector:1.1.9
+  telemetryflow/telemetryflow-collector:1.2.0
 ```
 
 ---

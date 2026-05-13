@@ -45,8 +45,8 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		ProductName: "TelemetryFlow Collector",
-		Version:     "1.1.9",
-		BasedOn:     "OTEL Collector v0.147.0",
+		Version:     "1.2.0",
+		BasedOn:     "OTEL Collector v0.152.0",
 		Motto:       "Community Enterprise Observability Platform (CEOP)",
 		GitCommit:   "unknown",
 		BuildTime:   "unknown",

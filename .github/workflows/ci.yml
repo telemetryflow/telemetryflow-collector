@@ -67,7 +67,7 @@ on:
 
 env:
   GO_VERSION: '1.26'
-  OTEL_VERSION: '0.147.0'
+  OTEL_VERSION: '0.152.0'
   PRODUCT_NAME: TelemetryFlow Collector
   BINARY_NAME: tfo-collector
 

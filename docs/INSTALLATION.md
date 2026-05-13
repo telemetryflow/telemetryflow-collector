@@ -1,7 +1,7 @@
 # TelemetryFlow Collector Installation Guide
 
-- **Version:** 1.1.9
-- **OTEL Version:** 0.147.0
+- **Version:** 1.2.0
+- **OTEL Version:** 0.152.0
 - **Last Updated:** March 2026
 
 ---
@@ -42,10 +42,10 @@ make build
 
 ```bash
 # Pull from Docker Hub
-docker pull telemetryflow/telemetryflow-collector:1.1.9
+docker pull telemetryflow/telemetryflow-collector:1.2.0
 
 # Or from GitHub Container Registry
-docker pull ghcr.io/telemetryflow/telemetryflow-collector:1.1.9
+docker pull ghcr.io/telemetryflow/telemetryflow-collector:1.2.0
 ```
 
 ### Method 3: Docker Compose
@@ -97,7 +97,7 @@ make build
 #     ___________    .__                        __
 #     \__    ___/___ |  |   ____   _____   _____/  |________ ___.__. ...
 #
-# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.1.9"}
+# {"level":"info","msg":"Starting TelemetryFlow Collector","version":"1.2.0"}
 ```
 
 ---
@@ -126,7 +126,7 @@ docker run -d \
   -v /var/lib/tfo-collector:/var/lib/tfo-collector \
   -e TELEMETRYFLOW_API_KEY_ID=tfk_xxx \
   -e TELEMETRYFLOW_API_KEY_SECRET=tfs_xxx \
-  telemetryflow/telemetryflow-collector:1.1.9 \
+  telemetryflow/telemetryflow-collector:1.2.0 \
   --config /etc/tfo-collector/config.yaml
 
 # Check logs
@@ -144,7 +144,7 @@ version: "3.8"
 
 services:
   tfo-collector:
-    image: telemetryflow/telemetryflow-collector:1.1.9
+    image: telemetryflow/telemetryflow-collector:1.2.0
     container_name: tfo-collector
     command: ["--config", "/etc/tfo-collector/config.yaml"]
     environment:
@@ -423,7 +423,7 @@ metadata:
   namespace: observability
   labels:
     app: tfo-collector
-    version: "1.1.9"
+    version: "1.2.0"
 spec:
   replicas: 3
   selector:
@@ -433,13 +433,13 @@ spec:
     metadata:
       labels:
         app: tfo-collector
-        version: "1.1.9"
+        version: "1.2.0"
     spec:
       serviceAccountName: tfo-collector
 
       containers:
         - name: tfo-collector
-          image: telemetryflow/telemetryflow-collector:1.1.9
+          image: telemetryflow/telemetryflow-collector:1.2.0
           args:
             - "--config"
             - "/etc/tfo-collector/tfo-collector.yaml"
@@ -646,14 +646,14 @@ tfo-collector --version
 
 ```bash
 # Pull new image
-docker pull telemetryflow/telemetryflow-collector:1.1.9
+docker pull telemetryflow/telemetryflow-collector:1.2.0
 
 # Stop and remove
 docker stop tfo-collector
 docker rm tfo-collector
 
 # Start with new image
-docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1.9 ...
+docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.2.0 ...
 ```
 
 ### Kubernetes Upgrade
@@ -661,7 +661,7 @@ docker run -d --name tfo-collector ... telemetryflow/telemetryflow-collector:1.1
 ```bash
 # Update image
 kubectl set image deployment/tfo-collector \
-  tfo-collector=telemetryflow/telemetryflow-collector:1.1.9 \
+  tfo-collector=telemetryflow/telemetryflow-collector:1.2.0 \
   -n observability
 
 # Watch rollout
@@ -690,7 +690,7 @@ sudo userdel telemetryflow
 ```bash
 docker stop tfo-collector
 docker rm tfo-collector
-docker rmi telemetryflow/telemetryflow-collector:1.1.9
+docker rmi telemetryflow/telemetryflow-collector:1.2.0
 ```
 
 ### Kubernetes

@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.9-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.0-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -24,6 +24,28 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-13
+
+### Security
+
+- **CVE-2026-33997 (MEDIUM)**: Moby plugin privilege validation bypass — resolved by upgrading all OTel Collector Contrib packages from v0.146.0 to v0.152.0, which migrated from `github.com/docker/docker` (unfixed) to `github.com/moby/moby` (patched)
+
+### Changed
+
+- **OpenTelemetry Collector Contrib v0.146.0 → v0.152.0**: Full upgrade of all 20+ contrib packages
+  - Connectors: countconnector, servicegraphconnector, spanmetricsconnector
+  - Exporters: fileexporter, prometheusexporter, prometheusremotewriteexporter
+  - Extensions: basicauthextension, bearertokenauthextension, healthcheckextension, pprofextension
+  - Processors: attributesprocessor, filterprocessor, resourcedetectionprocessor, resourceprocessor, tailsamplingprocessor, transformprocessor, k8sattributesprocessor
+  - Receivers: filelogreceiver, hostmetricsreceiver, jaegerreceiver, prometheusreceiver, zipkinreceiver
+- **OpenTelemetry Collector Core Stable v1.53.0 → v1.58.0**
+  - `component`, `config/configopaque`, `confmap`, `consumer`, `pdata`, `processor`, `receiver`, `extension`, `exporter`, `pipeline`, `client`
+- **OpenTelemetry Collector Core Unstable v0.146.1/v0.147.0 → v0.152.0**
+  - `connector`, `exporter/debugexporter`, `exporter/otlpexporter`, `exporter/otlphttpexporter`, `processor/batchprocessor`, `processor/memorylimiterprocessor`, `receiver/otlpreceiver`, `service`, `otelcol`, `extension/zpagesextension`
+- **OTel SDK v1.40.0 → v1.43.0**, **OTel Contrib Instrumentation v0.65.0 → v0.68.0**
+- **Prometheus v0.309.2 → v0.311.4**
+- **Version Bump**: Updated version from 1.1.9 to 1.2.0 across all files
+
 ## [1.1.9] - 2026-05-13
 
 ### Security
@@ -35,15 +57,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Go Standard Library**: Transitive upgrades from `golang.org/x/net` bump
+- **Go Standard Library**: Transitive upgrades
   - `golang.org/x/crypto` v0.48.0 → v0.50.0
-  - `golang.org/x/mod` v0.33.0 → v0.34.0
-  - `golang.org/x/sync` v0.19.0 → v0.20.0
+  - `golang.org/x/mod` v0.33.0 → v0.35.0
+  - `golang.org/x/net` v0.51.0 → v0.53.0
   - `golang.org/x/sys` v0.41.0 → v0.43.0
-  - `golang.org/x/term` v0.40.0 → v0.42.0
   - `golang.org/x/text` v0.34.0 → v0.36.0
-  - `golang.org/x/tools` v0.42.0 → v0.43.0
-- **go.mod**: Added documented `replace` block section for tracking unfixed Moby (docker/docker) CVEs (GO-2026-4887, GO-2026-4883)
 - **Version Bump**: Updated version from 1.1.8 to 1.1.9 across all files
 
 ## [1.1.8] - 2026-03-12
@@ -441,7 +460,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                               |
 | ------- | ---------- | --------------------------------------------------------- |
-| 1.1.9   | 2026-05-13 | Go 1.26.3 toolchain, security vuln fixes (x/net, gRPC, xpath)              |
+| 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                     |
+| 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                         |
 | 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected  |
 | 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster                                 |
 | 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade    |
@@ -477,11 +497,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Guide
 
+### From v1.1.9 to v1.2.0
+
+1. **OTel**: Major dependency upgrade — OTel Contrib v0.146.0 → v0.152.0, Core Stable v1.53.0 → v1.58.0
+2. **go.mod**: Run `go mod tidy` to pull updated dependencies
+3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.2.0`
+4. **Security**: Resolves CVE-2026-33997 (Moby plugin privilege bypass)
+
 ### From v1.1.8 to v1.1.9
 
 1. **Go**: Ensure Go 1.26.3+ is installed (`go version`)
 2. **go.mod**: Run `go mod tidy` to pull updated security patches
 3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.1.9`
+4. **Security**: Fixes GO-2026-4918 (x/net), GO-2026-4762 (gRPC), GO-2026-4526 (xpath)
 
 ### From v1.1.5 to v1.1.6
 
