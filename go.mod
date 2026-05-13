@@ -2,6 +2,8 @@ module github.com/telemetryflow/telemetryflow-collector
 
 go 1.26
 
+toolchain go1.26.3
+
 // =============================================================================
 // Direct Dependencies
 // =============================================================================
@@ -131,7 +133,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antchfx/xmlquery v1.5.0 // indirect
-	github.com/antchfx/xpath v1.3.5 // indirect
+	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/apache/thrift v0.22.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.1 // indirect
@@ -446,23 +448,23 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a // indirect
-	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/term v0.42.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
-	google.golang.org/grpc v1.79.1 // indirect
+	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -484,11 +486,23 @@ require (
 require github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.147.0
 
 // =============================================================================
-// Replace Directives for Local TFO Components
+// Replace Directives
 // =============================================================================
 replace (
+	// -------------------------------------------------------------------------
+	// Local TFO Components
+	// -------------------------------------------------------------------------
 	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoauthextension => ./components/extension/tfoauthextension
 	github.com/telemetryflow/telemetryflow-collector/components/extension/tfoidentityextension => ./components/extension/tfoidentityextension
 	github.com/telemetryflow/telemetryflow-collector/components/tfoexporter => ./components/tfoexporter
 	github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver => ./components/tfootlpreceiver
+
+// -------------------------------------------------------------------------
+// Security: Moby (docker/docker) CVE Workarounds
+// See: GO-2026-4887 (AuthZ plugin bypass via oversized request bodies)
+// See: GO-2026-4883 (Off-by-one error in plugin privilege validation)
+// TODO: Remove once github.com/docker/docker releases a fix (v28.5.3+).
+// Transitive dependency from OTel Collector Contrib (resourcedetection,
+// prometheusexporter, hostmetricsreceiver, k8sattributesprocessor).
+// -------------------------------------------------------------------------
 )

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 IMAGE="telemetryflow/telemetryflow-collector"
-VERSION="1.1.8"
+VERSION="1.1.9"
 COMMIT=$(git rev-parse --short HEAD)
 YYYYMMDD=$(date +"%Y%m%d")
 

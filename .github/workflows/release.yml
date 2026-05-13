@@ -25,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.1.8)'
+        description: 'Version to release (e.g., 1.1.9)'
         required: true
-        default: '1.1.8'
+        default: '1.1.9'
       prerelease:
         description: 'Mark as pre-release'
         required: false

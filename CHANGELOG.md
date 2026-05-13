@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.1.8-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.1.9-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.147.0-blueviolet)](https://opentelemetry.io/)
@@ -23,6 +23,28 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.1.9] - 2026-05-13
+
+### Security
+
+- **Go toolchain upgraded 1.26.2 → 1.26.3** (`go.mod`): latest stable Go 1.26 patch release
+- **golang.org/x/net v0.51.0 → v0.53.0**: fixes GO-2026-4918 — infinite loop in HTTP/2 transport when given bad `SETTINGS_MAX_FRAME_SIZE`
+- **google.golang.org/grpc v1.79.1 → v1.79.3**: fixes GO-2026-4762 — authorization bypass via missing leading slash in `:path`
+- **github.com/antchfx/xpath v1.3.5 → v1.3.6**: fixes GO-2026-4526 — infinite loop in XPath evaluation
+
+### Changed
+
+- **Go Standard Library**: Transitive upgrades from `golang.org/x/net` bump
+  - `golang.org/x/crypto` v0.48.0 → v0.50.0
+  - `golang.org/x/mod` v0.33.0 → v0.34.0
+  - `golang.org/x/sync` v0.19.0 → v0.20.0
+  - `golang.org/x/sys` v0.41.0 → v0.43.0
+  - `golang.org/x/term` v0.40.0 → v0.42.0
+  - `golang.org/x/text` v0.34.0 → v0.36.0
+  - `golang.org/x/tools` v0.42.0 → v0.43.0
+- **go.mod**: Added documented `replace` block section for tracking unfixed Moby (docker/docker) CVEs (GO-2026-4887, GO-2026-4883)
+- **Version Bump**: Updated version from 1.1.8 to 1.1.9 across all files
 
 ## [1.1.8] - 2026-03-12
 
@@ -419,6 +441,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                               |
 | ------- | ---------- | --------------------------------------------------------- |
+| 1.1.9   | 2026-05-13 | Go 1.26.3 toolchain, security vuln fixes (x/net, gRPC, xpath)              |
 | 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected  |
 | 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster                                 |
 | 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade    |
@@ -453,6 +476,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tfoidentity` | Extension | Collector identity               |
 
 ## Upgrade Guide
+
+### From v1.1.8 to v1.1.9
+
+1. **Go**: Ensure Go 1.26.3+ is installed (`go version`)
+2. **go.mod**: Run `go mod tidy` to pull updated security patches
+3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.1.9`
 
 ### From v1.1.5 to v1.1.6
 
