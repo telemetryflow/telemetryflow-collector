@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.0-blueviolet)](https://opentelemetry.io/)
@@ -23,6 +23,16 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.1] - 2026-05-14
+
+### Security
+
+- **CVE-2026-41602 (HIGH)**: Apache Thrift TFramedTransport integer overflow — upgraded `github.com/apache/thrift` v0.22.0 → v0.23.0
+
+### Changed
+
+- **Version Bump**: Updated version from 1.2.0 to 1.2.1 across all files
 
 ## [1.2.0] - 2026-05-13
 
@@ -460,6 +470,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                               |
 | ------- | ---------- | --------------------------------------------------------- |
+| 1.2.1   | 2026-05-14 | CVE-2026-41602 fix (Apache Thrift integer overflow)                           |
 | 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                     |
 | 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                         |
 | 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected  |
@@ -496,6 +507,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tfoidentity` | Extension | Collector identity               |
 
 ## Upgrade Guide
+
+### From v1.2.0 to v1.2.1
+
+1. **go.mod**: Run `go mod tidy` to pull Apache Thrift v0.23.0
+2. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.2.1`
+3. **Security**: Resolves CVE-2026-41602 (Apache Thrift TFramedTransport integer overflow)
 
 ### From v1.1.9 to v1.2.0
 

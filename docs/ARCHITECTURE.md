@@ -2,7 +2,7 @@
 
 Domain-Driven Design (DDD) architecture guide for the TelemetryFlow Collector.
 
-- **Version:** 1.2.0
+- **Version:** 1.2.1
 - **OTEL Version:** 0.152.0
 - **Last Updated:** March 2026
 
