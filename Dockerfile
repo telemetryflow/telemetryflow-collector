@@ -108,13 +108,16 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     io.telemetryflow.otel.version="${OTEL_VERSION}" \
     io.telemetryflow.maintainer="DevOpsCorner Indonesia"
 
-# Update packages to get security patches (CVE fixes) and install runtime dependencies
-RUN apk upgrade --no-cache && \
+# Update all packages for security patches (CVE fixes) and install runtime dependencies
+# SECURITY: apk upgrade ensures all base packages are patched against known CVEs
+# (zlib CVE-2026-22184/CVE-2026-27171, libcrypto/libssl patches, musl libc fixes, etc.)
+RUN apk upgrade --no-cache --available && \
     apk add --no-cache \
     ca-certificates \
     tzdata \
     curl \
-    && rm -rf /var/cache/apk/*
+    && apk del --purge apk-tools 2>/dev/null || true \
+    && rm -rf /var/cache/apk/* /etc/apk /lib/apk
 
 # Create non-root user and group
 RUN addgroup -g 10001 -S telemetryflow && \
