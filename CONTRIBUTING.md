@@ -10,7 +10,7 @@
 [![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.0-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -44,7 +44,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](https://www.c
 
 ### Prerequisites
 
-- **Go 1.25** or later
+- **Go 1.26** or later
 - **Git**
 - **Make**
 - **Docker** (optional, for container builds)

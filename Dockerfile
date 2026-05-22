@@ -128,10 +128,12 @@ RUN mkdir -p \
     /etc/tfo-collector \
     /var/lib/tfo-collector/queue \
     /var/log/tfo-collector \
+    /tmp/tfo-collector \
     && chown -R telemetryflow:telemetryflow \
     /etc/tfo-collector \
     /var/lib/tfo-collector \
-    /var/log/tfo-collector
+    /var/log/tfo-collector \
+    /tmp/tfo-collector
 
 # Copy binary from builder
 COPY --from=builder /tfo-collector /usr/local/bin/tfo-collector
@@ -146,6 +148,9 @@ USER telemetryflow
 
 # Set working directory
 WORKDIR /home/telemetryflow
+
+# Set TMPDIR for Go runtime temp files
+ENV TMPDIR=/tmp/tfo-collector
 
 # =============================================================================
 # Exposed Ports

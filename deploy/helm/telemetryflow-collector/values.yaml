@@ -275,7 +275,7 @@ config:
           action: insert
 
   connectors:
-    spanmetrics:
+    span_metrics:
       histogram:
         explicit:
           buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
@@ -290,7 +290,7 @@ config:
         enabled: true
       namespace: traces
       metrics_flush_interval: 15s
-    servicegraph:
+    service_graph:
       latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
       dimensions:
         - http.method
@@ -335,7 +335,7 @@ config:
       traces:
         receivers: [tfootlp]
         processors: [memory_limiter, k8sattributes, resource, attributes/agent, batch]
-        exporters: [tfo, spanmetrics, servicegraph]
+        exporters: [tfo, span_metrics, service_graph]
       # Metrics — all 16 TFO-Agent collectors + app metrics
       metrics:
         receivers: [tfootlp]
@@ -349,12 +349,12 @@ config:
           - attributes/agent    # tag with tfo.source=tfo-agent
           - batch
         exporters: [tfo, prometheus]
-      metrics/spanmetrics:
-        receivers: [spanmetrics]
+      metrics/span_metrics:
+        receivers: [span_metrics]
         processors: [memory_limiter, batch]
         exporters: [tfo, prometheus]
-      metrics/servicegraph:
-        receivers: [servicegraph]
+      metrics/service_graph:
+        receivers: [service_graph]
         processors: [memory_limiter, batch]
         exporters: [tfo, prometheus]
       # Logs — pod container logs (k8s-pod-logs) + eBPF Hubble events

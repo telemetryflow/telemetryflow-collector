@@ -97,7 +97,7 @@ receivers:
     protocols:
       grpc:
         endpoint: "0.0.0.0:4317"
-        max_recv_msg_size_mib: 8  # increased for large K8s metric batches
+        max_recv_msg_size_mib: 8 # increased for large K8s metric batches
       http:
         endpoint: "0.0.0.0:4318"
         transport: tcp
@@ -254,10 +254,11 @@ processors:
 # CONNECTORS — Trace-derived metrics with Exemplars
 # =============================================================================
 connectors:
-  spanmetrics:
+  span_metrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
         default: GET
@@ -270,8 +271,9 @@ connectors:
     namespace: traces
     metrics_flush_interval: 15s
 
-  servicegraph:
-    latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - http.method
       - http.status_code
@@ -322,7 +324,7 @@ exporters:
     sending_queue:
       enabled: true
       num_consumers: 10
-      queue_size: 2000   # larger queue for 16-collector metric volume
+      queue_size: 2000 # larger queue for 16-collector metric volume
     compression: gzip
     headers:
       User-Agent: "TFO-Collector-Agent/1.2.1"
@@ -343,12 +345,12 @@ exporters:
     sending_queue:
       enabled: true
       num_consumers: 5
-      queue_size: 2000   # larger queue for pod logs from all namespaces
+      queue_size: 2000 # larger queue for pod logs from all namespaces
     compression: gzip
     headers:
       User-Agent: "TFO-Collector-Agent/1.2.1"
 
-  # TFO Platform exporter for traces (app instrumentation, spanmetrics, servicegraph)
+  # TFO Platform exporter for traces (app instrumentation, span_metrics, service_graph)
   tfo/traces:
     endpoint: "${env:TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}"
     use_v2_api: true
@@ -377,12 +379,13 @@ service:
 
   pipelines:
     # ------------------------------------------------------------------
-    # Application traces (spanmetrics → exemplar correlation)
+    # Application traces (span_metrics → exemplar correlation)
     # ------------------------------------------------------------------
     traces:
       receivers: [tfootlp]
-      processors: [memory_limiter, resourcedetection, resource, attributes/agent, batch]
-      exporters: [debug, tfo/traces, spanmetrics, servicegraph]
+      processors:
+        [memory_limiter, resourcedetection, resource, attributes/agent, batch]
+      exporters: [debug, tfo/traces, span_metrics, service_graph]
 
     # ------------------------------------------------------------------
     # All TFO-Agent metric collectors → TFO Platform
@@ -409,24 +412,24 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection   # host/cloud/docker context for system/node-exporter/docker/cadvisor/ebpf
-        - groupbyattrs/k8s    # scope K8s metrics to correct resource identity
-        - resource            # add service.namespace, deployment.environment
-        - transform/cadvisor  # normalize container_* / machine_* → container.cadvisor.* / machine.*
-        - transform/hubble    # normalize hubble_* → hubble.*
-        - attributes/agent    # tag with tfo.source=tfo-agent
+        - resourcedetection # host/cloud/docker context for system/node-exporter/docker/cadvisor/ebpf
+        - groupbyattrs/k8s # scope K8s metrics to correct resource identity
+        - resource # add service.namespace, deployment.environment
+        - transform/cadvisor # normalize container_* / machine_* → container.cadvisor.* / machine.*
+        - transform/hubble # normalize hubble_* → hubble.*
+        - attributes/agent # tag with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo/metrics, prometheus]
 
     # Trace-derived metrics with exemplars
-    metrics/spanmetrics:
-      receivers: [spanmetrics]
+    metrics/span_metrics:
+      receivers: [span_metrics]
       processors: [memory_limiter, batch]
       exporters: [tfo/metrics, prometheus]
 
     # Service dependency graph metrics
-    metrics/servicegraph:
-      receivers: [servicegraph]
+    metrics/service_graph:
+      receivers: [service_graph]
       processors: [memory_limiter, batch]
       exporters: [tfo/metrics, prometheus]
 
@@ -443,9 +446,9 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection  # host context for pod logs and eBPF events
-        - resource           # add service.namespace, deployment.environment
-        - attributes/agent   # tag with tfo.source=tfo-agent
+        - resourcedetection # host context for pod logs and eBPF events
+        - resource # add service.namespace, deployment.environment
+        - attributes/agent # tag with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo/logs]
 

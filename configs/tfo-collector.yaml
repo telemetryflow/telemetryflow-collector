@@ -67,12 +67,12 @@ extensions:
   # Optional env vars: TELEMETRYFLOW_COLLECTOR_ID, TELEMETRYFLOW_COLLECTOR_NAME,
   #                    TELEMETRYFLOW_ENVIRONMENT, TELEMETRYFLOW_DATACENTER
   tfoidentity:
-    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"   # TELEMETRYFLOW_COLLECTOR_ID
-    name: "TelemetryFlow Collector"           # TELEMETRYFLOW_COLLECTOR_NAME
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}" # TELEMETRYFLOW_COLLECTOR_ID
+    name: "TelemetryFlow Collector" # TELEMETRYFLOW_COLLECTOR_NAME
     description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
     tags:
-      environment: production                 # TELEMETRYFLOW_ENVIRONMENT
-      datacenter: default                     # TELEMETRYFLOW_DATACENTER
+      environment: production # TELEMETRYFLOW_ENVIRONMENT
+      datacenter: default # TELEMETRYFLOW_DATACENTER
     enrich_resources: true
 
 # =============================================================================
@@ -249,10 +249,11 @@ processors:
 # =============================================================================
 connectors:
   # Span metrics connector - derives metrics from traces with EXEMPLARS support
-  spanmetrics:
+  span_metrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
         default: GET
@@ -266,8 +267,9 @@ connectors:
     metrics_flush_interval: 15s
 
   # Service graph connector - builds service dependency graphs from traces
-  servicegraph:
-    latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - http.method
       - http.status_code
@@ -350,8 +352,9 @@ service:
     # Traces pipeline - receives traces via TFO OTLP receiver → forwards to backend (ClickHouse)
     traces:
       receivers: [tfootlp]
-      processors: [memory_limiter, k8sattributes, resource, attributes/agent, batch]
-      exporters: [debug, tfo, spanmetrics, servicegraph]
+      processors:
+        [memory_limiter, k8sattributes, resource, attributes/agent, batch]
+      exporters: [debug, tfo, span_metrics, service_graph]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO OTLP receiver.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
@@ -361,25 +364,25 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - k8sattributes       # enrich instrumented app metrics with K8s context
-        - groupbyattrs/k8s    # scope K8s collector metrics to their resource identity
-        - resource            # add service.namespace, deployment.environment
-        - transform/cadvisor  # normalize cAdvisor Prometheus names → container.cadvisor.*
-        - transform/hubble    # normalize Hubble Prometheus names → hubble.*
-        - attributes/agent    # tag all agent-sourced telemetry with tfo.source=tfo-agent
+        - k8sattributes # enrich instrumented app metrics with K8s context
+        - groupbyattrs/k8s # scope K8s collector metrics to their resource identity
+        - resource # add service.namespace, deployment.environment
+        - transform/cadvisor # normalize cAdvisor Prometheus names → container.cadvisor.*
+        - transform/hubble # normalize Hubble Prometheus names → hubble.*
+        - attributes/agent # tag all agent-sourced telemetry with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo, prometheus]
 
-    # Metrics from traces pipeline - receives derived metrics from spanmetrics connector
+    # Metrics from traces pipeline - receives derived metrics from span_metrics connector
     # These metrics include EXEMPLARS for correlation with traces
-    metrics/spanmetrics:
-      receivers: [spanmetrics]
+    metrics/span_metrics:
+      receivers: [span_metrics]
       processors: [memory_limiter, batch]
       exporters: [tfo, prometheus]
 
     # Metrics from service graph - receives service dependency metrics
-    metrics/servicegraph:
-      receivers: [servicegraph]
+    metrics/service_graph:
+      receivers: [service_graph]
       processors: [memory_limiter, batch]
       exporters: [tfo, prometheus]
 
@@ -389,8 +392,8 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - k8sattributes    # enrich with K8s context (namespace, pod, container)
-        - resource         # add service.namespace, deployment.environment
+        - k8sattributes # enrich with K8s context (namespace, pod, container)
+        - resource # add service.namespace, deployment.environment
         - attributes/agent # tag with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo]

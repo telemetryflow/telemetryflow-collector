@@ -10,7 +10,7 @@
 [![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.0-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -24,16 +24,29 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2026-05-14
+## [1.2.1] - 2026-05-22
 
 ### Security
 
+- **CVE-2026-42306 (HIGH)**: Docker `docker cp` race condition — bind mount redirect to arbitrary host path. Resolved by upgrading OTel Contrib v0.146.1 → v0.152.0, which migrated from `github.com/docker/docker` v28.5.2 (unfixed) to `github.com/moby/moby/*` (patched in v2.0.0-beta.14)
+- **CVE-2026-41567 (HIGH)**: Docker `PUT /containers/{id}/archive` executes container binary on host. Resolved by same migration to `github.com/moby/moby/*`
+- **CVE-2026-41568 (MODERATE)**: Docker `docker cp` race condition — arbitrary file/directory creation on host. Resolved by same migration to `github.com/moby/moby/*`
 - **CVE-2026-41602 (HIGH)**: Apache Thrift TFramedTransport integer overflow — upgraded `github.com/apache/thrift` v0.22.0 → v0.23.0
 - **Docker hardening**: Alpine runtime image upgraded to use `apk upgrade --available` for comprehensive OS-level security patching; added `apk-tools` cleanup to reduce attack surface
 
 ### Changed
 
-- **Version Bump**: Updated version from 1.2.0 to 1.2.1 across all files
+- **OpenTelemetry Collector Contrib v0.146.1 → v0.152.0**: Full upgrade of all contrib packages
+  - Eliminates `github.com/docker/docker v28.5.2+incompatible` (no patch available for v28.x line)
+  - Replaced with `github.com/moby/moby/api v1.54.2` + `github.com/moby/moby/client v0.4.1` (patched)
+  - Re-enabled `carbonreceiver`, `routingconnector`, `failoverconnector` (previously disabled in v0.146.1)
+  - Fixed connector module names: `span_metricsconnector` → `spanmetricsconnector`, `service_graphconnector` → `servicegraphconnector`
+- **OpenTelemetry Collector Core v0.146.1 → v0.152.1**
+  - `connector/forwardconnector`, `exporter/debugexporter`, `exporter/otlpexporter`, `exporter/otlphttpexporter`
+  - `processor/batchprocessor`, `processor/memorylimiterprocessor`, `receiver/otlpreceiver`
+  - `extension/zpagesextension`, `service`, `otelcol`
+- **Manifest (`manifest.yaml`)**: Updated header to reflect disabled components re-enabled in v0.152.0
+- **Build (`build/`)**: Regenerated with OCB v0.152.1 — `docker/docker` no longer present in any `go.mod`
 
 ## [1.2.0] - 2026-05-13
 
@@ -471,7 +484,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                                                             |
 | ------- | ---------- | --------------------------------------------------------------------------------------- |
-| 1.2.1   | 2026-05-14 | CVE-2026-41602 fix (Apache Thrift), Docker Alpine security hardening                    |
+| 1.2.1   | 2026-05-14 | CVE-2026-42306/41567/41568 (Docker), CVE-2026-41602 (Apache Thrift), OTel Contrib v0.152.0 |
 | 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                                 |
 | 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                                     |
 | 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected |
@@ -511,9 +524,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### From v1.2.0 to v1.2.1
 
-1. **go.mod**: Run `go mod tidy` to pull Apache Thrift v0.23.0
-2. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.2.1`
-3. **Security**: Resolves CVE-2026-41602 (Apache Thrift TFramedTransport integer overflow)
+1. **OTel**: Major dependency upgrade — OTel Contrib v0.146.1 → v0.152.0, Core v0.146.1 → v0.152.1
+2. **go.mod**: Run `go mod tidy` to pull updated dependencies
+3. **Docker**: Pull new image tag `telemetryflow/telemetryflow-collector:1.2.1`
+4. **Security**: Resolves CVE-2026-42306, CVE-2026-41567, CVE-2026-41568 (Docker docker cp race conditions & code execution), CVE-2026-41602 (Apache Thrift)
 
 ### From v1.1.9 to v1.2.0
 

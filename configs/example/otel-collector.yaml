@@ -7,7 +7,7 @@
 # This is the DEFAULT community configuration using standard OTEL components.
 # No TFO authentication required - compatible with any OTEL-compliant client.
 #
-# Usage: ./tfo-collector --config configs/otel-collector.yaml
+# Usage: ./tfo-collector --configyes configs/otel-collector.yaml
 #
 # =============================================================================
 # OTLP HTTP Endpoints (Standard OTEL - v1 only, NO AUTH)
@@ -25,7 +25,7 @@
 # Features Included:
 # - Full OTLP receiver (gRPC + HTTP)
 # - Traces, Metrics, Logs collection
-# - Exemplars support via spanmetrics connector
+# - Exemplars support via span_metrics connector
 # - Service graph generation for dependency mapping
 # - Prometheus exporter with OpenMetrics support
 # - Debug exporter for troubleshooting
@@ -193,10 +193,11 @@ processors:
 connectors:
   # Span metrics connector - derives metrics from traces with EXEMPLARS
   # Enables metrics-to-traces correlation in Grafana/Prometheus
-  spanmetrics:
+  span_metrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
         default: GET
@@ -211,8 +212,9 @@ connectors:
 
   # Service graph connector - builds service dependency graphs
   # Generates metrics for service-to-service relationships
-  servicegraph:
-    latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - http.method
       - http.status_code
@@ -300,7 +302,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [debug, spanmetrics, servicegraph]
+      exporters: [debug, span_metrics, service_graph]
 
     # -------------------------------------------------------------------------
     # Metrics pipeline - receives metrics from OTLP
@@ -311,19 +313,19 @@ service:
       exporters: [debug, prometheus]
 
     # -------------------------------------------------------------------------
-    # Metrics from traces - derived metrics from spanmetrics connector
+    # Metrics from traces - derived metrics from span_metrics connector
     # These metrics include EXEMPLARS for correlation with traces
     # -------------------------------------------------------------------------
-    metrics/spanmetrics:
-      receivers: [spanmetrics]
+    metrics/span_metrics:
+      receivers: [span_metrics]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
 
     # -------------------------------------------------------------------------
     # Metrics from service graph - service dependency metrics
     # -------------------------------------------------------------------------
-    metrics/servicegraph:
-      receivers: [servicegraph]
+    metrics/service_graph:
+      receivers: [service_graph]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
 

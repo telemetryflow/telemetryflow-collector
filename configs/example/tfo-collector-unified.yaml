@@ -214,10 +214,11 @@ processors:
 # =============================================================================
 connectors:
   # Span metrics connector - derives metrics from traces with EXEMPLARS support
-  spanmetrics:
+  span_metrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
         default: GET
@@ -231,8 +232,9 @@ connectors:
     metrics_flush_interval: 15s
 
   # Service graph connector - builds service dependency graphs from traces
-  servicegraph:
-    latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - http.method
       - http.status_code
@@ -358,8 +360,9 @@ service:
     # Traces pipeline - TFO v2 authenticated traces
     traces:
       receivers: [tfootlp]
-      processors: [memory_limiter, resourcedetection, resource, attributes/agent, batch]
-      exporters: [debug, tfo/traces, spanmetrics, servicegraph]
+      processors:
+        [memory_limiter, resourcedetection, resource, attributes/agent, batch]
+      exporters: [debug, tfo/traces, span_metrics, service_graph]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO v2 authenticated endpoint.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
@@ -369,24 +372,24 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection   # auto-detect host/cloud/docker resource attributes
-        - groupbyattrs/k8s    # scope K8s collector metrics to their resource identity
-        - resource            # add service.namespace, deployment.environment
-        - transform/cadvisor  # normalize cAdvisor Prometheus names → container.cadvisor.*
-        - transform/hubble    # normalize Hubble Prometheus names → hubble.*
-        - attributes/agent    # tag all agent-sourced telemetry with tfo.source=tfo-agent
+        - resourcedetection # auto-detect host/cloud/docker resource attributes
+        - groupbyattrs/k8s # scope K8s collector metrics to their resource identity
+        - resource # add service.namespace, deployment.environment
+        - transform/cadvisor # normalize cAdvisor Prometheus names → container.cadvisor.*
+        - transform/hubble # normalize Hubble Prometheus names → hubble.*
+        - attributes/agent # tag all agent-sourced telemetry with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo/metrics, prometheus]
 
     # Metrics from traces pipeline - derived metrics with EXEMPLARS
-    metrics/spanmetrics:
-      receivers: [spanmetrics]
+    metrics/span_metrics:
+      receivers: [span_metrics]
       processors: [memory_limiter, batch]
       exporters: [tfo/metrics, prometheus]
 
     # Metrics from service graph - service dependency metrics
-    metrics/servicegraph:
-      receivers: [servicegraph]
+    metrics/service_graph:
+      receivers: [service_graph]
       processors: [memory_limiter, batch]
       exporters: [tfo/metrics, prometheus]
 
@@ -396,9 +399,9 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection  # auto-detect host context for pod logs
-        - resource           # add service.namespace, deployment.environment
-        - attributes/agent   # tag with tfo.source=tfo-agent
+        - resourcedetection # auto-detect host context for pod logs
+        - resource # add service.namespace, deployment.environment
+        - attributes/agent # tag with tfo.source=tfo-agent
         - batch
       exporters: [debug, tfo/logs]
 

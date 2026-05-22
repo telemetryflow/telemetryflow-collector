@@ -73,7 +73,7 @@ graph TB
 
 ## Prerequisites
 
-- Go 1.25 or later
+- Go 1.26 or later
 - OCB (OpenTelemetry Collector Builder) v0.146.1
 
 ## Installation

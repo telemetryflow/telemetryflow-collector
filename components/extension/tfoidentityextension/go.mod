@@ -1,6 +1,6 @@
 module github.com/telemetryflow/telemetryflow-collector/components/extension/tfoidentityextension
 
-go 1.25.7
+Go 1.26.3
 
 require (
 	github.com/google/uuid v1.6.0

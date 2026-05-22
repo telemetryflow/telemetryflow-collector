@@ -67,10 +67,10 @@ flowchart TB
 
 When sending traces to the collector for exemplars generation:
 
-| Build Type | Recommended Endpoint | Description |
-|------------|---------------------|-------------|
-| TFO Standalone | `/v2/traces` | TelemetryFlow Platform endpoint |
-| OCB (OTEL Community) | `/v1/traces` | Standard OpenTelemetry endpoint |
+| Build Type           | Recommended Endpoint | Description                     |
+| -------------------- | -------------------- | ------------------------------- |
+| TFO Standalone       | `/v2/traces`         | TelemetryFlow Platform endpoint |
+| OCB (OTEL Community) | `/v1/traces`         | Standard OpenTelemetry endpoint |
 
 > **Note:** TFO Standalone supports both v1 and v2 endpoints. OCB build only supports v1 endpoints.
 
@@ -111,7 +111,8 @@ connectors:
   spanmetrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
         default: GET
@@ -120,14 +121,15 @@ connectors:
       - name: rpc.method
       - name: rpc.service
     exemplars:
-      enabled: true  # <-- Enable exemplars
+      enabled: true # <-- Enable exemplars
     namespace: traces
     metrics_flush_interval: 15s
     aggregation_temporality: AGGREGATION_TEMPORALITY_CUMULATIVE
 
   # Service Graph Connector - builds service dependency graphs
-  servicegraph:
-    latency_histogram_buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - http.method
       - http.status_code
@@ -155,7 +157,7 @@ exporters:
     namespace: telemetryflow
     send_timestamps: true
     metric_expiration: 5m
-    enable_open_metrics: true  # <-- Required for exemplars
+    enable_open_metrics: true # <-- Required for exemplars
     resource_to_telemetry_conversion:
       enabled: true
 
@@ -202,7 +204,7 @@ service:
       exporters: [prometheus]
 
     # Derived metrics from servicegraph connector
-    metrics/servicegraph:
+    metrics/service_graph:
       receivers: [servicegraph]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
@@ -231,12 +233,13 @@ service:
 
 The `spanmetrics` connector generates these metrics with exemplars:
 
-| Metric | Type | Description |
-|--------|------|-------------|
+| Metric                                     | Type      | Description                     |
+| ------------------------------------------ | --------- | ------------------------------- |
 | `traces_spanmetrics_duration_milliseconds` | Histogram | Request duration with exemplars |
-| `traces_spanmetrics_calls_total` | Counter | Total number of calls |
+| `traces_spanmetrics_calls_total`           | Counter   | Total number of calls           |
 
 Each metric includes dimensions from span attributes:
+
 - `service.name`
 - `span.name`
 - `http.method`
@@ -255,10 +258,10 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'tfo-collector'
+  - job_name: "tfo-collector"
     scrape_interval: 15s
     static_configs:
-      - targets: ['tfo-collector:8889']
+      - targets: ["tfo-collector:8889"]
     # Enable exemplar scraping
     honor_labels: true
 ```
@@ -270,6 +273,7 @@ scrape_configs:
 Configure both Prometheus and your trace backend (Jaeger/Tempo):
 
 **Prometheus Data Source:**
+
 ```yaml
 apiVersion: 1
 datasources:
@@ -280,10 +284,11 @@ datasources:
     jsonData:
       exemplarTraceIdDestinations:
         - name: trace_id
-          datasourceUid: jaeger  # Link to trace datasource
+          datasourceUid: jaeger # Link to trace datasource
 ```
 
 **Jaeger Data Source:**
+
 ```yaml
 datasources:
   - name: Jaeger
@@ -306,7 +311,7 @@ Example panel configuration:
     {
       "expr": "histogram_quantile(0.99, sum(rate(traces_spanmetrics_duration_milliseconds_bucket{service_name=\"my-service\"}[5m])) by (le))",
       "legendFormat": "p99 latency",
-      "exemplar": true  // Enable exemplars
+      "exemplar": true // Enable exemplars
     }
   ],
   "fieldConfig": {
@@ -327,11 +332,11 @@ Example panel configuration:
 
 The `servicegraph` connector generates metrics for service dependencies:
 
-| Metric | Description |
-|--------|-------------|
-| `traces_service_graph_request_total` | Total requests between services |
-| `traces_service_graph_request_failed_total` | Failed requests |
-| `traces_service_graph_request_duration_seconds` | Request duration histogram |
+| Metric                                          | Description                     |
+| ----------------------------------------------- | ------------------------------- |
+| `traces_service_graph_request_total`            | Total requests between services |
+| `traces_service_graph_request_failed_total`     | Failed requests                 |
+| `traces_service_graph_request_duration_seconds` | Request duration histogram      |
 
 ### Grafana Service Graph Panel
 
@@ -354,16 +359,16 @@ The `servicegraph` connector generates metrics for service dependencies:
 Complete example with collector, Prometheus, Jaeger, and Grafana:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   tfo-collector:
     image: telemetryflow/telemetryflow-collector-ocb:latest
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Self metrics
-      - "8889:8889"   # Prometheus exporter
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Self metrics
+      - "8889:8889" # Prometheus exporter
       - "13133:13133" # Health check
     volumes:
       - ./configs/exemplars-config.yaml:/etc/tfo-collector/otel-collector.yaml:ro
@@ -381,8 +386,8 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--enable-feature=exemplar-storage'  # Enable exemplar storage
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--enable-feature=exemplar-storage" # Enable exemplar storage
 
   grafana:
     image: grafana/grafana:latest
@@ -400,6 +405,7 @@ services:
 ### Exemplars Not Appearing
 
 1. **Check OpenMetrics format is enabled:**
+
    ```yaml
    exporters:
      prometheus:
@@ -407,6 +413,7 @@ services:
    ```
 
 2. **Verify exemplars are enabled in spanmetrics:**
+
    ```yaml
    connectors:
      spanmetrics:
@@ -415,6 +422,7 @@ services:
    ```
 
 3. **Check Prometheus has exemplar storage enabled:**
+
    ```bash
    prometheus --enable-feature=exemplar-storage
    ```
