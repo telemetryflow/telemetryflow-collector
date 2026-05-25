@@ -104,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added complete Apache License 2.0 SPDX block to all non-generated Go source files
   - Replaced short copyright-only headers with full license preamble matching Apache 2.0 requirements
   - Skipped auto-generated `build/` files (OCB-generated, not hand-authored)
-- **Copyright Owner Corrected**: Updated `DevOpsCorner Indonesia` → `TelemetryFlow` in copyright lines
+- **Copyright Owner Corrected**: Updated `Telemetri Data Indonesia` → `TelemetryFlow` in copyright lines
   - `internal/version/version.go`: copyright line updated
   - `pkg/banner/banner.go`: copyright line updated
   - `Makefile`: copyright comment header updated
