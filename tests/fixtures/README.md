@@ -32,4 +32,4 @@ These fixtures are used by unit, integration, and e2e tests to provide consisten
 ## License
 
 TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.

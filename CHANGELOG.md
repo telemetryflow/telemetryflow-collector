@@ -484,7 +484,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date       | Description                                                                             |
 | ------- | ---------- | --------------------------------------------------------------------------------------- |
-| 1.2.1   | 2026-05-14 | CVE-2026-42306/41567/41568 (Docker), CVE-2026-41602 (Apache Thrift), OTel Contrib v0.152.0 |
+| 1.2.1   | 2026-05-22 | CVE-2026-42306/41567/41568 (Docker), CVE-2026-41602 (Apache Thrift), OTel Contrib v0.152.1 |
 | 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                                 |
 | 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                                     |
 | 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected |

@@ -2,7 +2,7 @@
 # OpenTelemetry Collector Configuration (Minimal)
 # =============================================================================
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This is a MINIMAL configuration for quick start and testing.
 # For production use, see otel-collector.yaml or tfo-collector.yaml.

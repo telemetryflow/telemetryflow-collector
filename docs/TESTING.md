@@ -2,8 +2,8 @@
 
 Testing guide for the TelemetryFlow Collector.
 
-- **Version:** 1.1.1
-- **Last Updated:** December 2025
+- **Version:** 1.2.1
+- **Last Updated:** May 2026
 
 ---
 
@@ -127,18 +127,18 @@ open coverage.html
 
 ### Coverage Targets
 
-| Layer          | Package      | Target | Description                    |
-|----------------|--------------|--------|--------------------------------|
-| Domain         | collector    | 90%    | Core collector logic           |
-| Domain         | pipeline     | 85%    | Data processing pipelines      |
-| Domain         | plugin       | 85%    | Plugin registry                |
-| Application    | collector    | 90%    | OTEL collector integration     |
-| Application    | config       | 95%    | Configuration management       |
-| Infrastructure | exporter     | 90%    | Data exporters                 |
-| Infrastructure | receiver     | 90%    | Data receivers                 |
-| Infrastructure | pkg_config   | 90%    | Config loader utilities        |
-| Presentation   | banner       | 90%    | Banner display                 |
-| Presentation   | version      | 100%   | Version information            |
+| Layer          | Package    | Target | Description                |
+| -------------- | ---------- | ------ | -------------------------- |
+| Domain         | collector  | 90%    | Core collector logic       |
+| Domain         | pipeline   | 85%    | Data processing pipelines  |
+| Domain         | plugin     | 85%    | Plugin registry            |
+| Application    | collector  | 90%    | OTEL collector integration |
+| Application    | config     | 95%    | Configuration management   |
+| Infrastructure | exporter   | 90%    | Data exporters             |
+| Infrastructure | receiver   | 90%    | Data receivers             |
+| Infrastructure | pkg_config | 90%    | Config loader utilities    |
+| Presentation   | banner     | 90%    | Banner display             |
+| Presentation   | version    | 100%   | Version information        |
 
 ---
 
@@ -400,7 +400,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: "1.23"
       - name: Run tests
         run: make test
       - name: Run coverage
@@ -431,24 +431,28 @@ jobs:
 ### Common Issues
 
 **Tests timeout:**
+
 ```bash
 # Increase timeout
 go test -timeout 10m ./...
 ```
 
 **Race conditions:**
+
 ```bash
 # Detect races
 go test -race ./...
 ```
 
 **Flaky tests:**
+
 ```bash
 # Run multiple times to detect flakiness
 go test -count=10 ./...
 ```
 
 **Coverage not accurate:**
+
 ```bash
 # Include all packages
 go test -coverpkg=./... -coverprofile=coverage.out ./...
@@ -466,4 +470,4 @@ go test -coverpkg=./... -coverprofile=coverage.out ./...
 
 ---
 
-**Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.**
+**Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.**

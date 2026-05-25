@@ -1,8 +1,8 @@
 # TelemetryFlow Collector - Configuration Guide
 
 - **Version:** 1.2.1
-- **OTEL Version:** 0.152.0
-- **Last Updated:** March 2026
+- **OTEL Version:** 0.152.1
+- **Last Updated:** May 2026
 
 This guide provides configuration examples and best practices for the TelemetryFlow Collector.
 
@@ -133,16 +133,16 @@ receivers:
       # gRPC Protocol (Port 4317)
       grpc:
         endpoint: "0.0.0.0:4317"
-        max_recv_msg_size_mib: 4           # Max message size in MiB
-        max_concurrent_streams: 100         # Max concurrent gRPC streams
-        read_buffer_size: 524288            # Read buffer size (512 KiB)
-        write_buffer_size: 524288           # Write buffer size (512 KiB)
+        max_recv_msg_size_mib: 4 # Max message size in MiB
+        max_concurrent_streams: 100 # Max concurrent gRPC streams
+        read_buffer_size: 524288 # Read buffer size (512 KiB)
+        write_buffer_size: 524288 # Write buffer size (512 KiB)
 
         # TLS Configuration
         tls:
           cert_file: /etc/tfo-collector/certs/server.crt
           key_file: /etc/tfo-collector/certs/server.key
-          client_ca_file: /etc/tfo-collector/certs/ca.crt  # For mTLS
+          client_ca_file: /etc/tfo-collector/certs/ca.crt # For mTLS
           min_version: "1.2"
 
         # Keepalive Configuration
@@ -157,7 +157,7 @@ receivers:
       # HTTP Protocol (Port 4318)
       http:
         endpoint: "0.0.0.0:4318"
-        max_request_body_size: 10485760     # 10 MiB
+        max_request_body_size: 10485760 # 10 MiB
 
         # CORS Configuration
         cors:
@@ -210,7 +210,7 @@ exporters:
       enabled: true
       num_consumers: 10
       queue_size: 5000
-      storage: file_storage  # For persistent queue
+      storage: file_storage # For persistent queue
 ```
 
 **OTLP HTTP Exporter (For HTTP-only backends):**
@@ -253,20 +253,21 @@ connectors:
   spanmetrics:
     histogram:
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     dimensions:
       - name: http.method
       - name: http.status_code
       - name: http.route
     exemplars:
-      enabled: true  # Enable exemplars for metrics-to-traces correlation
+      enabled: true # Enable exemplars for metrics-to-traces correlation
     namespace: traces
     metrics_flush_interval: 15s
 
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-    enable_open_metrics: true  # Required for exemplars
+    enable_open_metrics: true # Required for exemplars
 
 service:
   pipelines:
@@ -607,7 +608,7 @@ receivers:
         parse_from: body
         timestamp:
           parse_from: attributes.timestamp
-          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          layout: "%Y-%m-%dT%H:%M:%S.%LZ"
       # Parse standard logs
       - type: regex_parser
         if: body matches "^\\d{4}-\\d{2}-\\d{2}"
@@ -656,10 +657,12 @@ receivers:
           kubernetes_sd_configs:
             - role: pod
           relabel_configs:
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
               action: keep
               regex: true
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_prometheus_io_path]
               action: replace
               target_label: __metrics_path__
               regex: (.+)
@@ -697,13 +700,13 @@ exporters:
 
 Common environment variables:
 
-| Variable | Description |
-|----------|-------------|
-| `OTEL_EXPORTER_ENDPOINT` | Backend endpoint |
-| `OTEL_SERVICE_NAME` | Service name |
+| Variable                   | Description                    |
+| -------------------------- | ------------------------------ |
+| `OTEL_EXPORTER_ENDPOINT`   | Backend endpoint               |
+| `OTEL_SERVICE_NAME`        | Service name                   |
 | `OTEL_RESOURCE_ATTRIBUTES` | Additional resource attributes |
-| `TELEMETRYFLOW_TENANT_ID` | Tenant identifier |
-| `TELEMETRYFLOW_API_KEY` | API authentication key |
+| `TELEMETRYFLOW_TENANT_ID`  | Tenant identifier              |
+| `TELEMETRYFLOW_API_KEY`    | API authentication key         |
 
 ---
 
@@ -726,11 +729,11 @@ Configure the collector's internal telemetry:
 service:
   telemetry:
     logs:
-      level: info  # debug, info, warn, error
-      encoding: json  # json, console
+      level: info # debug, info, warn, error
+      encoding: json # json, console
 
     metrics:
-      level: detailed  # none, basic, normal, detailed
+      level: detailed # none, basic, normal, detailed
       readers:
         - pull:
             exporter:

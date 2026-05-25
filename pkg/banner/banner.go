@@ -1,7 +1,7 @@
 // Package banner provides ASCII art banner for TelemetryFlow Collector.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-// Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+// Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,10 +54,10 @@ func DefaultConfig() Config {
 		Platform:    "unknown",
 		Vendor:      "TelemetryFlow",
 		VendorURL:   "https://telemetryflow.id",
-		Developer:   "DevOpsCorner Indonesia",
+		Developer:   "Telemetri Data Indonesia",
 		License:     "Apache-2.0",
 		SupportURL:  "https://docs.telemetryflow.id",
-		Copyright:   "Copyright (c) 2024-2026 DevOpsCorner Indonesia",
+		Copyright:   "Copyright (c) 2026 Telemetri Data Indonesia",
 	}
 }
 

@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - OpenTelemetry Collector Builder Manifest
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+# Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This manifest defines the components to include in the TelemetryFlow Collector
 # distribution based on OpenTelemetry Collector Community.

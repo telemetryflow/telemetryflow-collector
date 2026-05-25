@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+# Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     org.opencontainers.image.description="Enterprise-grade OpenTelemetry Collector - Community Enterprise Observability Platform (CEOP)" \
     org.opencontainers.image.version="${VERSION}" \
     org.opencontainers.image.vendor="TelemetryFlow" \
-    org.opencontainers.image.authors="DevOpsCorner Indonesia <support@telemetryflow.id>" \
+    org.opencontainers.image.authors="Telemetri Data Indonesia <support@telemetryflow.id>" \
     org.opencontainers.image.url="https://telemetryflow.id" \
     org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
     org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
@@ -106,7 +106,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     io.telemetryflow.platform="CEOP" \
     io.telemetryflow.build.type="native" \
     io.telemetryflow.otel.version="${OTEL_VERSION}" \
-    io.telemetryflow.maintainer="DevOpsCorner Indonesia"
+    io.telemetryflow.maintainer="Telemetri Data Indonesia"
 
 # Update all packages for security patches (CVE fixes) and install runtime dependencies
 # SECURITY: apk upgrade ensures all base packages are patched against known CVEs

@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - GitHub Workflows
 
 - **Version:** 1.2.1
-- **Last Updated:** March 2026
+- **Last Updated:** May 2026
 
 This document describes the GitHub Actions workflows available for TelemetryFlow Collector with OCB-native architecture.
 
@@ -36,23 +36,23 @@ flowchart TB
 
 TelemetryFlow Collector now uses a **unified OCB-native build** - a single binary that includes all OTEL community components plus TFO custom components.
 
-| Aspect | Description |
-|--------|-------------|
-| **Binary** | `tfo-collector` (single unified binary) |
-| **Build** | OpenTelemetry Collector Builder (OCB) |
-| **CLI** | Standard OTEL CLI with TFO branding |
-| **Config** | Standard OTEL YAML format |
+| Aspect           | Description                             |
+| ---------------- | --------------------------------------- |
+| **Binary**       | `tfo-collector` (single unified binary) |
+| **Build**        | OpenTelemetry Collector Builder (OCB)   |
+| **CLI**          | Standard OTEL CLI with TFO branding     |
+| **Config**       | Standard OTEL YAML format               |
 | **Docker Image** | `telemetryflow/telemetryflow-collector` |
 
 ---
 
 ## Workflow Files
 
-| Workflow | File | Purpose |
-|----------|------|---------|
-| CI | `ci.yml` | Code quality, tests, build verification |
-| Release | `release.yml` | Release binaries (RPM, DEB, DMG, ZIP) |
-| Docker | `docker.yml` | Build & push Docker images |
+| Workflow | File          | Purpose                                 |
+| -------- | ------------- | --------------------------------------- |
+| CI       | `ci.yml`      | Code quality, tests, build verification |
+| Release  | `release.yml` | Release binaries (RPM, DEB, DMG, ZIP)   |
+| Docker   | `docker.yml`  | Build & push Docker images              |
 
 ---
 
@@ -361,8 +361,8 @@ flowchart LR
     end
 
     subgraph "Environment"
-        GO[GO_VERSION: 1.24]
-        OTEL[OTEL_VERSION: 0.152.0]
+        GO[GO_VERSION: 1.26]
+        OTEL[OTEL_VERSION: 0.152.1]
     end
 
     GH --> |Required| ALL[All Workflows]

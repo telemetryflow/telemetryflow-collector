@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - Makefile
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 #
 # Build Type: Direct Go Build with TFO Custom Components
 # Build and development commands for TelemetryFlow Collector

@@ -1,8 +1,8 @@
 # TelemetryFlow Collector Build System
 
 - **Version:** 1.2.1
-- **OTEL Version:** 0.152.0
-- **Last Updated:** March 2026
+- **OTEL Version:** 0.152.1
+- **Last Updated:** May 2026
 
 ---
 
@@ -41,15 +41,15 @@ graph LR
 
 ## OCB-Native Architecture
 
-| Aspect | Description |
-|--------|-------------|
-| **Binary** | `tfo-collector` (single unified binary) |
-| **Build System** | OpenTelemetry Collector Builder (OCB) |
-| **CLI** | Standard OTEL CLI with TFO branding |
-| **Config Format** | Standard OTEL YAML |
-| **Components** | 85+ OTEL community + TFO custom |
-| **Build Command** | `make build` |
-| **Binary Location** | `./build/tfo-collector` |
+| Aspect              | Description                             |
+| ------------------- | --------------------------------------- |
+| **Binary**          | `tfo-collector` (single unified binary) |
+| **Build System**    | OpenTelemetry Collector Builder (OCB)   |
+| **CLI**             | Standard OTEL CLI with TFO branding     |
+| **Config Format**   | Standard OTEL YAML                      |
+| **Components**      | 85+ OTEL community + TFO custom         |
+| **Build Command**   | `make build`                            |
+| **Binary Location** | `./build/tfo-collector`                 |
 
 ---
 
@@ -57,12 +57,12 @@ graph LR
 
 TFO custom components are integrated natively into the OCB build:
 
-| Component | Type | Description |
-|-----------|------|-------------|
-| `tfootlp` | Receiver | OTLP receiver with v1 + v2 endpoint support |
-| `tfo` | Exporter | Auto-injects TFO authentication headers |
-| `tfoauth` | Extension | Centralized API key management |
-| `tfoidentity` | Extension | Collector identity and resource enrichment |
+| Component     | Type      | Description                                 |
+| ------------- | --------- | ------------------------------------------- |
+| `tfootlp`     | Receiver  | OTLP receiver with v1 + v2 endpoint support |
+| `tfo`         | Exporter  | Auto-injects TFO authentication headers     |
+| `tfoauth`     | Extension | Centralized API key management              |
+| `tfoidentity` | Extension | Collector identity and resource enrichment  |
 
 ---
 
@@ -206,7 +206,7 @@ tfo-collector/
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 VERSION ?= 1.2.1
-OTEL_VERSION := 0.152.0
+OTEL_VERSION := 0.152.1
 
 BUILD_DIR := ./build
 CONFIG_DIR := ./configs
@@ -377,19 +377,19 @@ This indicates OTEL API version mismatch. Ensure go.mod has matching versions:
 grep "go.opentelemetry.io/collector" go.mod
 
 # Update to correct version
-go get go.opentelemetry.io/collector@v0.146.1
+go get go.opentelemetry.io/collector@v0.152.1
 go mod tidy
 ```
 
 ### Build Fails: "MakeFactoryMap undefined"
 
-OTEL 0.146.1 removed `MakeFactoryMap` functions. Use manual map creation:
+OTEL 0.152.1 removed `MakeFactoryMap` functions. Use manual map creation:
 
 ```go
 // Old API (deprecated)
 factories.Extensions, err = extension.MakeFactoryMap(...)
 
-// New API (0.146.1+)
+// New API (0.152.1+)
 factories.Extensions = make(map[component.Type]extension.Factory)
 for _, f := range extensionFactories {
     factories.Extensions[f.Type()] = f
@@ -417,4 +417,4 @@ make build
 
 ---
 
-**Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.**
+**Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.**

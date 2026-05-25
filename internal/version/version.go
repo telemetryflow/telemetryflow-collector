@@ -1,7 +1,7 @@
 // Package version provides build and version information for TelemetryFlow Collector.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-// Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+// Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,13 +42,13 @@ const (
 	VendorURL = "https://telemetryflow.id"
 
 	// Developer is the organization that built this software
-	Developer = "DevOpsCorner Indonesia"
+	Developer = "Telemetri Data Indonesia"
 
 	// DeveloperURL is the developer website
-	DeveloperURL = "https://devopscorner.id"
+	DeveloperURL = "https://telemetryflow.id"
 
 	// Copyright is the copyright notice
-	Copyright = "Copyright (c) 2024-2026 DevOpsCorner Indonesia"
+	Copyright = "Copyright (c) 2026 Telemetri Data Indonesia"
 
 	// License is the license type
 	License = "Apache-2.0"
@@ -60,7 +60,7 @@ const (
 	SupportURL = "https://docs.telemetryflow.id"
 
 	// OTELVersion is the OpenTelemetry Collector version this is based on
-	OTELVersion = "0.152.0"
+	OTELVersion = "0.152.1"
 )
 
 // Build-time variables (set via ldflags)

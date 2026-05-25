@@ -1,7 +1,7 @@
 // Package tfoauthextension provides centralized TelemetryFlow API key management.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-// Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+// Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

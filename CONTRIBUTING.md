@@ -38,7 +38,7 @@ Thank you for your interest in contributing to TelemetryFlow Collector! This doc
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code. Please report unacceptable behavior to [support@devopscorner.id](mailto:support@devopscorner.id).
+This project adheres to the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code. Please report unacceptable behavior to [support@telemetryflow.id](mailto:support@telemetryflow.id).
 
 ## Getting Started
 
@@ -107,19 +107,22 @@ curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/insta
 
 ```
 telemetryflow-collector/
-├── cmd/tfo-collector/        # Standalone CLI entry point
-│   └── main.go               # Cobra CLI with banner
+├── cmd/tfo-collector/        # OCB-generated main entry point
+│   ├── main.go               # Main entry point
+│   └── components.go         # Component registry
+├── components/               # TFO Custom Components
+│   ├── tfootlpreceiver/      # TFO OTLP Receiver (v1/v2)
+│   ├── tfoexporter/          # TFO Platform Exporter
+│   └── extension/
+│       ├── tfoauthextension/ # TFO Auth Extension
+│       └── tfoidentityextension/ # TFO Identity Extension
 ├── internal/
-│   ├── collector/            # Core collector implementation
-│   ├── config/               # Configuration management
-│   └── version/              # Version and banner info
-├── pkg/                      # LEGO Building Blocks (reusable)
-│   ├── banner/               # Startup banner
-│   ├── config/               # Config loader utilities
-│   └── plugin/               # Component registry
+│   └── version/              # Version info
+├── pkg/
+│   └── banner/               # Startup banner
 ├── configs/
-│   ├── tfo-collector.yaml        # Standalone config (custom format)
-│   ├── otel-collector.yaml       # OCB config (standard OTel format)
+│   ├── tfo-collector.yaml        # TFO config (v1/v2)
+│   ├── otel-collector.yaml       # Standard OTel config
 │   └── otel-collector-minimal.yaml
 ├── tests/
 │   ├── unit/                 # Unit tests
@@ -128,15 +131,11 @@ telemetryflow-collector/
 │   ├── mocks/                # Mock implementations
 │   └── fixtures/             # Test fixtures
 ├── build/                    # Build output directory
-│   ├── tfo-collector         # Standalone binary
-│   ├── tfo-collector-ocb     # OCB binary
-│   └── ocb/                  # OCB generated code
 ├── manifest.yaml             # OCB manifest
 ├── Makefile
-├── Dockerfile                # Standalone build
-├── Dockerfile.ocb            # OCB build
-├── docker-compose.yml        # Docker Compose (standalone)
-└── docker-compose.ocb.yml    # Docker Compose (OCB)
+├── Dockerfile
+├── docker-compose.yml
+└── .env.example
 ```
 
 ### Key Packages
@@ -150,17 +149,11 @@ telemetryflow-collector/
 
 ## Build Options
 
-TelemetryFlow Collector supports two build modes:
+TelemetryFlow Collector uses a single OCB-native build (since v1.1.2+):
 
-| Build Type     | Command      | Binary              | Description                      |
-| -------------- | ------------ | ------------------- | -------------------------------- |
-| **Standalone** | `make`       | `tfo-collector`     | Custom CLI with Cobra commands   |
-| **OCB**        | `make build` | `tfo-collector-ocb` | Standard OpenTelemetry Collector |
-
-### When to Use Each Build
-
-- **Standalone**: Custom features, simplified configuration with `enabled` flags
-- **OCB**: Full OpenTelemetry ecosystem compatibility, standard OTEL config format
+| Build Type      | Command      | Binary              | Description                      |
+| --------------- | ------------ | ------------------- | -------------------------------- |
+| **OCB-Native**  | `make build` | `tfo-collector`     | Standard OpenTelemetry Collector |
 
 ## Making Changes
 
@@ -216,7 +209,7 @@ fix(processor): resolve batch timeout issue
 
 docs(readme): update OCB build instructions
 
-chore(deps): update OpenTelemetry to v0.114.0
+chore(deps): update OpenTelemetry to v0.152.1
 ```
 
 ## Testing
@@ -429,15 +422,15 @@ Edit `manifest.yaml` to add OpenTelemetry components:
 ```yaml
 # Add a new receiver
 receivers:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newreceiver v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/newreceiver v0.152.1
 
 # Add a new processor
 processors:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/newprocessor v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/newprocessor v0.152.1
 
 # Add a new exporter
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newexporter v0.114.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newexporter v0.152.1
 ```
 
 Then rebuild:
@@ -499,7 +492,6 @@ func NewCollector(config *Config) (*Collector, error) {
 - Update README.md for user-facing changes
 - Add/update docs in the `docs/` directory
 - Include examples for new features
-- Document both standalone and OCB configurations
 
 ## Community
 
@@ -507,7 +499,7 @@ func NewCollector(config *Config) (*Collector, error) {
 
 - **GitHub Issues**: Report bugs or request features
 - **Discussions**: Ask questions and share ideas
-- **Email**: [support@devopscorner.id](mailto:support@devopscorner.id)
+- **Email**: [support@telemetryflow.id](mailto:support@telemetryflow.id)
 
 ### Recognition
 
@@ -525,4 +517,4 @@ By contributing to TelemetryFlow Collector, you agree that your contributions wi
 
 **Thank you for contributing to TelemetryFlow Collector!**
 
-Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.
+Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.

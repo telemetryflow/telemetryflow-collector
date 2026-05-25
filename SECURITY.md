@@ -579,8 +579,8 @@ We would like to thank the following security researchers for their contribution
 
 ---
 
-- **Last Updated**: May 22nd, 2025
-- **Version**: 2.0.0
+- **Last Updated**: May 25, 2026
+- **Version**: 1.2.1
 - **Project**: TelemetryFlow Collector
 
-**Built with ❤️ by DevOpsCorner Indonesia**
+**Built with ❤️ by Telemetri Data Indonesia**

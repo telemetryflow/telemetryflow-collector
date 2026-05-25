@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-# Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This workflow builds and releases TelemetryFlow Collector for:
 # - Linux: RPM (RHEL/CentOS/Fedora), DEB (Debian/Ubuntu)
@@ -701,7 +701,7 @@ jobs:
           Documentation: https://docs.telemetryflow.id
           Support: support@telemetryflow.id
 
-          Copyright (c) 2024-2026 TelemetryFlow
+          Copyright (c) 2024-2026 Telemetri Data Indonesia
           EOF
 
           # Create ZIP
@@ -885,7 +885,7 @@ jobs:
           Documentation: https://docs.telemetryflow.id
           Support: support@telemetryflow.id
 
-          Copyright (c) 2024-2026 TelemetryFlow
+          Copyright (c) 2024-2026 Telemetri Data Indonesia
           EOF
 
       - name: Create DMG

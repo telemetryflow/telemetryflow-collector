@@ -1,7 +1,7 @@
 // Package main is the entry point for the TelemetryFlow Collector.
 //
 // TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
-// Copyright (c) 2024-2026 TelemetryFlow. All rights reserved.
+// Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // This is the OCB-native build that includes:
 // - All 85+ OpenTelemetry Collector community components

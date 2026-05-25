@@ -1,8 +1,8 @@
 # TelemetryFlow Collector Documentation
 
 - **Version:** 1.2.1
-- **OTEL Version:** 0.152.0
-- **Last Updated:** March 2026
+- **OTEL Version:** 0.152.1
+- **Last Updated:** May 2026
 - **Status:** Production Ready
 
 ---
@@ -16,37 +16,37 @@ TelemetryFlow Collector (`tfo-collector`) is an enterprise-grade OpenTelemetry C
 
 ### OCB-Native Architecture
 
-| Feature | Description |
-|---------|-------------|
-| Binary | `tfo-collector` |
-| Build System | OpenTelemetry Collector Builder (OCB) |
-| Config Format | Standard OTEL YAML |
-| CLI | Standard OTEL with TFO branding |
-| Components | 85+ OTEL community + TFO custom |
-| Docker Image | `telemetryflow/telemetryflow-collector` |
+| Feature       | Description                             |
+| ------------- | --------------------------------------- |
+| Binary        | `tfo-collector`                         |
+| Build System  | OpenTelemetry Collector Builder (OCB)   |
+| Config Format | Standard OTEL YAML                      |
+| CLI           | Standard OTEL with TFO branding         |
+| Components    | 85+ OTEL community + TFO custom         |
+| Docker Image  | `telemetryflow/telemetryflow-collector` |
 
 ### TFO Custom Components
 
-| Component | Type | Description |
-|-----------|------|-------------|
-| `tfootlp` | Receiver | OTLP receiver with v1 + v2 endpoint support |
-| `tfo` | Exporter | Auto-injects TFO authentication headers |
-| `tfoauth` | Extension | Centralized API key management |
-| `tfoidentity` | Extension | Collector identity and resource enrichment |
+| Component     | Type      | Description                                 |
+| ------------- | --------- | ------------------------------------------- |
+| `tfootlp`     | Receiver  | OTLP receiver with v1 + v2 endpoint support |
+| `tfo`         | Exporter  | Auto-injects TFO authentication headers     |
+| `tfoauth`     | Extension | Centralized API key management              |
+| `tfoidentity` | Extension | Collector identity and resource enrichment  |
 
 ---
 
 ## Documentation Index
 
-| Document | Description |
-|----------|-------------|
-| [README.md](README.md) | This file - Overview and quick reference |
-| [INSTALLATION.md](INSTALLATION.md) | Installation and deployment guide |
-| [CONFIGURATION.md](CONFIGURATION.md) | Configuration reference |
-| [BUILD-SYSTEM.md](BUILD-SYSTEM.md) | OCB build system explained |
-| [COMPONENTS.md](COMPONENTS.md) | Available receivers, processors, exporters |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture |
-| [GITHUB-WORKFLOWS.md](GITHUB-WORKFLOWS.md) | CI/CD workflow documentation |
+| Document                                   | Description                                |
+| ------------------------------------------ | ------------------------------------------ |
+| [README.md](README.md)                     | This file - Overview and quick reference   |
+| [INSTALLATION.md](INSTALLATION.md)         | Installation and deployment guide          |
+| [CONFIGURATION.md](CONFIGURATION.md)       | Configuration reference                    |
+| [BUILD-SYSTEM.md](BUILD-SYSTEM.md)         | OCB build system explained                 |
+| [COMPONENTS.md](COMPONENTS.md)             | Available receivers, processors, exporters |
+| [ARCHITECTURE.md](ARCHITECTURE.md)         | System architecture                        |
+| [GITHUB-WORKFLOWS.md](GITHUB-WORKFLOWS.md) | CI/CD workflow documentation               |
 
 ---
 
@@ -166,20 +166,24 @@ graph TB
 ### TFO Custom Components
 
 **TFO OTLP Receiver (`tfootlp`)**:
+
 - v1 endpoints: `/v1/traces`, `/v1/metrics`, `/v1/logs` (OTEL standard)
 - v2 endpoints: `/v2/traces`, `/v2/metrics`, `/v2/logs` (TFO Platform)
 - gRPC and HTTP support on same ports
 
 **TFO Exporter (`tfo`)**:
+
 - Auto-injects authentication headers
 - Supports both cloud SaaS and self-hosted endpoints
 - v2 API support for TelemetryFlow Platform
 
 **TFO Auth Extension (`tfoauth`)**:
+
 - Centralized API key management
 - Environment variable substitution
 
 **TFO Identity Extension (`tfoidentity`)**:
+
 - Collector identity management
 - Resource enrichment with collector metadata
 
@@ -197,21 +201,21 @@ graph TB
 
 ### OTLP Protocol Support
 
-| Protocol | Port | Encoding | Signals |
-|----------|------|----------|---------|
-| gRPC | 4317 | Protocol Buffers | Traces, Metrics, Logs |
-| HTTP | 4318 | Protocol Buffers, JSON | Traces, Metrics, Logs |
+| Protocol | Port | Encoding               | Signals               |
+| -------- | ---- | ---------------------- | --------------------- |
+| gRPC     | 4317 | Protocol Buffers       | Traces, Metrics, Logs |
+| HTTP     | 4318 | Protocol Buffers, JSON | Traces, Metrics, Logs |
 
 ### OTLP HTTP Endpoints
 
-| Endpoint | Version | Description |
-|----------|---------|-------------|
-| `/v1/traces` | v1 | Standard OTEL traces endpoint |
-| `/v1/metrics` | v1 | Standard OTEL metrics endpoint |
-| `/v1/logs` | v1 | Standard OTEL logs endpoint |
-| `/v2/traces` | v2 | TelemetryFlow Platform traces |
-| `/v2/metrics` | v2 | TelemetryFlow Platform metrics |
-| `/v2/logs` | v2 | TelemetryFlow Platform logs |
+| Endpoint      | Version | Description                    |
+| ------------- | ------- | ------------------------------ |
+| `/v1/traces`  | v1      | Standard OTEL traces endpoint  |
+| `/v1/metrics` | v1      | Standard OTEL metrics endpoint |
+| `/v1/logs`    | v1      | Standard OTEL logs endpoint    |
+| `/v2/traces`  | v2      | TelemetryFlow Platform traces  |
+| `/v2/metrics` | v2      | TelemetryFlow Platform metrics |
+| `/v2/logs`    | v2      | TelemetryFlow Platform logs    |
 
 ### Exemplars Support
 
@@ -228,7 +232,7 @@ connectors:
 
 exporters:
   prometheus:
-    enable_open_metrics: true  # Required for exemplars
+    enable_open_metrics: true # Required for exemplars
 ```
 
 See [EXEMPLARS.md](EXEMPLARS.md) for detailed configuration.
@@ -295,15 +299,15 @@ service:
 
 ## Exposed Ports
 
-| Port | Protocol | Description |
-|------|----------|-------------|
-| 4317 | gRPC | OTLP gRPC receiver |
-| 4318 | HTTP | OTLP HTTP receiver |
-| 8888 | HTTP | Prometheus metrics (self) |
-| 8889 | HTTP | Prometheus exporter |
-| 13133 | HTTP | Health check |
-| 55679 | HTTP | zPages |
-| 1777 | HTTP | pprof |
+| Port  | Protocol | Description               |
+| ----- | -------- | ------------------------- |
+| 4317  | gRPC     | OTLP gRPC receiver        |
+| 4318  | HTTP     | OTLP HTTP receiver        |
+| 8888  | HTTP     | Prometheus metrics (self) |
+| 8889  | HTTP     | Prometheus exporter       |
+| 13133 | HTTP     | Health check              |
+| 55679 | HTTP     | zPages                    |
+| 1777  | HTTP     | pprof                     |
 
 ---
 
@@ -410,24 +414,24 @@ spec:
   template:
     spec:
       containers:
-      - name: collector
-        image: telemetryflow/telemetryflow-collector:1.2.1
-        args: ["--config", "/etc/tfo-collector/config.yaml"]
-        ports:
-        - containerPort: 4317
-        - containerPort: 4318
-        - containerPort: 8888
-        env:
-        - name: TELEMETRYFLOW_API_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: tfo-credentials
-              key: api-key-id
-        - name: TELEMETRYFLOW_API_KEY_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: tfo-credentials
-              key: api-key-secret
+        - name: collector
+          image: telemetryflow/telemetryflow-collector:1.2.1
+          args: ["--config", "/etc/tfo-collector/config.yaml"]
+          ports:
+            - containerPort: 4317
+            - containerPort: 4318
+            - containerPort: 8888
+          env:
+            - name: TELEMETRYFLOW_API_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tfo-credentials
+                  key: api-key-id
+            - name: TELEMETRYFLOW_API_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tfo-credentials
+                  key: api-key-secret
 ```
 
 ### Systemd
@@ -471,8 +475,8 @@ curl http://localhost:55679/debug/servicez
 - **Website**: [https://telemetryflow.id](https://telemetryflow.id)
 - **Documentation**: [https://docs.telemetryflow.id](https://docs.telemetryflow.id)
 - **OpenTelemetry**: [https://opentelemetry.io](https://opentelemetry.io)
-- **Developer**: [DevOpsCorner Indonesia](https://devopscorner.id)
+- **Developer**: [Telemetri Data Indonesia](https://telemetryflow.id)
 
 ---
 
-**Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.**
+**Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.**

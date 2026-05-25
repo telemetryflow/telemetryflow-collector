@@ -383,8 +383,8 @@ Apache License 2.0 - See [LICENSE](../LICENSE)
 - **Website**: [https://telemetryflow.id](https://telemetryflow.id)
 - **Documentation**: [https://docs.telemetryflow.id](https://docs.telemetryflow.id)
 - **OpenTelemetry**: [https://opentelemetry.io](https://opentelemetry.io)
-- **Developer**: [DevOpsCorner Indonesia](https://devopscorner.id)
+- **Developer**: [Telemetri Data Indonesia](https://telemetryflow.id)
 
 ---
 
-**Copyright (c) 2024-2026 DevOpsCorner Indonesia. All rights reserved.**
+**Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.**

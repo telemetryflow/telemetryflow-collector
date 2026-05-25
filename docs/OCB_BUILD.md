@@ -23,7 +23,7 @@ flowchart LR
     end
 
     subgraph Binary["Final Binary"]
-        BIN[tfo-collector-ocb]
+        BIN[tfo-collector]
     end
 
     MANIFEST --> GEN
@@ -38,43 +38,31 @@ flowchart LR
     style Binary fill:#C8E6C9,stroke:#388E3C
 ```
 
-### Two Build Approaches
+### OCB-Native Build (v1.1.2+)
+
+Since v1.1.2, TelemetryFlow Collector uses a single OCB-native build system. The legacy standalone build has been removed.
 
 ```mermaid
 graph TB
-    subgraph Approaches["Build Approaches"]
-        subgraph OCB_Build["OCB Build"]
-            O1[manifest.yaml]
-            O2[OCB generates code]
-            O3[go build]
-            O4[tfo-collector-ocb]
-            O1 --> O2 --> O3 --> O4
-        end
-
-        subgraph Standalone["Standalone Build"]
-            S1[cmd/tfo-collector/main.go]
-            S2[internal packages]
-            S3[go build]
-            S4[tfo-collector]
-            S1 --> S3
-            S2 --> S3
-            S3 --> S4
-        end
+    subgraph OCB_Build["OCB-Native Build"]
+        O1[manifest.yaml]
+        O2[OCB generates code]
+        O3[go build]
+        O4[tfo-collector]
+        O1 --> O2 --> O3 --> O4
     end
 
     style OCB_Build fill:#E3F2FD,stroke:#1565C0
-    style Standalone fill:#E8F5E9,stroke:#388E3C
 ```
 
-| Approach             | CLI Command                                | Config Format        | Use Case                |
-| -------------------- | ------------------------------------------ | -------------------- | ----------------------- |
-| **OCB Build**        | `tfo-collector --config config.yaml`       | Standard OTEL        | Full OTEL ecosystem     |
-| **Standalone Build** | `tfo-collector start --config config.yaml` | TelemetryFlow format | Lightweight, custom CLI |
+| Approach             | CLI Command                          | Config Format | Use Case            |
+| -------------------- | ------------------------------------ | ------------- | ------------------- |
+| **OCB-Native Build** | `tfo-collector --config config.yaml` | Standard OTEL | Full OTEL ecosystem |
 
 ## Prerequisites
 
 - Go 1.26 or later
-- OCB (OpenTelemetry Collector Builder) v0.146.1
+- OCB (OpenTelemetry Collector Builder) v0.152.1
 
 ## Installation
 
@@ -82,7 +70,7 @@ graph TB
 
 ```bash
 # Install OCB matching your OTEL version
-go install go.opentelemetry.io/collector/cmd/builder@v0.146.1
+go install go.opentelemetry.io/collector/cmd/builder@v0.152.1
 
 # Verify installation
 builder version
@@ -93,7 +81,7 @@ builder version
 ```bash
 # Linux/macOS
 curl -L -o ocb \
-  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.146.1/ocb_0.146.1_$(uname -s)_$(uname -m)"
+  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.152.1/ocb_0.152.1_$(uname -s)_$(uname -m)"
 chmod +x ocb
 sudo mv ocb /usr/local/bin/
 ```
@@ -111,13 +99,13 @@ flowchart TD
 
     subgraph Step2["Step 2: Compile"]
         B1[cd build/ocb]
-        B2[go build -o tfo-collector-ocb]
+        B2[go build -o tfo-collector]
         B3[Binary created]
         B1 --> B2 --> B3
     end
 
     subgraph Step3["Step 3: Run"]
-        C1[./tfo-collector-ocb]
+        C1[./tfo-collector]
         C2[--config config.yaml]
         C3[Collector Running]
         C1 --> C2 --> C3
@@ -143,14 +131,13 @@ builder --config manifest.yaml
 
 ```bash
 cd build/ocb
-go build -o tfo-collector-ocb .
+go build -o tfo-collector .
 ```
 
 ### Step 3: Run the Collector
 
-```bash
-./tfo-collector-ocb --config configs/otel-collector.yaml
-```
+````bash
+./tfo-collector --config configs/otel-collector.yaml
 
 ## Using Make Targets
 
@@ -168,7 +155,7 @@ make run
 
 # Clean build artifacts
 make clean
-```
+````
 
 ## Manifest Structure
 
@@ -176,31 +163,26 @@ The `manifest.yaml` defines which components to include:
 
 ```yaml
 dist:
-  name: tfo-collector-ocb
-  description: TelemetryFlow Collector OCB
-  output_path: ./build/ocb
-  module: github.com/telemetryflow/telemetryflow-collector-ocb
-  skip_compilation: true # We compile manually
+  name: tfo-collector
+  description: TelemetryFlow Collector
+  output_path: ./build
+  module: github.com/telemetryflow/telemetryflow-collector
+  skip_compilation: true
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.146.1
-  # ... more extensions
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.152.1
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.146.1
-  # ... more receivers
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.152.1
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.146.1
-  # ... more processors
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.152.1
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.146.1
-  # ... more exporters
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.152.1
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.146.1
-  # ... more connectors
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.152.1
 ```
 
 ## Adding New Components
@@ -235,14 +217,14 @@ Browse available components:
 ```yaml
 receivers:
   # Add new receiver
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.146.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.152.1
 ```
 
 ### 3. Rebuild
 
 ```bash
 builder --config manifest.yaml
-cd build/ocb && go build -o tfo-collector-ocb .
+cd build/ocb && go build -o tfo-collector .
 ```
 
 ### 4. Configure in YAML
@@ -269,36 +251,37 @@ service:
 ### Build Image
 
 ```bash
-docker build -f Dockerfile.ocb \
-  --build-arg VERSION=1.1.1 \
-  --build-arg OTEL_VERSION=0.146.1 \
-  -t telemetryflow/telemetryflow-collector-ocb:1.1.1 .
+docker build -f Dockerfile \
+  --build-arg VERSION=1.2.1 \
+  --build-arg OTEL_VERSION=0.152.1 \
+  -t telemetryflow/telemetryflow-collector:1.2.1 .
 ```
 
 ### Run Container
 
 ```bash
 docker run -d \
-  --name tfo-collector-ocb \
+  --name tfo-collector \
   -p 4317:4317 \
   -p 4318:4318 \
   -p 8888:8888 \
   -p 8889:8889 \
   -p 13133:13133 \
   -v $(pwd)/configs/otel-collector.yaml:/etc/tfo-collector/otel-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector-ocb:1.1.1
+  telemetryflow/telemetryflow-collector:1.2.1
 ```
 
 ### Docker Compose
 
 ```bash
-docker-compose -f docker-compose.ocb.yml up -d
+docker-compose up -d
 ```
 
 ## Version Compatibility
 
 | TelemetryFlow | OTEL Version | OCB Version |
 | ------------- | ------------ | ----------- |
+| 1.2.x         | 0.152.1      | v0.152.1    |
 | 1.1.x         | 0.146.1      | v0.146.1    |
 | 1.0.x         | 0.114.0      | v0.114.0    |
 
@@ -308,7 +291,7 @@ docker-compose -f docker-compose.ocb.yml up -d
 
 ### OCB Build (OTEL Community - v1 Only)
 
-The OCB build uses the **standard OpenTelemetry OTLP receiver** which supports **v1 endpoints only**:
+The OCB-native build uses the **standard OpenTelemetry OTLP receiver** which supports **v1 endpoints only**:
 
 | Signal  | Endpoint      | Content-Type                                 |
 | ------- | ------------- | -------------------------------------------- |
@@ -318,16 +301,16 @@ The OCB build uses the **standard OpenTelemetry OTLP receiver** which supports *
 
 This ensures full compatibility with the OpenTelemetry specification and all OTEL SDKs.
 
-### TFO Standalone Build (Dual Endpoints)
+### TFO OTLP Receiver (Dual Endpoints)
 
-The standalone TFO build uses a **custom OTLP receiver** that supports **both v1 and v2** endpoints:
+The TFO OTLP receiver (`tfootlp`) supports **both v1 and v2** endpoints:
 
 | Version                 | Endpoint                                | Description                     |
 | ----------------------- | --------------------------------------- | ------------------------------- |
 | **v1** (OTEL Community) | `/v1/traces`, `/v1/metrics`, `/v1/logs` | Standard OpenTelemetry spec     |
 | **v2** (TFO Platform)   | `/v2/traces`, `/v2/metrics`, `/v2/logs` | TelemetryFlow Platform-specific |
 
-> **Recommendation:** Use **v2 endpoints** for TFO Standalone build for TelemetryFlow Platform features. Use **v1 endpoints** when compatibility with standard OTEL tooling is required.
+> **Recommendation:** Use **v2 endpoints** with the `tfootlp` receiver for TelemetryFlow Platform features. Use **v1 endpoints** when compatibility with standard OTEL tooling is required.
 
 ## Troubleshooting
 
@@ -345,7 +328,7 @@ go mod tidy
 
 ```bash
 # Ensure all components use same version in manifest.yaml
-# All gomod entries should end with v0.114.0
+# All gomod entries should end with v0.152.1
 ```
 
 ### Runtime Errors
@@ -358,23 +341,23 @@ go mod tidy
 **"failed to create pipeline"**
 
 - Check YAML syntax in config file
-- Validate with: `./tfo-collector-ocb validate --config config.yaml`
+- Validate with: `./tfo-collector validate --config config.yaml`
 
 ## Configuration Validation
 
 ```bash
 # Validate configuration
-./tfo-collector-ocb validate --config configs/otel-collector.yaml
+./tfo-collector validate --config configs/otel-collector.yaml
 
 # Show configuration (debug)
-./tfo-collector-ocb --config configs/otel-collector.yaml --dry-run
+./tfo-collector --config configs/otel-collector.yaml --dry-run
 ```
 
 ## CLI Reference
 
 ```bash
 # Basic usage
-./tfo-collector-ocb --config <config-file>
+./tfo-collector --config <config-file>
 
 # Common flags
 --config          Path to configuration file
@@ -382,7 +365,7 @@ go mod tidy
 --feature-gates   Enable/disable feature gates
 
 # Validate configuration
-./tfo-collector-ocb validate --config <config-file>
+./tfo-collector validate --config <config-file>
 ```
 
 ## Related Documentation
