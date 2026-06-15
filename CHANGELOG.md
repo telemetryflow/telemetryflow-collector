@@ -5,7 +5,7 @@
     <img src="https://github.com/telemetryflow/.github/raw/main/docs/assets/tfo-logo-collector-light.svg" alt="TelemetryFlow Logo" width="80%">
   </picture>
 
-  <h3>TelemetryFlow Collector (OTEL Collector)</h3>
+  <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
 [![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -482,21 +482,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-| Version | Date       | Description                                                                             |
-| ------- | ---------- | --------------------------------------------------------------------------------------- |
+| Version | Date       | Description                                                                                |
+| ------- | ---------- | ------------------------------------------------------------------------------------------ |
 | 1.2.1   | 2026-05-22 | CVE-2026-42306/41567/41568 (Docker), CVE-2026-41602 (Apache Thrift), OTel Contrib v0.152.1 |
-| 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                                 |
-| 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                                     |
-| 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected |
-| 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster                                |
-| 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade                                  |
-| 1.1.5   | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump                                    |
-| 1.1.4   | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes                                              |
-| 1.1.2   | 2026-01-03 | OCB-native architecture, unified build system                                           |
-| 1.1.1   | 2025-01-01 | Documentation improvements, DDD test reorganization                                     |
-| 1.1.0   | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format                               |
-| 1.0.1   | 2024-12-17 | Docker workflows, SBOM, multi-platform support                                          |
-| 1.0.0   | 2024-12-17 | Initial release                                                                         |
+| 1.2.0   | 2026-05-13 | OTel Contrib v0.152.0, Core v1.58.0, CVE-2026-33997 fix                                    |
+| 1.1.9   | 2026-05-13 | Go 1.26.3, security vuln fixes (x/net, gRPC, xpath)                                        |
+| 1.1.8   | 2026-03-12 | Helm chart (telemetryflow-collector), license headers standardized, copyright corrected    |
+| 1.1.7   | 2026-03-08 | Go v1.26 upgrade, Helm deployment for Kubernetes cluster                                   |
+| 1.1.6   | 2026-03-04 | k8sattributes processor, OTEL v1.53.0/v0.147.0 upgrade                                     |
+| 1.1.5   | 2026-02-22 | Makefile OCB cleanup, go.mod alignment, version bump                                       |
+| 1.1.4   | 2026-02-21 | OTEL v0.146.1, golangci-lint v2, bug fixes                                                 |
+| 1.1.2   | 2026-01-03 | OCB-native architecture, unified build system                                              |
+| 1.1.1   | 2025-01-01 | Documentation improvements, DDD test reorganization                                        |
+| 1.1.0   | 2024-12-27 | OTEL v0.142.0, TelemetryFlow config, standard OTEL format                                  |
+| 1.0.1   | 2024-12-17 | Docker workflows, SBOM, multi-platform support                                             |
+| 1.0.0   | 2024-12-17 | Initial release                                                                            |
 
 ## Build Architecture
 
