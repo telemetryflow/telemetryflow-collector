@@ -2,7 +2,8 @@
 # TelemetryFlow Collector - Dockerfile (Native Go Build)
 # =============================================================================
 #
-# TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
+# TelemetryFlow Collector v1.2.1 (Based on OpenTelemetry Collector Builder (OCB) 0.152.0)
+# AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +38,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Builder
 # -----------------------------------------------------------------------------
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 # Build arguments
 ARG VERSION=1.2.1
@@ -45,6 +46,8 @@ ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
 ARG OTEL_VERSION=0.152.0
+ARG TARGETOS=linux
+ARG TARGETARCH
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -71,10 +74,12 @@ COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 
 # Build the binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+# Uses TARGETOS/TARGETARCH for multi-arch support (amd64, arm64)
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags "-s -w \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.Version=${VERSION}' \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitCommit=${GIT_COMMIT}' \
+    -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.GitBranch=${GIT_BRANCH}' \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=${BUILD_TIME}'" \
     -o /tfo-collector ./cmd/tfo-collector
 
@@ -185,7 +190,7 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-#     --build-arg OTEL_VERSION=0.146.1 \
+#     --build-arg OTEL_VERSION=0.152.0 \
 #     -t telemetryflow/telemetryflow-collector:1.2.1 .
 #
 # Run with:

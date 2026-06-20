@@ -24,7 +24,7 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2026-05-22
+## [1.2.1] - 2026-06-20
 
 ### Security
 
@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CVE-2026-41568 (MODERATE)**: Docker `docker cp` race condition — arbitrary file/directory creation on host. Resolved by same migration to `github.com/moby/moby/*`
 - **CVE-2026-41602 (HIGH)**: Apache Thrift TFramedTransport integer overflow — upgraded `github.com/apache/thrift` v0.22.0 → v0.23.0
 - **Docker hardening**: Alpine runtime image upgraded to use `apk upgrade --available` for comprehensive OS-level security patching; added `apk-tools` cleanup to reduce attack surface
+- **GHSA #49 (MODERATE)**: `go.mongodb.org/mongo-driver/v2` heap out-of-bounds read in GSSAPI error handling — resolved by Dependabot bump v2.3.1 → v2.4.2 in `build/`
+- **GHSA #50 (MODERATE)**: `sentryexporter` path traversal via attacker-controlled `service.name` reaching privileged Sentry API endpoints with operator bearer token — removed `sentryexporter` from `manifest.yaml`, `build/`, and docs. Sentry integration is now provided over native OTLP (no vulnerable component); see Changed below
 
 ### Changed
 
@@ -46,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `processor/batchprocessor`, `processor/memorylimiterprocessor`, `receiver/otlpreceiver`
   - `extension/zpagesextension`, `service`, `otelcol`
 - **Manifest (`manifest.yaml`)**: Updated header to reflect disabled components re-enabled in v0.152.0
+- **Sentry integration (replaces `sentryexporter`)**: Sentry traces are now exported via the standard `otlphttpexporter` against Sentry's native OTLP ingestion endpoint, authenticated with a project DSN key instead of the privileged operator bearer token. This eliminates the GHSA #50 attack surface (fixed `/otlp` endpoint; no path construction from `service.name`) while preserving Sentry functionality.
+  - `configs/tfo-collector.yaml`: added `otlphttp/sentry` exporter and a `resource/sentry` processor that pins `service.name` as defense-in-depth; wired both into the traces pipeline
+  - `.env.example`: added `SENTRY_ORG_SLUG`, `SENTRY_DSN_KEY`, `SENTRY_SERVICE_NAME` (all optional — leave empty to disable)
 - **Build (`build/`)**: Regenerated with OCB v0.152.1 — `docker/docker` no longer present in any `go.mod`
 
 ## [1.2.0] - 2026-05-13

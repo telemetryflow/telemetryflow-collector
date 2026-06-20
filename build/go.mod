@@ -37,7 +37,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.152.0
@@ -424,7 +423,6 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
-	github.com/getsentry/sentry-go v0.46.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect

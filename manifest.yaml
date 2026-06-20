@@ -443,8 +443,6 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.152.0
   # Mezmo exporter
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.152.0
-  # Sentry exporter
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.152.0
   # SumoLogic exporter
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.152.0
   # Tencentcloud Cls exporter

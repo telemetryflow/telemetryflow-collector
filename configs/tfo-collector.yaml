@@ -39,6 +39,9 @@
 #   TELEMETRYFLOW_COLLECTOR_ID    - Unique collector identifier (auto-generated if empty)
 #   TELEMETRYFLOW_COLLECTOR_NAME  - Human-readable collector name
 #   TELEMETRYFLOW_ENVIRONMENT     - Deployment environment
+#   SENTRY_ORG_SLUG               - Sentry org slug for OTLP ingestion (optional)
+#   SENTRY_DSN_KEY                - Sentry project DSN public key (optional)
+#   SENTRY_SERVICE_NAME           - Pinned service.name sent to Sentry (optional)
 #
 # =============================================================================
 
@@ -132,6 +135,18 @@ processors:
         action: upsert
       - key: deployment.environment
         value: production
+        action: upsert
+
+  # Sentry defense-in-depth - enforce a controlled service.name before export.
+  # Replaces the vulnerable sentryexporter (GHSA #50: path traversal via
+  # attacker-controlled service.name reaching privileged Sentry API endpoints).
+  # Guarding service.name upstream means no caller can inject traversal
+  # characters even if a future exporter rebuilds a path from it.
+  # Disable Sentry by leaving SENTRY_DSN_KEY empty and removing otlphttp/sentry.
+  resource/sentry:
+    attributes:
+      - key: service.name
+        value: "${env:SENTRY_SERVICE_NAME:-telemetryflow-collector}"
         action: upsert
 
   # Kubernetes attributes processor
@@ -324,6 +339,27 @@ exporters:
       num_consumers: 10
       queue_size: 1000
 
+  # Sentry via OTLP - replaces the removed, vulnerable sentryexporter.
+  # SECURITY: This uses Sentry's native OTLP ingestion over a FIXED /otlp endpoint
+  # authenticated with a project DSN key (NOT your privileged org auth token), so
+  # GHSA #50 (service.name path traversal to privileged Sentry API endpoints) does
+  # not apply. Pair with the resource/sentry processor to pin service.name.
+  # Enable: set SENTRY_ORG_SLUG and SENTRY_DSN_KEY in .env
+  # Scope: traces are GA in Sentry; metrics/logs OTLP support is maturing.
+  otlphttp/sentry:
+    endpoint: "https://sentry.io/api/${env:SENTRY_ORG_SLUG}/otlp"
+    compression: gzip
+    headers:
+      x-sentry-auth: "Sentry sentry_key=${env:SENTRY_DSN_KEY}"
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+
   # Standard OTLP gRPC exporter for other backends (uncomment to enable)
   # otlp_grpc:
   #   endpoint: "other-backend:4317"
@@ -350,11 +386,13 @@ service:
 
   pipelines:
     # Traces pipeline - receives traces via TFO OTLP receiver → forwards to backend (ClickHouse)
+    # otlphttp/sentry is last so data is fully enriched before export to Sentry.
+    # Remove otlphttp/sentry from this list if Sentry is not configured.
     traces:
       receivers: [tfootlp]
       processors:
-        [memory_limiter, k8sattributes, resource, attributes/agent, batch]
-      exporters: [debug, tfo, span_metrics, service_graph]
+        [memory_limiter, k8sattributes, resource, attributes/agent, resource/sentry, batch]
+      exporters: [debug, tfo, span_metrics, service_graph, otlphttp/sentry]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO OTLP receiver.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,

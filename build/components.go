@@ -35,7 +35,6 @@ import (
 	prometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	pulsarexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
-	sentryexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	signalfxexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	splunkhecexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	sumologicexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
@@ -350,7 +349,6 @@ func components() (otelcol.Factories, error) {
 		coralogixexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
-		sentryexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 		tencentcloudlogserviceexporter.NewFactory(),
 		alibabacloudlogserviceexporter.NewFactory(),
@@ -391,7 +389,6 @@ func components() (otelcol.Factories, error) {
 		coralogixexporter.NewFactory().Type():              "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.152.0",
 		logzioexporter.NewFactory().Type():                 "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.152.0",
 		mezmoexporter.NewFactory().Type():                  "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.152.0",
-		sentryexporter.NewFactory().Type():                 "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.152.0",
 		sumologicexporter.NewFactory().Type():              "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.152.0",
 		tencentcloudlogserviceexporter.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.152.0",
 		alibabacloudlogserviceexporter.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.152.0",

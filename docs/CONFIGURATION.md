@@ -435,6 +435,55 @@ service:
       exporters: [loki]
 ```
 
+### Sentry via OTLP
+
+Sentry is reached via the standard `otlphttp` exporter against Sentry's native OTLP ingestion endpoint. This replaces the removed `sentryexporter` (GHSA #50: path traversal via attacker-controlled `service.name` to privileged Sentry API endpoints). The OTLP path uses a fixed `/otlp` endpoint authenticated with a project DSN key — not the privileged operator bearer token — so the vulnerability class does not apply.
+
+```yaml
+processors:
+  # Defense-in-depth: pin service.name so no caller can inject traversal chars
+  resource/sentry:
+    attributes:
+      - key: service.name
+        value: "${env:SENTRY_SERVICE_NAME:-telemetryflow-collector}"
+        action: upsert
+
+exporters:
+  otlphttp/sentry:
+    endpoint: "https://sentry.io/api/${env:SENTRY_ORG_SLUG}/otlp"
+    compression: gzip
+    headers:
+      x-sentry-auth: "Sentry sentry_key=${env:SENTRY_DSN_KEY}"
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource/sentry, batch]
+      exporters: [otlphttp/sentry]
+```
+
+Environment variables (see `.env.example`):
+
+| Variable             | Required | Description                                                                          |
+| -------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `SENTRY_ORG_SLUG`    | Yes      | Sentry organization slug (URL path on `sentry.io`).                                  |
+| `SENTRY_DSN_KEY`     | Yes      | Project **public** DSN key from Sentry → Project Settings → Client Keys.            |
+| `SENTRY_SERVICE_NAME`| No       | Pinned `service.name` sent to Sentry (defaults to `telemetryflow-collector`).        |
+
+Notes:
+- **Scope:** Sentry OTLP traces are GA. Metrics/logs OTLP support is maturing — add `otlphttp/sentry` to those pipelines once your Sentry plan supports them.
+- **Auth:** `SENTRY_DSN_KEY` is the project DSN public key, intentionally not your org auth token — it cannot reach privileged endpoints even if abused.
+- **Disable:** leave `SENTRY_ORG_SLUG`/`SENTRY_DSN_KEY` empty and remove `otlphttp/sentry` from the traces pipeline.
+
 ### 3. Kubernetes Environment
 
 ```yaml
