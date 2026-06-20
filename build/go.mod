@@ -2,7 +2,7 @@
 
 module github.com/telemetryflow/telemetryflow-collector
 
-go 1.25.7
+go 1.26
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.152.0
@@ -731,7 +731,7 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.elastic.co/fastjson v1.5.1 // indirect
 	go.etcd.io/bbolt v1.4.3 // indirect
-	go.mongodb.org/mongo-driver/v2 v2.3.1 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.4.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.152.1 // indirect
 	go.opentelemetry.io/collector/client v1.58.0 // indirect
