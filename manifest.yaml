@@ -1,6 +1,6 @@
 # TelemetryFlow Collector - OpenTelemetry Collector Builder Manifest
 #
-# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This manifest defines the components to include in the TelemetryFlow Collector
@@ -48,7 +48,7 @@
 
 dist:
   name: tfo-collector
-  description: TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+  description: TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
   output_path: ./build
   module: github.com/telemetryflow/telemetryflow-collector
   # Skip compilation - we build manually with custom main.go

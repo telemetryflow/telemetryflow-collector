@@ -1,7 +1,7 @@
 # =============================================================================
 # TelemetryFlow Collector Configuration (v1.2.1)
 # =============================================================================
-# Community Enterprise Observability Platform (CEOP)
+# AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This is the standard configuration for TFO Collector (100% OCB-native build).
@@ -69,7 +69,7 @@ extensions:
   tfoidentity:
     id: "${env:TELEMETRYFLOW_COLLECTOR_ID}" # TELEMETRYFLOW_COLLECTOR_ID
     name: "TelemetryFlow Collector" # TELEMETRYFLOW_COLLECTOR_NAME
-    description: "TelemetryFlow Collector - Community Enterprise Observability Platform"
+    description: "TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform"
     tags:
       environment: production # TELEMETRYFLOW_ENVIRONMENT
       datacenter: default # TELEMETRYFLOW_DATACENTER

@@ -31,5 +31,5 @@ These fixtures are used by unit, integration, and e2e tests to provide consisten
 
 ## License
 
-TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.

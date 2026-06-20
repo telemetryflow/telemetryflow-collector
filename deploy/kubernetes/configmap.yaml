@@ -26,7 +26,7 @@ data:
       tfoidentity:
         id: "${env:TELEMETRYFLOW_COLLECTOR_ID}"
         name: "${env:TELEMETRYFLOW_COLLECTOR_NAME}"
-        description: "TFO Collector - Community Enterprise Observability Platform"
+        description: "TFO Collector - AI-Powered Observability & Incident Response Management (IRM) Platform"
         tags:
           environment: "${env:TELEMETRYFLOW_ENVIRONMENT}"
           datacenter: "${env:TELEMETRYFLOW_DATACENTER}"

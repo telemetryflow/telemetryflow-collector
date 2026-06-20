@@ -1,6 +1,6 @@
 // Package banner provides ASCII art banner for TelemetryFlow Collector.
 //
-// TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+// TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 // Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ func DefaultConfig() Config {
 		ProductName: "TelemetryFlow Collector",
 		Version:     "1.2.1",
 		BasedOn:     "OTEL Collector v0.152.1",
-		Motto:       "Community Enterprise Observability Platform (CEOP)",
+		Motto:       "AI-Powered Observability & Incident Response Management (IRM) Platform",
 		GitCommit:   "unknown",
 		BuildTime:   "unknown",
 		GoVersion:   "unknown",

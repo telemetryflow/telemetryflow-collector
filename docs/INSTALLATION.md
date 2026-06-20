@@ -212,7 +212,7 @@ sudo cp configs/tfo-collector.yaml /etc/tfo-collector/
 ```bash
 sudo tee /etc/systemd/system/tfo-collector.service > /dev/null <<'EOF'
 [Unit]
-Description=TelemetryFlow Collector - Community Enterprise Observability Platform
+Description=TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 Documentation=https://docs.telemetryflow.id
 After=network-online.target
 Wants=network-online.target

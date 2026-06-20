@@ -1,6 +1,6 @@
 // Package version provides build and version information for TelemetryFlow Collector.
 //
-// TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+// TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 // Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ const (
 	ProductDescription = "Community Enterprise-grade OpenTelemetry Collector for metrics, logs, and traces"
 
 	// Motto is the product tagline
-	Motto = "Community Enterprise Observability Platform (CEOP)"
+	Motto = "AI-Powered Observability & Incident Response Management (IRM) Platform"
 
 	// Vendor is the organization that owns this software
 	Vendor = "TelemetryFlow"

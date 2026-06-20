@@ -2,7 +2,7 @@
 # TelemetryFlow Collector - Docker Compose (E2E Testing)
 # =============================================================================
 #
-# TelemetryFlow Collector - Community Enterprise Observability Platform (CEOP)
+# TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
 # This docker-compose is for End-to-End testing using the Direct Go Build.
