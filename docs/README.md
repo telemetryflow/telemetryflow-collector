@@ -475,7 +475,7 @@ curl http://localhost:55679/debug/servicez
 - **Website**: [https://telemetryflow.id](https://telemetryflow.id)
 - **Documentation**: [https://docs.telemetryflow.id](https://docs.telemetryflow.id)
 - **OpenTelemetry**: [https://opentelemetry.io](https://opentelemetry.io)
-- **Developer**: [Telemetri Data Indonesia](https://telemetryflow.id)
+- **Developer**: [Telemetri Data Indonesia](https://telemetridata.id)
 
 ---
 
