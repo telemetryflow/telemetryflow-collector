@@ -52,7 +52,7 @@ func freePort(t *testing.T) int {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	return l.Addr().(*net.TCPAddr).Port
 }
 
@@ -158,7 +158,7 @@ func TestReceiver_V2Auth_MissingKeyID_401(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, nil)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Contains(t, string(body), "missing TelemetryFlow API Key ID")
 }
@@ -170,7 +170,7 @@ func TestReceiver_V2Auth_InvalidKeyIDFormat_401(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "invalid_key"}, nil)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Contains(t, string(body), "invalid TelemetryFlow API Key ID format")
 }
@@ -182,7 +182,7 @@ func TestReceiver_V2Auth_KeyIDNotInAllowList_403(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_other"}, nil)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 	assert.Contains(t, string(body), "API Key ID not authorized")
 }
@@ -198,7 +198,7 @@ func TestReceiver_V2Auth_KeyIDInAllowList_OK(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_allowed_one"}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
 }
@@ -210,7 +210,7 @@ func TestReceiver_V2Auth_ValidateSecret_Missing_401(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_test"}, nil)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Contains(t, string(body), "missing TelemetryFlow API Key Secret")
 }
@@ -226,7 +226,7 @@ func TestReceiver_V2Auth_ValidateSecret_BadFormat_401(t *testing.T) {
 			"X-TelemetryFlow-Key-ID":     "tfk_test",
 			"X-TelemetryFlow-Key-Secret": "bad_secret",
 		}, nil)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Contains(t, string(body), "invalid TelemetryFlow API Key Secret format")
 }
@@ -243,7 +243,7 @@ func TestReceiver_V2Auth_NotRequired_OK(t *testing.T) {
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	// No auth headers at all — should pass because required=false.
 	resp, _ := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -267,7 +267,7 @@ func TestReceiver_V1Traces_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
 }
@@ -283,7 +283,7 @@ func TestReceiver_V1Traces_JSON(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPostWithCT(t, url, nil, data, "application/json")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -294,7 +294,7 @@ func TestReceiver_V1Traces_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, []byte("not-protobuf"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to unmarshal traces")
 }
@@ -309,7 +309,7 @@ func TestReceiver_V1Traces_MethodNotAllowed(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
 
@@ -326,7 +326,7 @@ func TestReceiver_V1Metrics_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -337,7 +337,7 @@ func TestReceiver_V1Metrics_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, []byte("garbage"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to unmarshal metrics")
 }
@@ -351,7 +351,7 @@ func TestReceiver_V1Metrics_MethodNotAllowed(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPut, url, strings.NewReader(""))
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
 
@@ -367,7 +367,7 @@ func TestReceiver_V1Logs_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -378,7 +378,7 @@ func TestReceiver_V1Logs_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, []byte("garbage"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to unmarshal logs")
 }
@@ -392,7 +392,7 @@ func TestReceiver_V1Logs_MethodNotAllowed(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodDelete, url, nil)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
 
@@ -415,8 +415,7 @@ func TestReceiver_GRPC_Traces(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := ptraceotlp.NewGRPCClient(cc)
 	td := ptrace.NewTraces()
 	sp := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -444,8 +443,7 @@ func TestReceiver_GRPC_Metrics(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := pmetricotlp.NewGRPCClient(cc)
 	md := pmetric.NewMetrics()
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -472,8 +470,7 @@ func TestReceiver_GRPC_Logs(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := plogotlp.NewGRPCClient(cc)
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("grpc-log")

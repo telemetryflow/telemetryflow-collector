@@ -110,7 +110,7 @@ func TestReceiver_V1Traces_ConsumerError_500(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to process traces")
 }
@@ -134,7 +134,7 @@ func TestReceiver_V1Metrics_ConsumerError_500(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to process metrics")
 }
@@ -156,7 +156,7 @@ func TestReceiver_V1Logs_ConsumerError_500(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to process logs")
 }
@@ -177,8 +177,7 @@ func TestReceiver_GRPC_Traces_ConsumerError(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := ptraceotlp.NewGRPCClient(cc)
 	td := ptrace.NewTraces()
 	sp := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -204,8 +203,7 @@ func TestReceiver_GRPC_Metrics_ConsumerError(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := pmetricotlp.NewGRPCClient(cc)
 	md := pmetric.NewMetrics()
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -230,8 +228,7 @@ func TestReceiver_GRPC_Logs_ConsumerError(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := plogotlp.NewGRPCClient(cc)
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("grpc-fail")
@@ -280,8 +277,7 @@ func TestReceiver_Start_GRPCOnly(t *testing.T) {
 	cc, err := grpc.NewClient(cfg.Protocols.GRPC.NetAddr.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer cc.Close()
-
+	defer func() { _ = cc.Close() }()
 	client := ptraceotlp.NewGRPCClient(cc)
 	td := ptrace.NewTraces()
 	sp := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -324,7 +320,7 @@ func TestReceiver_Start_HTTPOnly_NoV2(t *testing.T) {
 
 	v1URL := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, v1URL, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// /v2/traces is not registered → 404 from the default mux.
@@ -332,6 +328,6 @@ func TestReceiver_Start_HTTPOnly_NoV2(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, v2URL, nil)
 	v2resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer v2resp.Body.Close()
+	defer func() { _ = v2resp.Body.Close() }()
 	assert.Equal(t, http.StatusNotFound, v2resp.StatusCode)
 }

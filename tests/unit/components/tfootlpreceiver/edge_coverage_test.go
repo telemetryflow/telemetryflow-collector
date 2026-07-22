@@ -72,7 +72,7 @@ func TestReceiver_StartHTTP_DefaultPaths(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, nil, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -131,13 +131,6 @@ func TestReceiver_StartHTTP_DefaultHTTPEndpoint(t *testing.T) {
 	time.Sleep(80 * time.Millisecond)
 }
 
-// failingReader is an io.Reader that always returns an error (other than EOF)
-// on Read. Kept for completeness; not currently used because Go's HTTP client
-// aborts the request before the server handler sees a body-read error.
-type failingReader struct{}
-
-func (failingReader) Read(p []byte) (int, error) { return 0, fmt.Errorf("simulated read error") }
-
 // Note: handle* body-read error branches in receiver.go require a body that
 // fails mid-stream after the request has been accepted. The Go http.Client
 // validates the request body before sending and returns an error from Do(),
@@ -166,7 +159,7 @@ func TestReceiver_V2Traces_WithCollectorID(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":       "tfk_test",
 		"X-TelemetryFlow-Collector-ID": "collector-xyz",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -186,7 +179,7 @@ func TestReceiver_V2Metrics_WithCollectorID(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":       "tfk_test",
 		"X-TelemetryFlow-Collector-ID": "collector-xyz",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -204,6 +197,6 @@ func TestReceiver_V2Logs_WithCollectorID(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":       "tfk_test",
 		"X-TelemetryFlow-Collector-ID": "collector-xyz",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

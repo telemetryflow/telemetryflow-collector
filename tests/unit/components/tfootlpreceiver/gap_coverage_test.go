@@ -52,7 +52,7 @@ func TestReceiver_V2Metrics_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_metrics"}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -67,7 +67,7 @@ func TestReceiver_V2Logs_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_logs"}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -88,7 +88,7 @@ func TestReceiver_V2Metrics_ValidateSecret_OK(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":     "tfk_test",
 		"X-TelemetryFlow-Key-Secret": "tfs_secret",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -106,7 +106,7 @@ func TestReceiver_V2Logs_ValidateSecret_OK(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":     "tfk_test",
 		"X-TelemetryFlow-Key-Secret": "tfs_secret",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -118,7 +118,7 @@ func TestReceiver_V2Metrics_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_test"}, []byte("garbage"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
@@ -130,7 +130,7 @@ func TestReceiver_V2Logs_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_test"}, []byte("garbage"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
@@ -142,7 +142,7 @@ func TestReceiver_V2Traces_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v2/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPost(t, url, map[string]string{"X-TelemetryFlow-Key-ID": "tfk_test"}, []byte("garbage"))
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
@@ -156,7 +156,7 @@ func TestReceiver_V2Metrics_MethodNotAllowed(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
 
@@ -165,7 +165,7 @@ func TestReceiver_Start_GRPCBindError(t *testing.T) {
 	// Pre-bind a listener to occupy the port.
 	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer occupied.Close()
+	defer func() { _ = occupied.Close() }()
 	port := occupied.Addr().(*net.TCPAddr).Port
 
 	cfg := &tfootlpreceiver.Config{
@@ -191,7 +191,7 @@ func TestReceiver_Start_GRPCBindError(t *testing.T) {
 func TestReceiver_Start_HTTPBindError(t *testing.T) {
 	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer occupied.Close()
+	defer func() { _ = occupied.Close() }()
 	port := occupied.Addr().(*net.TCPAddr).Port
 
 	cfg := &tfootlpreceiver.Config{
@@ -230,7 +230,7 @@ func TestReceiver_V1Traces_JSON_BadBody_400(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/traces", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, body := doPostWithCT(t, url, nil, []byte("not-json"), "application/json")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Contains(t, string(body), "Failed to unmarshal traces")
 }
@@ -247,7 +247,7 @@ func TestReceiver_V1Metrics_JSON_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/metrics", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPostWithCT(t, url, nil, data, "application/json")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -263,7 +263,7 @@ func TestReceiver_V1Logs_JSON_Success(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s/v1/logs", cfg.Protocols.HTTP.NetAddr.Endpoint)
 	resp, _ := doPostWithCT(t, url, nil, data, "application/json")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -286,7 +286,7 @@ func TestReceiver_V2Traces_ValidateSecret_OK(t *testing.T) {
 		"X-TelemetryFlow-Key-ID":     "tfk_test",
 		"X-TelemetryFlow-Key-Secret": "tfs_secret",
 	}, data)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 

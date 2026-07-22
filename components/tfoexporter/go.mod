@@ -3,6 +3,7 @@ module github.com/telemetryflow/telemetryflow-collector/components/tfoexporter
 go 1.26
 
 require (
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.52.0
 	go.opentelemetry.io/collector/config/confighttp v0.146.1
 	go.opentelemetry.io/collector/config/configopaque v1.52.0
@@ -39,7 +40,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.52.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.52.0 // indirect
