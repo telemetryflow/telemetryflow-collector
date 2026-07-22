@@ -63,21 +63,27 @@ func newHTTPCfg(port int) confighttp.ServerConfig {
 // failingTracesConsumer always returns err on ConsumeTraces.
 type failingTracesConsumer struct{ err error }
 
-func (f *failingTracesConsumer) Capabilities() consumer.Capabilities { return consumer.Capabilities{MutatesData: false} }
+func (f *failingTracesConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 func (f *failingTracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return f.err
 }
 
 type failingMetricsConsumer struct{ err error }
 
-func (f *failingMetricsConsumer) Capabilities() consumer.Capabilities { return consumer.Capabilities{MutatesData: false} }
+func (f *failingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 func (f *failingMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return f.err
 }
 
 type failingLogsConsumer struct{ err error }
 
-func (f *failingLogsConsumer) Capabilities() consumer.Capabilities { return consumer.Capabilities{MutatesData: false} }
+func (f *failingLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 func (f *failingLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return f.err
 }

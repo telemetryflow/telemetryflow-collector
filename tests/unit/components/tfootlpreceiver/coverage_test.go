@@ -490,7 +490,7 @@ func TestReceiver_GRPC_Logs(t *testing.T) {
 func TestReceiver_Start_NoProtocols(t *testing.T) {
 	// Both protocols nil — Start should succeed without binding anything.
 	cfg := &tfootlpreceiver.Config{
-		Protocols:        tfootlpreceiver.ProtocolsConfig{},
+		Protocols:         tfootlpreceiver.ProtocolsConfig{},
 		EnableV2Endpoints: true,
 	}
 	factory := tfootlpreceiver.NewFactory()

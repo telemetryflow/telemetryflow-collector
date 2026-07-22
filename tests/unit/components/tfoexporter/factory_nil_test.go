@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
-	"github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver"
 	"github.com/telemetryflow/telemetryflow-collector/components/tfoexporter"
+	"github.com/telemetryflow/telemetryflow-collector/components/tfootlpreceiver"
 )
 
 // TestFactory_NilConfig exercises the nil-config and wrong-type-config error
