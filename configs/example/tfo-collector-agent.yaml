@@ -1,5 +1,5 @@
 # =============================================================================
-# TelemetryFlow Collector — Agent-Optimized Configuration (v1.2.1)
+# TelemetryFlow Collector — Agent-Optimized Configuration (v1.2.2)
 # =============================================================================
 # AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
@@ -327,7 +327,7 @@ exporters:
       queue_size: 2000 # larger queue for 16-collector metric volume
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.2.1"
+      User-Agent: "TFO-Collector-Agent/1.2.2"
 
   # TFO Platform exporter for logs (pod logs + eBPF Hubble events)
   tfo/logs:
@@ -348,7 +348,7 @@ exporters:
       queue_size: 2000 # larger queue for pod logs from all namespaces
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.2.1"
+      User-Agent: "TFO-Collector-Agent/1.2.2"
 
   # TFO Platform exporter for traces (app instrumentation, span_metrics, service_graph)
   tfo/traces:
@@ -369,7 +369,7 @@ exporters:
       queue_size: 2000
     compression: gzip
     headers:
-      User-Agent: "TFO-Collector-Agent/1.2.1"
+      User-Agent: "TFO-Collector-Agent/1.2.2"
 
 # =============================================================================
 # SERVICE — Agent-Optimized Pipelines

@@ -17,6 +17,7 @@ package tfootlpreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -70,6 +71,15 @@ var (
 
 // newTFOOTLPReceiver creates a new TFO OTLP receiver or returns an existing shared instance.
 func newTFOOTLPReceiver(cfg *Config, set *receiver.Settings) (*tfoOTLPReceiver, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("tfootlpreceiver config cannot be nil")
+	}
+	if set == nil {
+		return nil, fmt.Errorf("tfootlpreceiver settings cannot be nil")
+	}
+	if set.Logger == nil {
+		return nil, fmt.Errorf("tfootlpreceiver settings.Logger cannot be nil")
+	}
 	receiverInstanceLock.Lock()
 	defer receiverInstanceLock.Unlock()
 

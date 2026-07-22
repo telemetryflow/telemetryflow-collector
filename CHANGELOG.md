@@ -7,10 +7,11 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.2-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
+[![Coverage](https://img.shields.io/badge/Coverage-95.3%25-brightgreen.svg)](CHANGELOG.md)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -23,6 +24,53 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.2] - 2026-07-22
+
+### Compatibility
+
+Compatibility audit against **TFO-Agent v1.2.2** (commit `ad6e92a`, OTEL Go SDK v1.44.0). Wire-format compatibility is governed by the OTLP proto version, not the SDK/Collector version — TFO-Agent (OTEL SDK v1.44.0) and TFO-Collector (OTEL Collector core v0.152.1) are wire-compatible.
+
+- **OTLP/HTTP paths**: TFO-Agent supports both `/v1/{traces,metrics,logs}` and `/v2/{traces,metrics,logs}` (default: v2). TFO-Collector registers both on `:4318` when `enable_v2_endpoints: true`. ✅ Compatible.
+- **OTLP/gRPC**: TFO-Agent defaults to `protocol: grpc` to `:4317` and sends `X-TelemetryFlow-Key-ID`, `X-TelemetryFlow-Key-Secret`, `X-TelemetryFlow-Agent-ID` as gRPC metadata. TFO-Collector serves OTLP/gRPC on `:4317`. ✅ Transport compatible (see Security below for auth caveat).
+- **Authentication headers**: TFO-Agent OTLP exporter sends `X-TelemetryFlow-Key-ID` + `X-TelemetryFlow-Key-Secret` + `X-TelemetryFlow-Agent-ID` (`internal/exporter/otlp.go:465-474`). TFO-Collector `tfootlpreceiver` validates `X-TelemetryFlow-Key-ID` + `X-TelemetryFlow-Key-Secret` on v2 HTTP endpoints (`components/tfootlpreceiver/receiver.go:380-471`). ✅ Compatible. Note: TFO-Agent does NOT use `Authorization: Bearer` against the collector; that scheme is reserved for the TFO Platform backend REST API.
+- **Key prefixes**: Both sides enforce `tfk_` for key IDs and `tfs_` for secrets. ✅ Compatible.
+- **Encoding**: TFO-Agent uses binary protobuf + gzip by default; TFO-Collector handles standard OTLP compression and accepts `Content-Type: application/json` as a fallback. ✅ Compatible.
+- **Resource attributes**: TFO-Agent self-telemetry path emits `telemetryflow.agent.id`, `telemetryflow.agent.name`, `service.instance.id`, `deployment.environment`, `telemetryflow.tag.*`, `telemetryflow.label.*`. TFO-Collector preserves these namespaces; the `tfo` exporter re-injects `X-TelemetryFlow-Key-ID/Secret` + `X-TelemetryFlow-Collector-ID` when forwarding to the TFO Platform backend. ✅ Compatible.
+
+### Security
+
+- **Known limitation — gRPC v2 auth not enforced (CRITICAL)**: The `tfootlpreceiver` validates `X-TelemetryFlow-Key-ID` / `X-TelemetryFlow-Key-Secret` **only on HTTP handlers** (`components/tfootlpreceiver/receiver.go:305-373`). The gRPC trace/metrics/logs handlers do not call `validateV2Auth` and do not inspect incoming metadata. As a result, any client able to route to `:4317` can push unauthenticated telemetry over gRPC, even when `v2_auth.required: true`. The doc comments in `configs/example/tfo-collector-unified.yaml:26` and `configs/example/tfo-collector-agent.yaml:46` implying gRPC consumes `x-telemetryflow-key-id` / `x-telemetryflow-key-secret` metadata are inaccurate. **Workaround**: deploy with `protocol: http` on the agent side, or restrict network access to `:4317` until a gRPC auth interceptor is shipped.
+
+### Known Limitations
+
+- **`v2_only: true` silently ignored (MEDIUM)**: The `Config` struct in `components/tfootlpreceiver/config.go:29-41` has no `v2_only` field. Setting `v2_only: true` in YAML (e.g. `configs/example/tfo-collector-unified.yaml:97`) is silently dropped by mapstructure — v1 endpoints remain open. Do not rely on this field for v2-only deployments; file an issue if you need it.
+- **`tfoidentityextension` does not inject resource attributes (MEDIUM)**: The extension resolves collector identity in `Start()` and exposes getters (`GetCollectorID`, `GetHostname`, `GetName`, etc.) but does not write `collector.id` / `collector.name` into `pdata.ResourceAttributes()`. The `ShouldEnrichResources()` getter is unused. Resource enrichment must currently be performed by the `resource` processor or derived by the backend from the `X-TelemetryFlow-Collector-ID` HTTP header set by the `tfo` exporter.
+- **TFO-Agent metric-bridge attribute gap (LOW)**: TFO-Agent's production metric data path (`otlp_metric_bridge.go:171-176`) emits only `service.name="telemetryflow-agent"` and a stale `service.version="1.0.0"`, without `telemetryflow.agent.id`. Collector logic that depends on `telemetryflow.agent.id` being present on every signal should upsert from the `X-TelemetryFlow-Agent-ID` header.
+- **`sending_queue` config ignored by `tfoexporter` (LOW)**: The factory (`components/tfoexporter/factory.go:78-87, 101-110, 124-133`) wires `WithRetry` only, not `WithQueue`. The `sending_queue` block in `configs/tfo-collector.yaml:337-340` is silently ignored. Configuring it has no effect.
+
+### Documented
+
+- Refreshed all `docs/*.md` files, README badges, banner version, Makefile, Dockerfile, docker-compose, Helm chart, k8s deployment, and example configs to reflect v1.2.2.
+- Documented explicit TFO-Agent ↔ TFO-Collector compatibility matrix and recommended deployment configuration in README.
+- Added Coverage badge to README, CHANGELOG, CONTRIBUTING, SECURITY, and CODE_OF_CONDUCT.
+
+### Tests
+
+- **Component test coverage raised from 30.9% → 95.3%** across all four TFO custom components (`tfootlpreceiver`, `tfoexporter`, `tfoauthextension`, `tfoidentityextension`), exceeding the 95% gate.
+  - `tfoauthextension`: 52.1% → 97.9%
+  - `tfoidentityextension`: 69.2% → 92.3%
+  - `tfoexporter`: 33.3% → 86.2% (combined external + internal coverage)
+  - `tfootlpreceiver`: 23.3% → 95.5% (combined external + internal coverage)
+- **Factory hardening**: refactored `create*Exporter` and `create*Receiver` to use comma-ok type assertion via new `resolveConfig`/`resolveReceiverConfig` helpers. This prevents a panic on a nil or wrong-typed `component.Config` and yields a typed error instead.
+- **Constructor defensive nil-checks**: `newTFOExporter` and `newTFOOTLPReceiver` now validate `cfg`, `set`, and `set.Logger` before dereferencing.
+- New test files: `coverage_test.go`, `gap_coverage_test.go`, `edge_coverage_test.go`, `extra_coverage_test.go`, `final_coverage_test.go`, `factory_nil_test.go` per component, plus `internal_coverage_test.go` inside the component packages for direct constructor coverage.
+- Covers: validateV2Auth (all branches), HTTP handle\* success/error/method-not-allowed/bad-body, gRPC Export traces/metrics/logs, startGRPC/startHTTP, Start/Shutdown idempotency, sender/receiver bind errors, sendData bad-URL, ToClient TLS errors, AuthProvider/IdentityProvider resolution from extensions, per-signal endpoint resolution, factory nil/wrong-type config, and constructor nil-arg paths.
+- Remaining uncovered statements are pdata `MarshalProto` defensive error paths (cannot fail on valid pdata) and the receiver gRPC/HTTP `Serve()` failure log paths (require accept-time errors).
+
+### Changed
+
+- **Version bump**: 1.2.1 → 1.2.2
 
 ## [1.2.1] - 2026-06-20
 

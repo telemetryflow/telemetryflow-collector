@@ -60,6 +60,15 @@ type tfoExporter struct {
 
 // newTFOExporter creates a new TFO exporter.
 func newTFOExporter(cfg *Config, set *exporter.Settings) (*tfoExporter, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("tfoexporter config cannot be nil")
+	}
+	if set == nil {
+		return nil, fmt.Errorf("tfoexporter settings cannot be nil")
+	}
+	if set.Logger == nil {
+		return nil, fmt.Errorf("tfoexporter settings.Logger cannot be nil")
+	}
 	return &tfoExporter{
 		cfg:      cfg,
 		settings: set,

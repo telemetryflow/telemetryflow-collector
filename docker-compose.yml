@@ -43,12 +43,12 @@
 services:
   tfo-collector:
     container_name: ${CONTAINER_NAME:-tfo-collector}
-    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.2.1}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-collector}:${IMAGE_TAG:-1.2.2}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.2.1}
+        VERSION: ${VERSION:-1.2.2}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}
@@ -72,13 +72,13 @@ services:
 
     # Port mappings
     ports:
-      - "${OTLP_GRPC_PORT:-4317}:4317"               # OTLP gRPC
-      - "${OTLP_HTTP_PORT:-4318}:4318"               # OTLP HTTP (v1 + v2)
-      - "${METRICS_PORT:-8888}:8888"                 # Prometheus metrics (self)
-      - "${PROMETHEUS_EXPORTER_PORT:-8889}:8889"    # Prometheus exporter
-      - "${HEALTH_PORT:-13133}:13133"                # Health check
-      - "${ZPAGES_PORT:-55679}:55679"                # zPages
-      - "${PPROF_PORT:-1777}:1777"                   # pprof
+      - "${OTLP_GRPC_PORT:-4317}:4317" # OTLP gRPC
+      - "${OTLP_HTTP_PORT:-4318}:4318" # OTLP HTTP (v1 + v2)
+      - "${METRICS_PORT:-8888}:8888" # Prometheus metrics (self)
+      - "${PROMETHEUS_EXPORTER_PORT:-8889}:8889" # Prometheus exporter
+      - "${HEALTH_PORT:-13133}:13133" # Health check
+      - "${ZPAGES_PORT:-55679}:55679" # zPages
+      - "${PPROF_PORT:-1777}:1777" # pprof
 
     # Volume mounts
     volumes:

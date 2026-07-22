@@ -95,8 +95,7 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	oCfg := cfg.(*Config)
-	r, err := newTFOOTLPReceiver(oCfg, &set)
+	r, err := newTFOOTLPReceiver(resolveReceiverConfig(cfg), &set)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +110,7 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	oCfg := cfg.(*Config)
-	r, err := newTFOOTLPReceiver(oCfg, &set)
+	r, err := newTFOOTLPReceiver(resolveReceiverConfig(cfg), &set)
 	if err != nil {
 		return nil, err
 	}
@@ -127,11 +125,26 @@ func createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	oCfg := cfg.(*Config)
-	r, err := newTFOOTLPReceiver(oCfg, &set)
+	r, err := newTFOOTLPReceiver(resolveReceiverConfig(cfg), &set)
 	if err != nil {
 		return nil, err
 	}
 	r.registerLogsConsumer(nextConsumer)
 	return r, nil
+}
+
+// resolveReceiverConfig performs the component.Config → *Config type assertion
+// using the comma-ok form so that a nil interface or wrong type yields nil
+// instead of panicking. The nil result is then caught by newTFOOTLPReceiver,
+// producing a typed error. This makes the factory defensive against
+// misconfiguration (e.g. wiring the wrong config struct in YAML).
+func resolveReceiverConfig(cfg component.Config) *Config {
+	if cfg == nil {
+		return nil
+	}
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil
+	}
+	return oCfg
 }

@@ -1,6 +1,6 @@
 # TelemetryFlow Collector - Configuration Guide
 
-- **Version:** 1.2.1
+- **Version:** 1.2.2
 - **OTEL Version:** 0.152.1
 - **Last Updated:** May 2026
 
@@ -473,13 +473,14 @@ service:
 
 Environment variables (see `.env.example`):
 
-| Variable             | Required | Description                                                                          |
-| -------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `SENTRY_ORG_SLUG`    | Yes      | Sentry organization slug (URL path on `sentry.io`).                                  |
-| `SENTRY_DSN_KEY`     | Yes      | Project **public** DSN key from Sentry → Project Settings → Client Keys.            |
-| `SENTRY_SERVICE_NAME`| No       | Pinned `service.name` sent to Sentry (defaults to `telemetryflow-collector`).        |
+| Variable              | Required | Description                                                                   |
+| --------------------- | -------- | ----------------------------------------------------------------------------- |
+| `SENTRY_ORG_SLUG`     | Yes      | Sentry organization slug (URL path on `sentry.io`).                           |
+| `SENTRY_DSN_KEY`      | Yes      | Project **public** DSN key from Sentry → Project Settings → Client Keys.      |
+| `SENTRY_SERVICE_NAME` | No       | Pinned `service.name` sent to Sentry (defaults to `telemetryflow-collector`). |
 
 Notes:
+
 - **Scope:** Sentry OTLP traces are GA. Metrics/logs OTLP support is maturing — add `otlphttp/sentry` to those pipelines once your Sentry plan supports them.
 - **Auth:** `SENTRY_DSN_KEY` is the project DSN public key, intentionally not your org auth token — it cannot reach privileged endpoints even if abused.
 - **Disable:** leave `SENTRY_ORG_SLUG`/`SENTRY_DSN_KEY` empty and remove `otlphttp/sentry` from the traces pipeline.

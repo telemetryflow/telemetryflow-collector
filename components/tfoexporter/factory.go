@@ -69,7 +69,7 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oCfg := cfg.(*Config)
+	oCfg := resolveConfig(cfg)
 	exp, err := newTFOExporter(oCfg, &set)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func createTracesExporter(
 		exp.pushTraces,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(exp.cfg.RetryConfig),
 	)
 }
 
@@ -92,7 +92,7 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oCfg := cfg.(*Config)
+	oCfg := resolveConfig(cfg)
 	exp, err := newTFOExporter(oCfg, &set)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func createMetricsExporter(
 		exp.pushMetrics,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(exp.cfg.RetryConfig),
 	)
 }
 
@@ -115,7 +115,7 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oCfg := cfg.(*Config)
+	oCfg := resolveConfig(cfg)
 	exp, err := newTFOExporter(oCfg, &set)
 	if err != nil {
 		return nil, err
@@ -128,6 +128,22 @@ func createLogsExporter(
 		exp.pushLogs,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(exp.cfg.RetryConfig),
 	)
+}
+
+// resolveConfig performs the component.Config → *Config type assertion using
+// the comma-ok form so that a nil interface or wrong type yields a nil *Config
+// instead of panicking. The nil *Config is then caught by newTFOExporter,
+// producing a typed error. This makes the factory defensive against
+// misconfiguration (e.g. someone wiring the wrong config struct in YAML).
+func resolveConfig(cfg component.Config) *Config {
+	if cfg == nil {
+		return nil
+	}
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil
+	}
+	return oCfg
 }

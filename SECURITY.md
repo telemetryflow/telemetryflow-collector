@@ -7,10 +7,11 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.2-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
+[![Coverage](https://img.shields.io/badge/Coverage-95.3%25-brightgreen.svg)](CHANGELOG.md)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>
@@ -38,6 +39,7 @@ We take the security of TelemetryFlow Core seriously. If you believe you have fo
 **Please DO NOT report security vulnerabilities through public GitHub issues.**
 
 Instead, please report them via email to:
+
 - **Security Team**: security@telemetryflow.id
 - **Project Lead**: support@telemetryflow.id
 
@@ -232,13 +234,13 @@ flowchart TB
 
 #### Common Fixes
 
-| Vulnerability Module | Typical Fix | Command |
-| --- | --- | --- |
-| `golang.org/x/crypto` | Upgrade to latest patch | `go get golang.org/x/crypto@latest` |
-| `golang.org/x/net` | Upgrade to latest patch | `go get golang.org/x/net@latest` |
-| `github.com/docker/docker` | Migrate to `moby/moby` modules | Update upstream dependency |
-| `google.golang.org/grpc` | Upgrade gRPC | `go get google.golang.org/grpc@latest` |
-| Transitive dependency | Upgrade root dependency | `go get -u <root-module>@latest` |
+| Vulnerability Module       | Typical Fix                    | Command                                |
+| -------------------------- | ------------------------------ | -------------------------------------- |
+| `golang.org/x/crypto`      | Upgrade to latest patch        | `go get golang.org/x/crypto@latest`    |
+| `golang.org/x/net`         | Upgrade to latest patch        | `go get golang.org/x/net@latest`       |
+| `github.com/docker/docker` | Migrate to `moby/moby` modules | Update upstream dependency             |
+| `google.golang.org/grpc`   | Upgrade gRPC                   | `go get google.golang.org/grpc@latest` |
+| Transitive dependency      | Upgrade root dependency        | `go get -u <root-module>@latest`       |
 
 #### CI Integration
 
@@ -271,11 +273,11 @@ Add to your CI pipeline:
 
 #### Current Vulnerability Status
 
-| Module | Vulns | Status | Notes |
-| --- | --- | --- | --- |
-| `golang.org/x/crypto` v0.50.0 | 13 | Uncalled | Your code does not invoke affected functions |
-| `github.com/aws/aws-sdk-go` v1.55.8 | 2 | Uncalled | Legacy SDK (transitive), not directly used |
-| `github.com/docker/docker` | 0 | Fixed | Migrated to `moby/moby` modules in v0.152.0 |
+| Module                              | Vulns | Status   | Notes                                        |
+| ----------------------------------- | ----- | -------- | -------------------------------------------- |
+| `golang.org/x/crypto` v0.50.0       | 13    | Uncalled | Your code does not invoke affected functions |
+| `github.com/aws/aws-sdk-go` v1.55.8 | 2     | Uncalled | Legacy SDK (transitive), not directly used   |
+| `github.com/docker/docker`          | 0     | Fixed    | Migrated to `moby/moby` modules in v0.152.0  |
 
 Last scanned: **May 2026** | Run `make govulncheck` for latest results.
 
@@ -293,15 +295,15 @@ gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
 
 ## Security Tools
 
-| Tool | Purpose | Command |
-| --- | --- | --- |
-| `govulncheck` | Dependency vulnerability scanning | `make govulncheck` |
-| `gosec` | Static security analysis (SAST) | `make security` |
-| `go vet` | Code correctness check | `make vet` |
-| `golangci-lint` | Comprehensive linting | `make lint` |
-| [Trivy](https://trivy.dev) | Container image scanning | `trivy image telemetryflow/telemetryflow-collector:latest` |
-| [Snyk](https://snyk.io) | Dependency monitoring | Integrates with GitHub |
-| [SonarQube](https://sonarqube.org) | Code quality & security | CI/CD integration |
+| Tool                               | Purpose                           | Command                                                    |
+| ---------------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| `govulncheck`                      | Dependency vulnerability scanning | `make govulncheck`                                         |
+| `gosec`                            | Static security analysis (SAST)   | `make security`                                            |
+| `go vet`                           | Code correctness check            | `make vet`                                                 |
+| `golangci-lint`                    | Comprehensive linting             | `make lint`                                                |
+| [Trivy](https://trivy.dev)         | Container image scanning          | `trivy image telemetryflow/telemetryflow-collector:latest` |
+| [Snyk](https://snyk.io)            | Dependency monitoring             | Integrates with GitHub                                     |
+| [SonarQube](https://sonarqube.org) | Code quality & security           | CI/CD integration                                          |
 
 ### Security Tools Workflow
 
@@ -336,6 +338,7 @@ flowchart TB
 ### For Users
 
 #### 1. Environment Variables
+
 ```bash
 # Never commit .env files
 echo ".env" >> .gitignore
@@ -345,6 +348,7 @@ pnpm run generate:secrets
 ```
 
 #### 2. Database Security
+
 ```bash
 # Use strong passwords
 POSTGRES_PASSWORD=<strong-random-password>
@@ -355,6 +359,7 @@ CLICKHOUSE_PASSWORD=<strong-random-password>
 ```
 
 #### 3. JWT Configuration
+
 ```bash
 # Use minimum 32 characters for secrets
 JWT_SECRET=<min-32-chars-random-string>
@@ -365,6 +370,7 @@ JWT_EXPIRES_IN=24h  # Adjust based on your needs
 ```
 
 #### 4. Production Deployment
+
 ```bash
 # Always use NODE_ENV=production
 NODE_ENV=production
@@ -381,6 +387,7 @@ LOG_LEVEL=warn
 #### 1. Code Security
 
 **Never commit:**
+
 - Passwords or API keys
 - Private keys or certificates
 - Database credentials
@@ -388,6 +395,7 @@ LOG_LEVEL=warn
 - Personal information
 
 **Always:**
+
 - Use environment variables for sensitive data
 - Validate all user inputs
 - Sanitize database queries
@@ -410,6 +418,7 @@ pnpm update
 #### 3. Code Review
 
 All code changes must:
+
 - Pass security review
 - Include tests for security-critical features
 - Follow OWASP security guidelines
@@ -456,6 +465,7 @@ No security vulnerabilities have been reported yet.
 ### Security Advisories
 
 Security advisories will be published at:
+
 - GitHub Security Advisories
 - Project documentation
 - Release notes
@@ -465,6 +475,7 @@ Security advisories will be published at:
 ### Standards
 
 TelemetryFlow Core follows:
+
 - **OWASP Top 10** security guidelines
 - **CWE/SANS Top 25** vulnerability prevention
 - **NIST Cybersecurity Framework** principles
@@ -472,22 +483,26 @@ TelemetryFlow Core follows:
 ### Certifications
 
 Currently pursuing:
+
 - SOC 2 Type II compliance
 - ISO 27001 certification
 
 ## Security Contacts
 
 ### Primary Contact
+
 - **Email**: security@telemetryflow.id
 - **Response Time**: 48 hours
 
 ### Alternative Contact
+
 - **Email**: support@telemetryflow.id
 - **GitHub**: [@telemetryflow](https://github.com/telemetryflow)
 
 ## Bug Bounty Program
 
 We currently do not have a formal bug bounty program, but we:
+
 - Acknowledge security researchers in release notes
 - Provide public recognition for valid reports
 - Consider monetary rewards for critical vulnerabilities (case-by-case basis)
@@ -497,10 +512,11 @@ We currently do not have a formal bug bounty program, but we:
 ### Notification Channels
 
 Stay informed about security updates:
+
 - **GitHub Releases**: Watch repository for releases
 - **Security Advisories**: Enable GitHub security alerts
 - **Changelog**: Check [CHANGELOG.md](./CHANGELOG.md)
-- **Release Notes**: Review [docs/RELEASE_NOTES_*.md](./docs/)
+- **Release Notes**: Review [docs/RELEASE*NOTES*\*.md](./docs/)
 
 ### Update Process
 
@@ -556,17 +572,20 @@ pnpm test
 ## Additional Resources
 
 ### Documentation
+
 - [README.md](./README.md) - Project overview
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) - Community standards
 
 ### Security Tools
+
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [npm audit](https://docs.npmjs.com/cli/v8/commands/npm-audit)
 - [Snyk](https://snyk.io/) - Vulnerability scanning
 - [SonarQube](https://www.sonarqube.org/) - Code quality & security
 
 ### Security Training
+
 - [OWASP WebGoat](https://owasp.org/www-project-webgoat/)
 - [PortSwigger Web Security Academy](https://portswigger.net/web-security)
 - [HackerOne Resources](https://www.hackerone.com/resources)
@@ -575,12 +594,12 @@ pnpm test
 
 We would like to thank the following security researchers for their contributions:
 
-*No security researchers have been acknowledged yet.*
+_No security researchers have been acknowledged yet._
 
 ---
 
 - **Last Updated**: May 25, 2026
-- **Version**: 1.2.1
+- **Version**: 1.2.2
 - **Project**: TelemetryFlow Collector
 
 **Built with ❤️ by Telemetri Data Indonesia**

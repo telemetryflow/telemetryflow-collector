@@ -252,9 +252,9 @@ service:
 
 ```bash
 docker build -f Dockerfile \
-  --build-arg VERSION=1.2.1 \
+  --build-arg VERSION=1.2.2 \
   --build-arg OTEL_VERSION=0.152.1 \
-  -t telemetryflow/telemetryflow-collector:1.2.1 .
+  -t telemetryflow/telemetryflow-collector:1.2.2 .
 ```
 
 ### Run Container
@@ -268,7 +268,7 @@ docker run -d \
   -p 8889:8889 \
   -p 13133:13133 \
   -v $(pwd)/configs/otel-collector.yaml:/etc/tfo-collector/otel-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.2.1
+  telemetryflow/telemetryflow-collector:1.2.2
 ```
 
 ### Docker Compose

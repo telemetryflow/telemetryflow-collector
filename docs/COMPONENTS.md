@@ -1,6 +1,6 @@
 # TelemetryFlow Collector - Component Reference
 
-- **Version:** 1.2.1
+- **Version:** 1.2.2
 - **OTEL Version:** 0.152.1
 - **Last Updated:** June 2026
 
@@ -485,7 +485,7 @@ exporters:
 | `logzio`    | Logz.io         | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/logzioexporter)    |
 | `sumologic` | Sumo Logic      | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter) |
 
-> **Sentry:** The dedicated `sentryexporter` was removed in v1.2.1 (GHSA #50 — path traversal via attacker-controlled `service.name` to privileged Sentry API endpoints). Sentry is now reached via the standard [`otlphttp`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter) exporter against Sentry's native OTLP ingestion endpoint, authenticated with a project DSN key (not the privileged operator token). This removes the attack surface — the OTLP path uses a fixed `/otlp` endpoint with no path construction from `service.name`. See the [Configuration Guide](./CONFIGURATION.md#sentry-via-otlp) for setup.
+> **Sentry:** The dedicated `sentryexporter` was removed in v1.2.2 (GHSA #50 — path traversal via attacker-controlled `service.name` to privileged Sentry API endpoints). Sentry is now reached via the standard [`otlphttp`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlphttpexporter) exporter against Sentry's native OTLP ingestion endpoint, authenticated with a project DSN key (not the privileged operator token). This removes the attack surface — the OTLP path uses a fixed `/otlp` endpoint with no path construction from `service.name`. See the [Configuration Guide](./CONFIGURATION.md#sentry-via-otlp) for setup.
 
 ### Legacy Trace Exporters
 

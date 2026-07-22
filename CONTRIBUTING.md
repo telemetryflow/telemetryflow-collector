@@ -7,10 +7,11 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.2.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.2-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
+[![Coverage](https://img.shields.io/badge/Coverage-95.3%25-brightgreen.svg)](CHANGELOG.md)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
 </div>

@@ -44,7 +44,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-1.2.1}
+        VERSION: ${VERSION:-1.2.2}
         OTEL_VERSION: ${OTEL_VERSION:-0.152.0}
     environment:
       - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID:-tfk_e2e_test_key}
@@ -52,9 +52,9 @@ services:
       - TELEMETRYFLOW_COLLECTOR_ID=e2e-test-collector
       - TELEMETRYFLOW_ENVIRONMENT=testing
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP (v1 + v2 endpoints)
-      - "8888:8888"   # Prometheus metrics (self)
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP (v1 + v2 endpoints)
+      - "8888:8888" # Prometheus metrics (self)
       - "13133:13133" # Health check
     volumes:
       - ./configs/tfo-collector.yaml:/etc/tfo-collector/tfo-collector.yaml:ro

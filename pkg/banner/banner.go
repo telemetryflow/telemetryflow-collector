@@ -45,7 +45,7 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		ProductName: "TelemetryFlow Collector",
-		Version:     "1.2.1",
+		Version:     "1.2.2",
 		BasedOn:     "OTEL Collector v0.152.1",
 		Motto:       "AI-Powered Observability & Incident Response Management (IRM) Platform",
 		GitCommit:   "unknown",

@@ -1,6 +1,6 @@
 # TelemetryFlow Collector Build System
 
-- **Version:** 1.2.1
+- **Version:** 1.2.2
 - **OTEL Version:** 0.152.1
 - **Last Updated:** May 2026
 
@@ -205,7 +205,7 @@ tfo-collector/
 ```makefile
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
-VERSION ?= 1.2.1
+VERSION ?= 1.2.2
 OTEL_VERSION := 0.152.1
 
 BUILD_DIR := ./build
