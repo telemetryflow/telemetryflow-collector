@@ -15,12 +15,14 @@
 package tfootlpreceiver
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -391,11 +393,41 @@ const (
 	headerKeyID       = "X-TelemetryFlow-Key-ID"
 	headerKeySecret   = "X-TelemetryFlow-Key-Secret"
 	headerCollectorID = "X-TelemetryFlow-Collector-ID"
+	headerAgentID     = "X-TelemetryFlow-Agent-ID"
 )
 
 // isV2Endpoint checks if the request path is a v2 endpoint.
 func isV2Endpoint(path string) bool {
 	return path == "/v2/traces" || path == "/v2/metrics" || path == "/v2/logs"
+}
+
+// getIdentityHeader returns the agent or collector identity from request headers.
+// The TFO-Agent sends X-TelemetryFlow-Agent-ID while older clients use
+// X-TelemetryFlow-Collector-ID. Both are accepted for compatibility.
+func getIdentityHeader(req *http.Request) string {
+	if id := req.Header.Get(headerAgentID); id != "" {
+		return id
+	}
+	return req.Header.Get(headerCollectorID)
+}
+
+// readRequestBody reads the HTTP request body, transparently decompressing
+// gzip-encoded payloads. The TFO-Agent's OTLPLogBridge always gzip-compresses
+// log requests, and the OTel SDK exporters may negotiate gzip for metrics and
+// traces. This helper ensures all handlers handle Content-Encoding: gzip.
+func readRequestBody(req *http.Request) ([]byte, error) {
+	defer func() { _ = req.Body.Close() }()
+
+	if strings.EqualFold(req.Header.Get("Content-Encoding"), "gzip") {
+		gzReader, err := gzip.NewReader(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer func() { _ = gzReader.Close() }()
+		return io.ReadAll(gzReader)
+	}
+
+	return io.ReadAll(req.Body)
 }
 
 // validateV2Auth validates TFO authentication for v2 endpoints.
@@ -474,7 +506,7 @@ func (r *tfoOTLPReceiver) validateV2Auth(w http.ResponseWriter, req *http.Reques
 	r.logger.Debug("v2 endpoint auth validated",
 		zap.String("path", req.URL.Path),
 		zap.String("key_id", keyID),
-		zap.String("collector_id", req.Header.Get(headerCollectorID)),
+		zap.String("collector_id", getIdentityHeader(req)),
 	)
 
 	return true
@@ -491,13 +523,12 @@ func (r *tfoOTLPReceiver) handleTraces(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, err := readRequestBody(req)
 	if err != nil {
 		r.logger.Error("Failed to read request body", zap.Error(err))
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer func() { _ = req.Body.Close() }()
 
 	contentType := req.Header.Get("Content-Type")
 	exportReq := ptraceotlp.NewExportRequest()
@@ -550,13 +581,12 @@ func (r *tfoOTLPReceiver) handleMetrics(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, err := readRequestBody(req)
 	if err != nil {
 		r.logger.Error("Failed to read request body", zap.Error(err))
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer func() { _ = req.Body.Close() }()
 
 	contentType := req.Header.Get("Content-Type")
 	exportReq := pmetricotlp.NewExportRequest()
@@ -609,13 +639,12 @@ func (r *tfoOTLPReceiver) handleLogs(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(req.Body)
+	body, err := readRequestBody(req)
 	if err != nil {
 		r.logger.Error("Failed to read request body", zap.Error(err))
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
-	defer func() { _ = req.Body.Close() }()
 
 	contentType := req.Header.Get("Content-Type")
 	exportReq := plogotlp.NewExportRequest()
