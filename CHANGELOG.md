@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.2.2-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.3.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
@@ -22,8 +22,81 @@
 
 All notable changes to TelemetryFlow Collector will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.0] - 2026-07-26
+
+The `1.3.0` release closes the security vulnerability backlog across all four
+Go modules and adds forward-compatibility with **TFO-Agent v1.3.0-dev**, whose
+new `OTLPLogBridge` always gzip-compresses log payloads and sends
+`X-TelemetryFlow-Agent-ID` instead of `X-TelemetryFlow-Collector-ID`.
+
+### Security — Dependency CVE Remediation
+
+All Critical, High, and Moderate Dependabot/Trivy alerts resolved across
+`go.mod`, `build/go.mod`, `components/tfoexporter/go.mod`, and
+`components/tfootlpreceiver/go.mod`.
+
+- **golang.org/x/crypto** v0.51.0/v0.52.0 → **v0.54.0** — fixes 14 CVEs:
+  - *Critical*: `VerifiedPublicKeyCallback` permission bypass, SSH client
+    server-deadlock, agent constraint forwarding/enforcement gaps, `@revoked`
+    auth bypass, large-channel-write infinite loop, FIDO/U2F physical-presence
+    bypass.
+  - *High*: byte-arithmetic underflow panic, pathological RSA/DSA DoS.
+  - *Moderate*: channel-rejection memory leak, certificate-restriction bypass,
+    `CheckHostKey`/`Authenticate` server panic, pathological-input client panic.
+  - *Note*: `openpgp` sub-package remains unmaintained by upstream; our code
+    never imports it (GO-2026-5932, non-actionable).
+- **google.golang.org/grpc** v1.79.3/v1.81.1 → **v1.82.1** — fixes xDS RBAC
+  filter bypass and HTTP/2 Rapid Reset vulnerability (High).
+- **golang.org/x/net** v0.55.0 → **v0.57.0** — fixes SVCB/HTTPS RR panic in
+  `dns/dnsmessage` (Note).
+- **golang.org/x/text** v0.37.0 → **v0.40.0** — fixes infinite-loop DoS on
+  malformed input (Note).
+- **go.opentelemetry.io/otel** v1.43.0 → **v1.44.0** — fixes uncapped baggage
+  header parsing DoS (GO-2026-5158, Moderate).
+
+`govulncheck` confirms **0 vulnerabilities in called code paths** across all
+component modules after upgrade.
+
+### Added — TFO-Agent 1.3.0-dev Compatibility
+
+- **Gzip decompression in HTTP receiver**: new `readRequestBody()` helper in
+  `components/tfootlpreceiver/receiver.go` transparently decompresses
+  `Content-Encoding: gzip` payloads before OTLP unmarshalling. Applied to all
+  three HTTP handlers (`handleTraces`, `handleMetrics`, `handleLogs`). Required
+  because TFO-Agent's `OTLPLogBridge` (`internal/exporter/otlp_log_bridge.go`)
+  always gzip-compresses log requests — without this fix, every native log
+  (file tailing, journald) sent via HTTP `/v1/logs` or `/v2/logs` would fail
+  with "Failed to unmarshal logs".
+- **Agent identity header alias**: new `getIdentityHeader()` helper accepts both
+  `X-TelemetryFlow-Agent-ID` (sent by TFO-Agent) and
+  `X-TelemetryFlow-Collector-ID` (legacy) for v2 auth debug logging. Agent-ID
+  takes priority when both headers are present.
+- **20 new tests** in `components/tfootlpreceiver/internal_coverage_test.go`:
+  - Gzip: protobuf/JSON decompression, case-insensitive encoding header,
+    invalid-gzip rejection, uncompressed passthrough.
+  - End-to-end handler tests: gzip-compressed logs/metrics/traces through
+    actual `handleX()` methods with consumer verification.
+  - Header alias: Agent-ID, Collector-ID, priority, empty.
+  - V2 auth with Agent-ID header.
+
+### Compatibility — TFO-Agent 1.3.0-dev Matrix
+
+| Agent Feature | Collector Support |
+|---|---|
+| OTLPLogBridge (M3) — gzip-compressed logs via HTTP | ✅ Fixed (gzip decompression) |
+| OTLP gRPC metric exporter (M5.2) | ✅ Already supported |
+| `X-TelemetryFlow-Agent-ID` header | ✅ Fixed (alias accepted) |
+| 18 new collectors (M2 network + M4 database) | ✅ Pass-through (metric-name agnostic) |
+| OTLP HTTP metric bridge (uncompressed protobuf) | ✅ Already supported |
+| Fluent Bit OTLP output | ✅ Already supported (separate path) |
+| Logs pipeline | ✅ Already configured (`configs/tfo-collector.yaml`) |
+
+### Changed
+
+- **Version bump**: 1.2.2 → 1.3.0
 
 ## [1.2.2] - 2026-07-22
 

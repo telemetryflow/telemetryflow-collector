@@ -2,7 +2,7 @@
 # TelemetryFlow Collector - Dockerfile (Native Go Build)
 # =============================================================================
 #
-# TelemetryFlow Collector v1.2.2 (Based on OpenTelemetry Collector Builder (OCB) 0.152.0)
+# TelemetryFlow Collector v1.3.0 (Based on OpenTelemetry Collector Builder (OCB) 0.152.0)
 # AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
@@ -41,7 +41,7 @@
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 
 # Build arguments
-ARG VERSION=1.2.2
+ARG VERSION=1.3.0
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
@@ -89,7 +89,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
 FROM alpine:3.23
 
 # Build arguments for labels
-ARG VERSION=1.2.2
+ARG VERSION=1.3.0
 ARG OTEL_VERSION=0.152.0
 
 # =============================================================================
@@ -186,12 +186,12 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 # =============================================================================
 # Build with:
 #   docker build \
-#     --build-arg VERSION=1.2.2 \
+#     --build-arg VERSION=1.3.0 \
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
 #     --build-arg OTEL_VERSION=0.152.0 \
-#     -t telemetryflow/telemetryflow-collector:1.2.2 .
+#     -t telemetryflow/telemetryflow-collector:1.3.0 .
 #
 # Run with:
 #   docker run -d \
@@ -203,11 +203,11 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 #     -e TELEMETRYFLOW_API_KEY_ID=tfk_your_key \
 #     -e TELEMETRYFLOW_API_KEY_SECRET=tfs_your_secret \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.2.2
+#     telemetryflow/telemetryflow-collector:1.3.0
 #
 # Validate config:
 #   docker run --rm \
 #     -v /path/to/config.yaml:/etc/tfo-collector/tfo-collector.yaml:ro \
-#     telemetryflow/telemetryflow-collector:1.2.2 \
+#     telemetryflow/telemetryflow-collector:1.3.0 \
 #     validate -c /etc/tfo-collector/tfo-collector.yaml
 # =============================================================================
