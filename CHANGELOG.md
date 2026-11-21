@@ -7,7 +7,7 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.3.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.3.1-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
 [![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
@@ -24,6 +24,32 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.1] - 2026-11-21
+
+### Security
+
+- **Patched HIGH-severity dependency CVEs** across the root module, the four
+  component modules (tfootlpreceiver, tfoexporter, tfoauthextension,
+  tfoidentityextension) and the generated OCB distribution (`build/go.mod`):
+  - `github.com/apache/thrift` → v0.24.0 (CVE-2026-43871, DoS)
+  - `github.com/go-jose/go-jose/v4` → v4.1.6 (CVE-2026-116587, DoS)
+  - `github.com/klauspost/compress` → v1.18.7 (CVE-2026-63209, DoS)
+  - `golang.org/x/crypto` → v0.58.0 (CVE-2026-56854, ssh)
+  - `golang.org/x/net` → v0.62.0 (CVE-2026-78661 / 78669, DoS)
+  - `golang.org/x/mod` → v0.41.0 (CVE-2026-56864 / 56865, sumdb)
+  - `golang.org/x/text` → v0.43.0 (CVE-2026-56851, DoS)
+  - `google.golang.org/grpc` → v1.83.1 (CVE-2026-84304 / 84445, DoS)
+  - `trivy fs --scanners vuln` reports Clean (0 HIGH/CRITICAL) after the bump.
+
+### Changed
+
+- **Version bump**: 1.3.0 → 1.3.1 (helm chart `appVersion` 1.3.1 / chart 0.1.1,
+  docker-compose image tag + build-arg defaults).
+
+> Note: the durable fix for `build/go.mod` is to carry these versions in
+> `manifest.yaml` and re-run the OpenTelemetry Collector Builder; the module was
+> patched directly here for the immediate security remediation.
 
 ## [1.3.0] - 2026-07-26
 
