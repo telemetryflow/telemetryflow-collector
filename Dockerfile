@@ -2,7 +2,7 @@
 # TelemetryFlow Collector - Dockerfile (Native Go Build)
 # =============================================================================
 #
-# TelemetryFlow Collector v1.3.1 (Based on OpenTelemetry Collector Builder (OCB) 0.156.0)
+# TelemetryFlow Collector v1.3.1 (Based on OpenTelemetry Collector Builder (OCB) 0.152.1)
 # AI-Powered Observability & Incident Response Management (IRM) Platform
 # Copyright (c) 2026 Telemetri Data Indonesia. All rights reserved.
 #
@@ -45,7 +45,7 @@ ARG VERSION=1.3.1
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
-ARG OTEL_VERSION=0.156.0
+ARG OTEL_VERSION=0.152.1
 ARG TARGETOS=linux
 ARG TARGETARCH
 
@@ -90,7 +90,7 @@ FROM alpine:3.24
 
 # Build arguments for labels
 ARG VERSION=1.3.1
-ARG OTEL_VERSION=0.156.0
+ARG OTEL_VERSION=0.152.1
 
 # =============================================================================
 # TelemetryFlow Metadata Labels (OCI Image Spec)
@@ -190,7 +190,7 @@ CMD ["-c", "/etc/tfo-collector/tfo-collector.yaml"]
 #     --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) \
 #     --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
 #     --build-arg BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ') \
-#     --build-arg OTEL_VERSION=0.156.0 \
+#     --build-arg OTEL_VERSION=0.152.1 \
 #     -t telemetryflow/telemetryflow-collector:1.3.1 .
 #
 # Run with:

@@ -52,7 +52,7 @@ services:
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-        OTEL_VERSION: ${OTEL_VERSION:-0.152.0}
+        OTEL_VERSION: ${OTEL_VERSION:-0.152.1}
     hostname: ${TELEMETRYFLOW_COLLECTOR_NAME:-tfo-collector}
     restart: unless-stopped
 
