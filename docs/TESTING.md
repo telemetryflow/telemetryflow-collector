@@ -2,7 +2,7 @@
 
 Testing guide for the TelemetryFlow Collector.
 
-- **Version:** 1.2.2
+- **Version:** 1.3.1
 - **Last Updated:** May 2026
 
 ---
