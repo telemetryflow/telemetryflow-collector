@@ -286,7 +286,12 @@ docker-compose up -d
 | 1.1.x         | 0.146.1      | v0.146.1    |
 | 1.0.x         | 0.114.0      | v0.114.0    |
 
-**Important**: All components in `manifest.yaml` must use the same OTEL version to ensure compatibility.
+**OTEL version strategy (core vs contrib).** The *OTEL Version* column is the OpenTelemetry Collector **core** release the build targets (`internal/version.OTELVersion`, e.g. **0.152.1** for 1.3.x). Component pins in `manifest.yaml` follow their upstream repos:
+
+- **Core** components (`go.opentelemetry.io/collector/*`) → the core version (**0.152.1**).
+- **Contrib** components (`github.com/open-telemetry/opentelemetry-collector-contrib/*`) → the aligned contrib release (**0.152.0**). OTEL contrib did **not** ship a `0.152.1` patch, so `manifest.yaml` intentionally mixes core `0.152.1` + contrib `0.152.0` — this is correct, not a drift. (A few core components are deliberately held at an adjacent patch when a given release had a Go-module-download issue — see the comment block at the top of `manifest.yaml`.)
+
+The generated `go.mod` / `build/go.mod` may additionally carry a handful of modules at adjacent patch levels from the direct dependency CVE remediation (see CHANGELOG 1.3.1) plus Go's transitive version selection. `go mod verify` passes (the graph is consistent); the durable way to re-unify the generated manifests is to re-run `ocb --config manifest.yaml` (below) rather than hand-editing `go.mod`.
 
 ## OTLP HTTP Endpoints
 
