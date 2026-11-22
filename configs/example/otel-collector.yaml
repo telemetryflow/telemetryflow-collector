@@ -273,7 +273,7 @@ exporters:
   #   compression: gzip
 
   # Prometheus remote write (uncomment to push to Prometheus/Cortex/Mimir)
-  # prometheusremotewrite:
+  # prometheus_remote_write:
   #   endpoint: "http://prometheus:9090/api/v1/write"
   #   tls:
   #     insecure: true
