@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resolved the `auth:` key collision introduced by 0.165's stricter `configauth`
   — both `auth.extension` (tfoauth-extension reference) and
   `auth.api_key_id`/`api_key_secret` (direct) modes are preserved unchanged.
+- **Registered the `groupbyattrs` processor** in `cmd/tfo-collector` and aligned
+  `configs/tfo-collector.complete.yaml` to the binary's 0.165 snake_case
+  type-IDs (`k8s_attributes`, `otlp_http`) — the complete reference config now
+  validates cleanly, matching the shipped `configs/tfo-collector.yaml`.
 
 ### Security
 
