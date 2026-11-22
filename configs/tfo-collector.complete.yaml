@@ -142,7 +142,7 @@ processors:
   # attacker-controlled service.name reaching privileged Sentry API endpoints).
   # Guarding service.name upstream means no caller can inject traversal
   # characters even if a future exporter rebuilds a path from it.
-  # Disable Sentry by leaving SENTRY_DSN_KEY empty and removing otlphttp/sentry.
+  # Disable Sentry by leaving SENTRY_DSN_KEY empty and removing otlp_http/sentry.
   resource/sentry:
     attributes:
       - key: service.name
@@ -154,7 +154,7 @@ processors:
   # Active when running inside Kubernetes (auth_type: serviceAccount uses the pod's ServiceAccount).
   # The tfo-collector ServiceAccount must have RBAC get/list/watch on pods, namespaces, nodes.
   # When running locally (non-K8s), set OTEL_K8S_ATTRIBUTES_DISABLED=true or remove from pipelines.
-  k8sattributes:
+  k8s_attributes:
     passthrough: false
     auth_type: serviceAccount
     pod_association:
@@ -343,7 +343,7 @@ exporters:
   # not apply. Pair with the resource/sentry processor to pin service.name.
   # Enable: set SENTRY_ORG_SLUG and SENTRY_DSN_KEY in .env
   # Scope: traces are GA in Sentry; metrics/logs OTLP support is maturing.
-  otlphttp/sentry:
+  otlp_http/sentry:
     endpoint: "https://sentry.io/api/${env:SENTRY_ORG_SLUG}/otlp"
     compression: gzip
     headers:
@@ -383,13 +383,13 @@ service:
 
   pipelines:
     # Traces pipeline - receives traces via TFO OTLP receiver → forwards to backend (ClickHouse)
-    # otlphttp/sentry is last so data is fully enriched before export to Sentry.
-    # Remove otlphttp/sentry from this list if Sentry is not configured.
+    # otlp_http/sentry is last so data is fully enriched before export to Sentry.
+    # Remove otlp_http/sentry from this list if Sentry is not configured.
     traces:
       receivers: [tfootlp]
       processors:
-        [memory_limiter, k8sattributes, resource, attributes/agent, resource/sentry, batch]
-      exporters: [debug, tfo, span_metrics, service_graph, otlphttp/sentry]
+        [memory_limiter, k8s_attributes, resource, attributes/agent, resource/sentry, batch]
+      exporters: [debug, tfo, span_metrics, service_graph, otlp_http/sentry]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO OTLP receiver.
     # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
@@ -399,7 +399,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - k8sattributes # enrich instrumented app metrics with K8s context
+        - k8s_attributes # enrich instrumented app metrics with K8s context
         - groupbyattrs/k8s # scope K8s collector metrics to their resource identity
         - resource # add service.namespace, deployment.environment
         - transform/cadvisor # normalize cAdvisor Prometheus names → container.cadvisor.*
@@ -427,7 +427,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - k8sattributes # enrich with K8s context (namespace, pod, container)
+        - k8s_attributes # enrich with K8s context (namespace, pod, container)
         - resource # add service.namespace, deployment.environment
         - attributes/agent # tag with tfo.source=tfo-agent
         - batch
