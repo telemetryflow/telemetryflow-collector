@@ -11,7 +11,7 @@
 #
 # Options:
 #   -b, --build            Build the Docker image
-#   -t, --tag <version>    Override version tag (default: 1.3.1)
+#   -t, --tag <version>    Override version tag (default: 1.4.0)
 #   -sha, --sha <hash>     Build from a specific git commit (short/full hash,
 #                          tag, or anything rev-parse accepts) using a temporary
 #                          detached worktree — the current working tree and the
@@ -27,10 +27,10 @@
 #
 # Examples:
 #   ./run-container.sh                    # Build + tag (default)
-#   ./run-container.sh -t 1.3.1           # Build with custom tag
+#   ./run-container.sh -t 1.4.0           # Build with custom tag
 #   ./run-container.sh -p                 # Push only (no build)
 #   ./run-container.sh -c                 # Build, tag, push
-#   ./run-container.sh -c -t 1.3.1        # Complete with custom tag
+#   ./run-container.sh -c -t 1.4.0        # Complete with custom tag
 #   ./run-container.sh -m                 # Multi-arch build + tag
 #   ./run-container.sh -m -c              # Multi-arch build + push
 #   ./run-container.sh -n                 # Build without Docker cache
@@ -55,7 +55,7 @@ set -euo pipefail
 # Config
 # ---------------------------------------------------------------------------
 IMAGE="telemetryflow/telemetryflow-collector"
-VERSION="1.3.1"
+VERSION="1.4.0"
 COMMIT=$(git rev-parse --short HEAD)
 COMMIT_FULL=$(git rev-parse HEAD)
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")
@@ -132,10 +132,10 @@ Options:
 
 Examples:
   $0                  # Build + tag (default)
-  $0 -t 1.3.1         # Build with custom tag
+  $0 -t 1.4.0         # Build with custom tag
   $0 -p               # Push only (no build)
   $0 -c               # Build, tag, push
-  $0 -c -t 1.3.1      # Complete with custom tag
+  $0 -c -t 1.4.0      # Complete with custom tag
   $0 -m               # Multi-arch build + tag
   $0 -m -c            # Multi-arch build + push
   $0 -n               # Build without Docker cache

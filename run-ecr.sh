@@ -17,7 +17,7 @@
 #
 # Options:
 #   -b, --build            Build the image (and tag onto the ECR path)
-#   -t, --tag <version>    Override version tag (default: 1.3.1)
+#   -t, --tag <version>    Override version tag (default: 1.4.0)
 #   -sha, --sha <hash>     Build from a specific git commit using a temporary
 #                          detached worktree (working tree untouched; only
 #                          :<version>-<commit> and :<commit> tags are produced)
@@ -68,7 +68,7 @@ resolve_aws() {
 # Config
 # ---------------------------------------------------------------------------
 IMAGE="telemetryflow/telemetryflow-collector"
-VERSION="1.3.1"
+VERSION="1.4.0"
 COMMIT=$(git rev-parse --short HEAD)
 COMMIT_FULL=$(git rev-parse HEAD)
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")
