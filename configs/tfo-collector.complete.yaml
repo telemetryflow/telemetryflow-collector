@@ -1,0 +1,452 @@
+# =============================================================================
+# TelemetryFlow Collector Configuration (v1.3.1)
+# =============================================================================
+# AI-Powered Observability & Incident Response Management (IRM) Platform
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
+#
+# This is the standard configuration for TFO Collector (100% OCB-native build).
+#
+#   Usage: ./tfo-collector --config configs/tfo-collector.yaml
+#
+# The unified build includes:
+# - All 85+ OpenTelemetry Collector community components
+# - TFO custom components (tfootlp, tfo, tfoauth, tfoidentity)
+#
+# =============================================================================
+# OTLP HTTP Endpoints - v1 vs v2 Architecture
+# =============================================================================
+#
+#   v1 Endpoints (Community / Open - NO AUTH REQUIRED):
+#     POST http://localhost:4318/v1/traces
+#     POST http://localhost:4318/v1/metrics
+#     POST http://localhost:4318/v1/logs
+#
+#   v2 Endpoints (TFO Platform / Authenticated):
+#     Headers: X-TelemetryFlow-Key-ID, X-TelemetryFlow-Key-Secret
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
+#
+#   gRPC (Both versions via same port):
+#     localhost:4317
+#
+# =============================================================================
+# Environment Variables
+# =============================================================================
+#   TELEMETRYFLOW_API_KEY_ID      - API Key ID for authentication (tfk_xxx)
+#   TELEMETRYFLOW_API_KEY_SECRET  - API Key Secret for authentication (tfs_xxx)
+#   TELEMETRYFLOW_ENDPOINT        - TelemetryFlow backend endpoint
+#   TELEMETRYFLOW_COLLECTOR_ID    - Unique collector identifier (auto-generated if empty)
+#   TELEMETRYFLOW_COLLECTOR_NAME  - Human-readable collector name
+#   TELEMETRYFLOW_ENVIRONMENT     - Deployment environment
+#   SENTRY_ORG_SLUG               - Sentry org slug for OTLP ingestion (optional)
+#   SENTRY_DSN_KEY                - Sentry project DSN public key (optional)
+#   SENTRY_SERVICE_NAME           - Pinned service.name sent to Sentry (optional)
+#
+# =============================================================================
+
+# =============================================================================
+# EXTENSIONS - TFO Authentication and Identity
+# =============================================================================
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+  # zPages extension for debugging
+  zpages:
+    endpoint: "0.0.0.0:55679"
+
+  # pprof extension for profiling
+  pprof:
+    endpoint: "0.0.0.0:1777"
+
+  # TFO Authentication Extension - API key management for TFO Platform
+  tfoauth:
+    api_key_id: "${env:TELEMETRYFLOW_API_KEY_ID}"
+    api_key_secret: "${env:TELEMETRYFLOW_API_KEY_SECRET}"
+
+  # TFO Identity Extension - Collector identity and resource enrichment
+  # Optional env vars: TELEMETRYFLOW_COLLECTOR_ID, TELEMETRYFLOW_COLLECTOR_NAME,
+  #                    TELEMETRYFLOW_ENVIRONMENT, TELEMETRYFLOW_DATACENTER
+  tfoidentity:
+    id: "${env:TELEMETRYFLOW_COLLECTOR_ID}" # TELEMETRYFLOW_COLLECTOR_ID
+    name: "TelemetryFlow Collector" # TELEMETRYFLOW_COLLECTOR_NAME
+    description: "TelemetryFlow Collector - AI-Powered Observability & Incident Response Management (IRM) Platform"
+    tags:
+      environment: production # TELEMETRYFLOW_ENVIRONMENT
+      datacenter: default # TELEMETRYFLOW_DATACENTER
+    enrich_resources: true
+
+# =============================================================================
+# RECEIVERS - How telemetry data enters the collector
+# =============================================================================
+receivers:
+  # TFO OTLP Receiver - supports both v1 (open) and v2 (authenticated) endpoints
+  tfootlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+        max_recv_msg_size_mib: 4
+      http:
+        endpoint: "0.0.0.0:4318"
+        transport: tcp
+        cors:
+          allowed_origins:
+            - "*"
+          allowed_headers:
+            - "*"
+    # Enable v2 endpoints with authentication
+    enable_v2_endpoints: true
+    v2_auth:
+      required: true
+      validate_secret: false
+
+  # Standard OTLP receiver (alternative, for v1-only traffic)
+  # otlp:
+  #   protocols:
+  #     grpc:
+  #       endpoint: "0.0.0.0:4319"
+  #     http:
+  #       endpoint: "0.0.0.0:4320"
+
+# =============================================================================
+# PROCESSORS - How telemetry data is processed
+# =============================================================================
+processors:
+  # Batch processor for efficient data handling
+  batch:
+    timeout: 200ms
+    send_batch_size: 8192
+    send_batch_max_size: 0
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+
+  # Resource processor for adding attributes
+  # To customize environment: export TELEMETRYFLOW_ENVIRONMENT=staging
+  resource:
+    attributes:
+      - key: service.namespace
+        value: telemetryflow
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+  # Sentry defense-in-depth - enforce a controlled service.name before export.
+  # Replaces the vulnerable sentryexporter (GHSA #50: path traversal via
+  # attacker-controlled service.name reaching privileged Sentry API endpoints).
+  # Guarding service.name upstream means no caller can inject traversal
+  # characters even if a future exporter rebuilds a path from it.
+  # Disable Sentry by leaving SENTRY_DSN_KEY empty and removing otlphttp/sentry.
+  resource/sentry:
+    attributes:
+      - key: service.name
+        value: "${env:SENTRY_SERVICE_NAME:-telemetryflow-collector}"
+        action: upsert
+
+  # Kubernetes attributes processor
+  # Enriches traces/metrics/logs with k8s.pod.name, k8s.namespace.name, k8s.deployment.name, etc.
+  # Active when running inside Kubernetes (auth_type: serviceAccount uses the pod's ServiceAccount).
+  # The tfo-collector ServiceAccount must have RBAC get/list/watch on pods, namespaces, nodes.
+  # When running locally (non-K8s), set OTEL_K8S_ATTRIBUTES_DISABLED=true or remove from pipelines.
+  k8sattributes:
+    passthrough: false
+    auth_type: serviceAccount
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+      - sources:
+          - from: connection
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.pod.start_time
+      labels:
+        - tag_name: app
+          key: app
+          from: pod
+        - tag_name: version
+          key: version
+          from: pod
+
+  # TFO-Agent: Normalize cAdvisor Prometheus-style metric names (container_* → container.cadvisor.*)
+  # Handles the cAdvisor collector which scrapes /metrics from cAdvisor or kubelet proxy.
+  # error_mode: ignore ensures non-cAdvisor metrics pass through unchanged.
+  transform/cadvisor:
+    error_mode: ignore
+    metric_statements:
+      - context: metric
+        statements:
+          # CPU
+          - replace_pattern(name, "^container_cpu_usage_seconds_total$", "container.cadvisor.cpu.usage_seconds_total")
+          - replace_pattern(name, "^container_cpu_system_seconds_total$", "container.cadvisor.cpu.system_seconds_total")
+          - replace_pattern(name, "^container_cpu_user_seconds_total$", "container.cadvisor.cpu.user_seconds_total")
+          - replace_pattern(name, "^container_cpu_cfs_throttled_seconds_total$", "container.cadvisor.cpu.cfs.throttled_seconds_total")
+          - replace_pattern(name, "^container_cpu_cfs_periods_total$", "container.cadvisor.cpu.cfs.periods_total")
+          - replace_pattern(name, "^container_cpu_cfs_throttled_periods_total$", "container.cadvisor.cpu.cfs.throttled_periods_total")
+          # Memory
+          - replace_pattern(name, "^container_memory_usage_bytes$", "container.cadvisor.memory.usage_bytes")
+          - replace_pattern(name, "^container_memory_working_set_bytes$", "container.cadvisor.memory.working_set_bytes")
+          - replace_pattern(name, "^container_memory_rss$", "container.cadvisor.memory.rss_bytes")
+          - replace_pattern(name, "^container_memory_cache$", "container.cadvisor.memory.cache_bytes")
+          - replace_pattern(name, "^container_memory_swap$", "container.cadvisor.memory.swap_bytes")
+          - replace_pattern(name, "^container_memory_failures_total$", "container.cadvisor.memory.failures_total")
+          # Network
+          - replace_pattern(name, "^container_network_receive_bytes_total$", "container.cadvisor.network.receive_bytes_total")
+          - replace_pattern(name, "^container_network_transmit_bytes_total$", "container.cadvisor.network.transmit_bytes_total")
+          - replace_pattern(name, "^container_network_receive_errors_total$", "container.cadvisor.network.receive_errors_total")
+          - replace_pattern(name, "^container_network_transmit_errors_total$", "container.cadvisor.network.transmit_errors_total")
+          - replace_pattern(name, "^container_network_receive_packets_dropped_total$", "container.cadvisor.network.receive_drops_total")
+          - replace_pattern(name, "^container_network_transmit_packets_dropped_total$", "container.cadvisor.network.transmit_drops_total")
+          # Filesystem
+          - replace_pattern(name, "^container_fs_usage_bytes$", "container.cadvisor.fs.usage_bytes")
+          - replace_pattern(name, "^container_fs_limit_bytes$", "container.cadvisor.fs.limit_bytes")
+          - replace_pattern(name, "^container_fs_reads_bytes_total$", "container.cadvisor.fs.read_bytes_total")
+          - replace_pattern(name, "^container_fs_writes_bytes_total$", "container.cadvisor.fs.write_bytes_total")
+          # Machine
+          - replace_pattern(name, "^machine_cpu_cores$", "machine.cpu.cores")
+          - replace_pattern(name, "^machine_memory_bytes$", "machine.memory.bytes")
+          - replace_pattern(name, "^machine_cpu_cache_capacity_kilobytes$", "machine.cpu.cache.capacity_kilobytes")
+
+  # TFO-Agent: Normalize Cilium Hubble Prometheus-style metric names (hubble_* → hubble.*)
+  # Handles eBPF collector's Cilium Hubble sub-collector metrics.
+  transform/hubble:
+    error_mode: ignore
+    metric_statements:
+      - context: metric
+        statements:
+          - replace_pattern(name, "^hubble_flows_processed_total$", "hubble.flows.processed_total")
+          - replace_pattern(name, "^hubble_drop_total$", "hubble.drop_total")
+          - replace_pattern(name, "^hubble_tcp_flags_total$", "hubble.tcp.flags_total")
+          - replace_pattern(name, "^hubble_dns_queries_total$", "hubble.dns.queries_total")
+          - replace_pattern(name, "^hubble_dns_responses_total$", "hubble.dns.responses_total")
+          - replace_pattern(name, "^hubble_http_requests_total$", "hubble.http.requests_total")
+          - replace_pattern(name, "^hubble_http_responses_total$", "hubble.http.responses_total")
+          - replace_pattern(name, "^hubble_http_request_duration_seconds$", "hubble.http.request_duration_seconds")
+
+  # TFO-Agent: Group Kubernetes metrics by their resource identity attributes.
+  # Ensures metrics from k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
+  # k8s-storage, k8s-network, k8s-hpa, k8s-pdb, k8s-events, k8s-resource-counts
+  # collectors are properly scoped to their Kubernetes resource context.
+  groupbyattrs/k8s:
+    keys:
+      - k8s.namespace.name
+      - k8s.pod.name
+      - k8s.node.name
+      - k8s.deployment.name
+      - k8s.container.name
+      - k8s.statefulset.name
+      - k8s.daemonset.name
+      - k8s.replicaset.name
+      - k8s.job.name
+      - k8s.cronjob.name
+
+  # TFO-Agent: Tag all agent-sourced telemetry for platform-side identification.
+  # Applies to all 16 collectors: k8s-*, system, node-exporter, docker, cadvisor, ebpf.
+  attributes/agent:
+    actions:
+      - key: tfo.source
+        value: "tfo-agent"
+        action: insert
+
+# =============================================================================
+# CONNECTORS - Pipeline bridging for Exemplars and derived metrics
+# =============================================================================
+connectors:
+  # Span metrics connector - derives metrics from traces with EXEMPLARS support
+  span_metrics:
+    histogram:
+      explicit:
+        buckets:
+          [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    dimensions:
+      - name: http.method
+        default: GET
+      - name: http.status_code
+      - name: http.route
+      - name: rpc.method
+      - name: rpc.service
+    exemplars:
+      enabled: true
+    namespace: traces
+    metrics_flush_interval: 15s
+
+  # Service graph connector - builds service dependency graphs from traces
+  service_graph:
+    latency_histogram_buckets:
+      [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    dimensions:
+      - http.method
+      - http.status_code
+    store:
+      ttl: 2s
+      max_items: 1000
+    cache_loop: 1s
+    store_expiration_loop: 2s
+    virtual_node_peer_attributes:
+      - db.system
+      - messaging.system
+      - rpc.service
+
+# =============================================================================
+# EXPORTERS - Where telemetry data is sent
+# =============================================================================
+exporters:
+  # Debug exporter for development/troubleshooting
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # Prometheus exporter for metrics scraping (with exemplars support)
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: telemetryflow
+    const_labels:
+      collector: tfo-collector
+    send_timestamps: true
+    metric_expiration: 5m
+    enable_open_metrics: true
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # TFO Platform Exporter - forwards all signals to TFO backend (ClickHouse ingestion)
+  # Uses tfoauth extension for authentication and tfoidentity for collector ID
+  tfo:
+    endpoint: "${env:TELEMETRYFLOW_ENDPOINT:-https://api.telemetryflow.id}"
+    use_v2_api: true
+    auth:
+      extension: tfoauth
+    collector_identity: tfoidentity
+    timeout: 30s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Sentry via OTLP - replaces the removed, vulnerable sentryexporter.
+  # SECURITY: This uses Sentry's native OTLP ingestion over a FIXED /otlp endpoint
+  # authenticated with a project DSN key (NOT your privileged org auth token), so
+  # GHSA #50 (service.name path traversal to privileged Sentry API endpoints) does
+  # not apply. Pair with the resource/sentry processor to pin service.name.
+  # Enable: set SENTRY_ORG_SLUG and SENTRY_DSN_KEY in .env
+  # Scope: traces are GA in Sentry; metrics/logs OTLP support is maturing.
+  otlphttp/sentry:
+    endpoint: "https://sentry.io/api/${env:SENTRY_ORG_SLUG}/otlp"
+    compression: gzip
+    headers:
+      x-sentry-auth: "Sentry sentry_key=${env:SENTRY_DSN_KEY}"
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+
+  # Standard OTLP gRPC exporter for other backends (uncomment to enable)
+  # otlp_grpc:
+  #   endpoint: "other-backend:4317"
+  #   tls:
+  #     insecure: true
+
+  # File exporter for local storage (uncomment to enable)
+  # file:
+  #   path: "/var/lib/tfo-collector/output.json"
+  #   format: json
+  #   compression: ""
+  #   flush_interval: 1s
+  #   rotation:
+  #     max_megabytes: 100
+  #     max_days: 7
+  #     max_backups: 3
+  #     localtime: true
+
+# =============================================================================
+# SERVICE - Defines active components and pipelines
+# =============================================================================
+service:
+  extensions: [health_check, zpages, pprof, tfoauth, tfoidentity]
+
+  pipelines:
+    # Traces pipeline - receives traces via TFO OTLP receiver → forwards to backend (ClickHouse)
+    # otlphttp/sentry is last so data is fully enriched before export to Sentry.
+    # Remove otlphttp/sentry from this list if Sentry is not configured.
+    traces:
+      receivers: [tfootlp]
+      processors:
+        [memory_limiter, k8sattributes, resource, attributes/agent, resource/sentry, batch]
+      exporters: [debug, tfo, span_metrics, service_graph, otlphttp/sentry]
+
+    # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO OTLP receiver.
+    # Covers all 16 collectors: k8s-nodes, k8s-pods, k8s-deployments, k8s-workloads,
+    # k8s-storage, k8s-network, k8s-hpa, k8s-pdb, k8s-events, k8s-resource-counts,
+    # system, node-exporter, docker, cadvisor, ebpf (metrics), and app metrics.
+    metrics:
+      receivers: [tfootlp]
+      processors:
+        - memory_limiter
+        - k8sattributes # enrich instrumented app metrics with K8s context
+        - groupbyattrs/k8s # scope K8s collector metrics to their resource identity
+        - resource # add service.namespace, deployment.environment
+        - transform/cadvisor # normalize cAdvisor Prometheus names → container.cadvisor.*
+        - transform/hubble # normalize Hubble Prometheus names → hubble.*
+        - attributes/agent # tag all agent-sourced telemetry with tfo.source=tfo-agent
+        - batch
+      exporters: [debug, tfo, prometheus]
+
+    # Metrics from traces pipeline - receives derived metrics from span_metrics connector
+    # These metrics include EXEMPLARS for correlation with traces
+    metrics/span_metrics:
+      receivers: [span_metrics]
+      processors: [memory_limiter, batch]
+      exporters: [tfo, prometheus]
+
+    # Metrics from service graph - receives service dependency metrics
+    metrics/service_graph:
+      receivers: [service_graph]
+      processors: [memory_limiter, batch]
+      exporters: [tfo, prometheus]
+
+    # Logs pipeline - receives pod container logs (k8s-pod-logs collector) and
+    # eBPF Hubble network flow events from TFO-Agent.
+    logs:
+      receivers: [tfootlp]
+      processors:
+        - memory_limiter
+        - k8sattributes # enrich with K8s context (namespace, pod, container)
+        - resource # add service.namespace, deployment.environment
+        - attributes/agent # tag with tfo.source=tfo-agent
+        - batch
+      exporters: [debug, tfo]
+
+  # Internal telemetry configuration
+  telemetry:
+    logs:
+      level: info
+      encoding: json
+
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888

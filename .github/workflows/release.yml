@@ -288,6 +288,7 @@ jobs:
           # Copy config
           mkdir -p rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs
           cp configs/tfo-collector.yaml rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs/
+          cp configs/tfo-collector.complete.yaml rpmbuild/SOURCES/${{ env.BINARY_NAME }}-${VERSION}/configs/
 
           # Create tarball
           cd rpmbuild/SOURCES
@@ -440,6 +441,7 @@ jobs:
 
           # Copy config
           cp configs/tfo-collector.yaml ${PKG_DIR}/etc/tfo-collector/
+          cp configs/tfo-collector.complete.yaml ${PKG_DIR}/etc/tfo-collector/
 
       - name: Create DEB control files
         env:
@@ -587,6 +589,7 @@ jobs:
 
           # Copy config
           cp configs/tfo-collector.yaml ${PKG_DIR}/
+          cp configs/tfo-collector.complete.yaml ${PKG_DIR}/
 
           # Create install script
           cat > ${PKG_DIR}/install.ps1 << 'EOF'
@@ -612,6 +615,7 @@ jobs:
           # Copy files
           Copy-Item -Path ".\tfo-collector.exe" -Destination "$InstallDir\tfo-collector.exe" -Force
           Copy-Item -Path ".\tfo-collector.yaml" -Destination "$ConfigDir\tfo-collector.yaml" -Force
+          Copy-Item -Path ".\tfo-collector.complete.yaml" -Destination "$ConfigDir\tfo-collector.complete.yaml" -Force
 
           # Add to PATH
           $envPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -687,6 +691,7 @@ jobs:
 
           Manual Usage:
           tfo-collector.exe --config tfo-collector.yaml
+          tfo-collector.exe --config tfo-collector.complete.yaml
 
           OTLP HTTP Endpoints (v1 + v2):
           - v1 (Community/Open): /v1/traces, /v1/metrics, /v1/logs
@@ -756,6 +761,7 @@ jobs:
 
           # Copy config
           cp configs/tfo-collector.yaml "${DMG_DIR}/"
+          cp configs/tfo-collector.complete.yaml "${DMG_DIR}/"
 
           # Create install script
           cat > "${DMG_DIR}/install.sh" << 'EOF'
@@ -783,6 +789,10 @@ jobs:
 
           if [ ! -f "${CONFIG_DIR}/tfo-collector.yaml" ]; then
             sudo cp tfo-collector.yaml "${CONFIG_DIR}/"
+          fi
+
+          if [ ! -f "${CONFIG_DIR}/tfo-collector.complete.yaml" ]; then
+            sudo cp tfo-collector.complete.yaml "${CONFIG_DIR}/"
           fi
 
           # Create LaunchDaemon
@@ -871,6 +881,7 @@ jobs:
 
           Manual Usage:
           tfo-collector --config /etc/tfo-collector/tfo-collector.yaml
+          tfo-collector --config /etc/tfo-collector/tfo-collector.complete.yaml
 
           OTLP HTTP Endpoints (v1 + v2):
           - v1 (Community/Open): /v1/traces, /v1/metrics, /v1/logs
@@ -952,6 +963,7 @@ jobs:
              "${TAR_DIR}/${{ env.BINARY_NAME }}"
           chmod +x "${TAR_DIR}/${{ env.BINARY_NAME }}"
           cp configs/tfo-collector.yaml "${TAR_DIR}/"
+          cp configs/tfo-collector.complete.yaml "${TAR_DIR}/"
           cp README.md "${TAR_DIR}/" 2>/dev/null || true
           cp LICENSE "${TAR_DIR}/" 2>/dev/null || true
 
