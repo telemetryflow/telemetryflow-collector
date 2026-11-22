@@ -36,7 +36,7 @@ on:
 
 env:
   GO_VERSION: '1.26'
-  OTEL_VERSION: '0.152.0'
+  OTEL_VERSION: '0.165.0'
   BINARY_NAME: tfo-collector
   PRODUCT_NAME: TelemetryFlow Collector
   VENDOR: TelemetryFlow
@@ -308,6 +308,12 @@ jobs:
           License:        ${{ env.LICENSE }}
           URL:            ${{ env.HOMEPAGE }}
           Source0:        %{name}-%{version}.tar.gz
+
+          # The Go binary is stripped and cross-compiled, so find-debuginfo
+          # extracts 0 files and the auto-generated -debuginfo subpackage ends up
+          # with an empty %files list ("Empty %files file ... debugfiles.list"),
+          # failing the build. Disable automatic debuginfo generation.
+          %global debug_package %{nil}
 
           %description
           ${{ env.PRODUCT_NAME }} is an enterprise-grade OpenTelemetry
