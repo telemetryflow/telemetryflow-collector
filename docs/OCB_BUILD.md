@@ -252,9 +252,9 @@ service:
 
 ```bash
 docker build -f Dockerfile \
-  --build-arg VERSION=1.3.1 \
+  --build-arg VERSION=1.4.0 \
   --build-arg OTEL_VERSION=0.152.1 \
-  -t telemetryflow/telemetryflow-collector:1.3.1 .
+  -t telemetryflow/telemetryflow-collector:1.4.0 .
 ```
 
 ### Run Container
@@ -268,7 +268,7 @@ docker run -d \
   -p 8889:8889 \
   -p 13133:13133 \
   -v $(pwd)/configs/otel-collector.yaml:/etc/tfo-collector/otel-collector.yaml:ro \
-  telemetryflow/telemetryflow-collector:1.3.1
+  telemetryflow/telemetryflow-collector:1.4.0
 ```
 
 ### Docker Compose
@@ -291,7 +291,7 @@ docker-compose up -d
 - **Core** components (`go.opentelemetry.io/collector/*`) → the core version (**0.152.1**).
 - **Contrib** components (`github.com/open-telemetry/opentelemetry-collector-contrib/*`) → the aligned contrib release (**0.152.0**). OTEL contrib did **not** ship a `0.152.1` patch, so `manifest.yaml` intentionally mixes core `0.152.1` + contrib `0.152.0` — this is correct, not a drift. (A few core components are deliberately held at an adjacent patch when a given release had a Go-module-download issue — see the comment block at the top of `manifest.yaml`.)
 
-The generated `go.mod` / `build/go.mod` may additionally carry a handful of modules at adjacent patch levels from the direct dependency CVE remediation (see CHANGELOG 1.3.1) plus Go's transitive version selection. `go mod verify` passes (the graph is consistent); the durable way to re-unify the generated manifests is to re-run `ocb --config manifest.yaml` (below) rather than hand-editing `go.mod`.
+The generated `go.mod` / `build/go.mod` may additionally carry a handful of modules at adjacent patch levels from the direct dependency CVE remediation (see CHANGELOG 1.4.0) plus Go's transitive version selection. `go mod verify` passes (the graph is consistent); the durable way to re-unify the generated manifests is to re-run `ocb --config manifest.yaml` (below) rather than hand-editing `go.mod`.
 
 ## OTLP HTTP Endpoints
 
