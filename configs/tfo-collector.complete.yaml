@@ -334,10 +334,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 1000
+    # The tfo exporter implements retry_on_failure only — no sending queue.
 
   # Sentry via OTLP - replaces the removed, vulnerable sentryexporter.
   # SECURITY: This uses Sentry's native OTLP ingestion over a FIXED /otlp endpoint
