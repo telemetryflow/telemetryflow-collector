@@ -362,7 +362,7 @@ flowchart LR
 
     subgraph "Environment"
         GO[GO_VERSION: 1.26]
-        OTEL[OTEL_VERSION: 0.152.1]
+        OTEL[OTEL_VERSION: 0.165.0]
     end
 
     GH --> |Required| ALL[All Workflows]

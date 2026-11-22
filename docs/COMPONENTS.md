@@ -1,7 +1,7 @@
 # TelemetryFlow Collector - Component Reference
 
 - **Version:** 1.4.0
-- **OTEL Version:** 0.152.1
+- **OTEL Version:** 0.165.0
 - **Last Updated:** June 2026
 
 This document provides a comprehensive reference of all OpenTelemetry Collector components included in the TelemetryFlow Collector distribution.

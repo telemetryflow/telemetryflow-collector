@@ -62,7 +62,7 @@ graph TB
 ## Prerequisites
 
 - Go 1.26 or later
-- OCB (OpenTelemetry Collector Builder) v0.152.1
+- OCB (OpenTelemetry Collector Builder) v0.165.0
 
 ## Installation
 
@@ -70,7 +70,7 @@ graph TB
 
 ```bash
 # Install OCB matching your OTEL version
-go install go.opentelemetry.io/collector/cmd/builder@v0.152.1
+go install go.opentelemetry.io/collector/cmd/builder@v0.165.0
 
 # Verify installation
 builder version
@@ -81,7 +81,7 @@ builder version
 ```bash
 # Linux/macOS
 curl -L -o ocb \
-  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.152.1/ocb_0.152.1_$(uname -s)_$(uname -m)"
+  "https://github.com/open-telemetry/opentelemetry-collector/releases/download/cmd%2Fbuilder%2Fv0.165.0/ocb_0.165.0_$(uname -s)_$(uname -m)"
 chmod +x ocb
 sudo mv ocb /usr/local/bin/
 ```
@@ -253,7 +253,7 @@ service:
 ```bash
 docker build -f Dockerfile \
   --build-arg VERSION=1.4.0 \
-  --build-arg OTEL_VERSION=0.152.1 \
+  --build-arg OTEL_VERSION=0.165.0 \
   -t telemetryflow/telemetryflow-collector:1.4.0 .
 ```
 
@@ -281,15 +281,16 @@ docker-compose up -d
 
 | TelemetryFlow | OTEL Version | OCB Version |
 | ------------- | ------------ | ----------- |
+| 1.4.x         | 0.165.0      | v0.165.0    |
 | 1.3.x         | 0.152.1      | v0.152.1    |
 | 1.2.x         | 0.152.1      | v0.152.1    |
 | 1.1.x         | 0.146.1      | v0.146.1    |
 | 1.0.x         | 0.114.0      | v0.114.0    |
 
-**OTEL version strategy (core vs contrib).** The *OTEL Version* column is the OpenTelemetry Collector **core** release the build targets (`internal/version.OTELVersion`, e.g. **0.152.1** for 1.3.x). Component pins in `manifest.yaml` follow their upstream repos:
+**OTEL version strategy (core vs contrib).** The *OTEL Version* column is the OpenTelemetry Collector **core** release the build targets (`internal/version.OTELVersion`, e.g. **0.165.0** for 1.4.x). Component pins in `manifest.yaml` are **not a single uniform tag** — each module tracks its own upstream release:
 
-- **Core** components (`go.opentelemetry.io/collector/*`) → the core version (**0.152.1**).
-- **Contrib** components (`github.com/open-telemetry/opentelemetry-collector-contrib/*`) → the aligned contrib release (**0.152.0**). OTEL contrib did **not** ship a `0.152.1` patch, so `manifest.yaml` intentionally mixes core `0.152.1` + contrib `0.152.0` — this is correct, not a drift. (A few core components are deliberately held at an adjacent patch when a given release had a Go-module-download issue — see the comment block at the top of `manifest.yaml`.)
+- **Core** components (`go.opentelemetry.io/collector/*`) → the core release (**0.165.0**); the graduated-stable modules (`pdata`, `component`, `confmap`, …) are at **v1.71.x**.
+- **Contrib** components (`github.com/open-telemetry/opentelemetry-collector-contrib/*`) → mostly **v0.165.1**, but as of 0.165 **many have stabilized to v1.x** (e.g. `k8sattributesprocessor` and `pkg/ottl` at **v1.4.1**), and a few trail at an adjacent patch (e.g. `pkg/pdatautil`). A blanket `v0.165.0` across every entry **fails** (`unknown revision`); the working method is `go get <module>@latest` per family and let Go resolve each module's correct version — this is how 1.4.x was pinned (no components had to be disabled).
 
 The generated `go.mod` / `build/go.mod` may additionally carry a handful of modules at adjacent patch levels from the direct dependency CVE remediation (see CHANGELOG 1.4.0) plus Go's transitive version selection. `go mod verify` passes (the graph is consistent); the durable way to re-unify the generated manifests is to re-run `ocb --config manifest.yaml` (below) rather than hand-editing `go.mod`.
 
@@ -333,8 +334,10 @@ go mod tidy
 **"incompatible versions"**
 
 ```bash
-# Ensure all components use same version in manifest.yaml
-# All gomod entries should end with v0.152.1
+# Re-resolve component versions in manifest.yaml. NOTE: as of 0.165 these are
+# NOT a single uniform tag — contrib mixes v0.165.1 with v1.x-stabilized
+# components (e.g. k8sattributes/ottl v1.4.1). Use `go get <module>@latest`
+# per family rather than forcing one tag across all entries.
 ```
 
 ### Runtime Errors

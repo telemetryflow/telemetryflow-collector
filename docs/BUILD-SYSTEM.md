@@ -1,7 +1,7 @@
 # TelemetryFlow Collector Build System
 
 - **Version:** 1.4.0
-- **OTEL Version:** 0.152.1
+- **OTEL Version:** 0.165.0
 - **Last Updated:** May 2026
 
 ---
@@ -206,7 +206,7 @@ tfo-collector/
 PRODUCT_NAME := TelemetryFlow Collector
 BINARY_NAME := tfo-collector
 VERSION ?= 1.4.0
-OTEL_VERSION := 0.152.1
+OTEL_VERSION := 0.165.0
 
 BUILD_DIR := ./build
 CONFIG_DIR := ./configs
@@ -377,7 +377,7 @@ This indicates OTEL API version mismatch. Ensure go.mod has matching versions:
 grep "go.opentelemetry.io/collector" go.mod
 
 # Update to correct version
-go get go.opentelemetry.io/collector@v0.152.1
+go get go.opentelemetry.io/collector@v0.165.0
 go mod tidy
 ```
 
