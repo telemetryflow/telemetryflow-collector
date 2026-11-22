@@ -129,7 +129,7 @@ processors:
         action: upsert
 
   # Resource detection for automatic enrichment
-  resourcedetection:
+  resource_detection:
     detectors: [env, system, docker]
     timeout: 5s
     override: false
@@ -349,7 +349,7 @@ service:
     traces:
       receivers: [tfootlp]
       processors:
-        [memory_limiter, resourcedetection, resource, attributes/agent, batch]
+        [memory_limiter, resource_detection, resource, attributes/agent, batch]
       exporters: [debug, tfo/traces, span_metrics, service_graph]
 
     # Metrics pipeline - receives ALL TFO-Agent collector metrics via TFO v2 authenticated endpoint.
@@ -360,7 +360,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection # auto-detect host/cloud/docker resource attributes
+        - resource_detection # auto-detect host/cloud/docker resource attributes
         - groupbyattrs/k8s # scope K8s collector metrics to their resource identity
         - resource # add service.namespace, deployment.environment
         - transform/cadvisor # normalize cAdvisor Prometheus names → container.cadvisor.*
@@ -387,7 +387,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection # auto-detect host context for pod logs
+        - resource_detection # auto-detect host context for pod logs
         - resource # add service.namespace, deployment.environment
         - attributes/agent # tag with tfo.source=tfo-agent
         - batch

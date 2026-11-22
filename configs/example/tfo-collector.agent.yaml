@@ -126,7 +126,7 @@ processors:
   # Resource detection — auto-detect host, cloud, and container context.
   # Enriches system/node-exporter/docker/cadvisor/ebpf metrics with host.name,
   # cloud.provider, cloud.region, container.runtime, etc.
-  resourcedetection:
+  resource_detection:
     detectors: [env, system, docker, gcp, aws, azure]
     timeout: 5s
     override: false
@@ -375,7 +375,7 @@ service:
     traces:
       receivers: [tfootlp]
       processors:
-        [memory_limiter, resourcedetection, resource, attributes/agent, batch]
+        [memory_limiter, resource_detection, resource, attributes/agent, batch]
       exporters: [debug, tfo/traces, span_metrics, service_graph]
 
     # ------------------------------------------------------------------
@@ -403,7 +403,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection # host/cloud/docker context for system/node-exporter/docker/cadvisor/ebpf
+        - resource_detection # host/cloud/docker context for system/node-exporter/docker/cadvisor/ebpf
         - groupbyattrs/k8s # scope K8s metrics to correct resource identity
         - resource # add service.namespace, deployment.environment
         - transform/cadvisor # normalize container_* / machine_* → container.cadvisor.* / machine.*
@@ -437,7 +437,7 @@ service:
       receivers: [tfootlp]
       processors:
         - memory_limiter
-        - resourcedetection # host context for pod logs and eBPF events
+        - resource_detection # host context for pod logs and eBPF events
         - resource # add service.namespace, deployment.environment
         - attributes/agent # tag with tfo.source=tfo-agent
         - batch

@@ -142,7 +142,7 @@ processors:
         action: upsert
 
   # Resource detection (uncomment to auto-detect cloud/container resources)
-  # resourcedetection:
+  # resource_detection:
   #   detectors: [env, system, docker, gcp, aws, azure]
   #   timeout: 5s
   #   override: false
