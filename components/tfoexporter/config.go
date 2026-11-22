@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines the configuration for the TFO exporter.
@@ -62,6 +63,45 @@ type AuthConfig struct {
 	// Extension is a reference to a tfoauth extension for authentication.
 	// If set, takes precedence over APIKeyID/APIKeySecret.
 	Extension component.ID `mapstructure:"extension"`
+}
+
+// Unmarshal routes the `auth:` block to the exporter's own AuthConfig and keeps
+// it away from the squashed confighttp.ClientConfig.Auth (configauth).
+//
+// The exporter authenticates by injecting X-TelemetryFlow-* headers built from
+// cfg.Auth (a tfoauth extension reference, or direct api_key_id/api_key_secret);
+// confighttp's native auth is never used. Because ClientConfig is squashed, its
+// `auth` key collides with the exporter's custom `auth`. Collector 0.165's
+// configauth is strict and claims that key, rejecting `extension:` (it expects
+// `authenticator:`). Stripping `auth` before decoding the squashed ClientConfig,
+// then decoding it into cfg.Auth, preserves both existing forms unchanged:
+//
+//	auth: {extension: tfoauth}                 # extension-ref mode
+//	auth: {api_key_id: ..., api_key_secret: ...} # direct mode
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	raw := conf.ToStringMap()
+	authRaw, hasAuth := raw["auth"]
+	delete(raw, "auth")
+
+	// Decode everything except `auth` without re-entering this method (the plain
+	// alias has no Unmarshal), so the squashed ClientConfig.Auth never sees it.
+	type plain Config
+	if err := confmap.NewFromStringMap(raw).Unmarshal((*plain)(cfg)); err != nil {
+		return err
+	}
+
+	if hasAuth {
+		authMap, ok := authRaw.(map[string]any)
+		if !ok {
+			return errors.New("auth must be a mapping")
+		}
+		a := &AuthConfig{}
+		if err := confmap.NewFromStringMap(authMap).Unmarshal(a); err != nil {
+			return err
+		}
+		cfg.Auth = a
+	}
+	return nil
 }
 
 // Validate checks the configuration for errors.

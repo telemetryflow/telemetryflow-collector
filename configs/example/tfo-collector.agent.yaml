@@ -321,10 +321,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 2000 # larger queue for 16-collector metric volume
+    # The tfo exporter implements retry_on_failure only — no sending queue.
     compression: gzip
     headers:
       User-Agent: "TFO-Collector-Agent/1.4.0"
@@ -342,10 +339,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-    sending_queue:
-      enabled: true
-      num_consumers: 5
-      queue_size: 2000 # larger queue for pod logs from all namespaces
+    # The tfo exporter implements retry_on_failure only — no sending queue.
     compression: gzip
     headers:
       User-Agent: "TFO-Collector-Agent/1.4.0"
@@ -363,10 +357,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 2000
+    # The tfo exporter implements retry_on_failure only — no sending queue.
     compression: gzip
     headers:
       User-Agent: "TFO-Collector-Agent/1.4.0"
