@@ -50,6 +50,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Runtime image migrated to `gcr.io/distroless/static-debian12:nonroot`**
+  (from `debian:trixie-slim`). The collector binary is already
+  `CGO_ENABLED=0`/fully static, so it needs no libc — the distroless static
+  image ships only `ca-certificates`, `tzdata` and `/etc/passwd`, with no shell
+  or package manager. This removes the base-image OS packages
+  (`openssl`, `sqlite`, `util-linux`, `coreutils`, …) that the Trivy image scan
+  was reporting as CRITICAL/HIGH (most unfixed upstream), rather than suppressing
+  the findings. The container `HEALTHCHECK` now runs a tiny static
+  `cmd/healthcheck` probe (exec form) in place of `curl`, which the distroless
+  image no longer carries. Runs as the distroless nonroot user (uid/gid 65532).
 - Cleared the outstanding Dependabot advisories via the distribution upgrade +
   direct-dependency bumps:
   - `google.golang.org/grpc` → `v1.85.0` — gRPC-Go xDS DoS (missing `:authority`/`Host`)

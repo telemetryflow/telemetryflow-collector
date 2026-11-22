@@ -54,8 +54,7 @@ RUN apk add --no-cache \
     git \
     make \
     ca-certificates \
-    tzdata \
-    curl
+    tzdata
 
 # Set working directory
 WORKDIR /build
@@ -83,13 +82,33 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -X 'github.com/telemetryflow/telemetryflow-collector/internal/version.BuildTime=${BUILD_TIME}'" \
     -o /tfo-collector ./cmd/tfo-collector
 
+# Build the static healthcheck probe.
+# The distroless/static runtime ships no shell and no curl, so the container
+# HEALTHCHECK runs this tiny statically linked binary instead of `curl`.
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    -ldflags "-s -w" \
+    -o /healthcheck ./cmd/healthcheck
+
+# Stage the writable runtime directory tree and default config under /out.
+# distroless has no shell, so these dirs (and their nonroot ownership) are
+# created here and copied into the runtime image with `COPY --chown`.
+RUN mkdir -p \
+    /out/etc/tfo-collector \
+    /out/var/lib/tfo-collector/queue \
+    /out/var/log/tfo-collector \
+    /out/tmp/tfo-collector
+COPY configs/tfo-collector.yaml /out/etc/tfo-collector/tfo-collector.yaml
+
 # -----------------------------------------------------------------------------
-# Stage 2: Runtime (Debian slim — latest stable)
+# Stage 2: Runtime (distroless static — minimal attack surface)
 # -----------------------------------------------------------------------------
-# The tfo-collector binary is built CGO_ENABLED=0 (fully static), so it runs on
-# glibc (Debian) unchanged. Debian trixie-slim is the current latest-stable
-# Debian release and is kept patched via `apt-get dist-upgrade` on every build.
-FROM debian:trixie-slim
+# The tfo-collector binary is built CGO_ENABLED=0 (fully static), so it needs no
+# libc at all. gcr.io/distroless/static-debian12 contains only ca-certificates,
+# tzdata, /etc/passwd (with the nonroot user, uid 65532) and a few base files —
+# NO shell, NO package manager, NO OS utilities. This removes the base-image OS
+# packages (openssl, sqlite, util-linux, coreutils, ...) that Trivy was flagging
+# as CRITICAL/HIGH, rather than suppressing those findings.
+FROM gcr.io/distroless/static-debian12:nonroot
 
 # Build arguments for labels
 ARG VERSION=1.4.0
@@ -107,7 +126,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
     org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
     org.opencontainers.image.licenses="Apache-2.0" \
-    org.opencontainers.image.base.name="debian:trixie-slim" \
+    org.opencontainers.image.base.name="gcr.io/distroless/static-debian12:nonroot" \
     # TelemetryFlow specific labels
     io.telemetryflow.product="TelemetryFlow Collector" \
     io.telemetryflow.component="tfo-collector" \
@@ -116,49 +135,30 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     io.telemetryflow.otel.version="${OTEL_VERSION}" \
     io.telemetryflow.maintainer="Telemetri Data Indonesia"
 
-# Update all packages for security patches (CVE fixes) and install runtime dependencies
-# SECURITY: `apt-get dist-upgrade` ensures all base packages are patched against
-# known CVEs (glibc, gnutls, krb5, curl, zlib, etc.) on every build.
-# The static tfo-collector binary needs no shared libraries; ca-certificates is
-# required for outbound TLS and curl is used only by the HEALTHCHECK below.
-# --no-install-recommends keeps the image minimal; apt metadata/logs are purged.
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    tzdata \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /var/log/apt /var/log/dpkg.log* /var/cache/apt/*
+# NOTE on security patching: distroless images carry no package manager or shell,
+# so there is no `apt-get dist-upgrade` step. Instead, base-image freshness comes
+# from rebuilding against the latest distroless/static-debian12 digest. The image
+# contains only ca-certificates and tzdata (both needed by the collector for
+# outbound TLS and timezone handling) — there are no openssl/sqlite/util-linux
+# OS packages to patch, which is what eliminates the Trivy CRITICAL/HIGH findings.
 
-# Create non-root user and group
-RUN groupadd -g 10001 telemetryflow && \
-    useradd -u 10001 -g telemetryflow -m -d /home/telemetryflow -s /usr/sbin/nologin telemetryflow
-
-# Create required directories
-RUN mkdir -p \
-    /etc/tfo-collector \
-    /var/lib/tfo-collector/queue \
-    /var/log/tfo-collector \
-    /tmp/tfo-collector \
-    && chown -R telemetryflow:telemetryflow \
-    /etc/tfo-collector \
-    /var/lib/tfo-collector \
-    /var/log/tfo-collector \
-    /tmp/tfo-collector
-
-# Copy binary from builder
+# Copy the collector and the static healthcheck probe from the builder.
+# Both are built CGO_ENABLED=0 and need no shared libraries.
 COPY --from=builder /tfo-collector /usr/local/bin/tfo-collector
-RUN chmod +x /usr/local/bin/tfo-collector
+COPY --from=builder /healthcheck /usr/local/bin/healthcheck
 
-# Copy default configuration
-COPY configs/tfo-collector.yaml /etc/tfo-collector/tfo-collector.yaml
-RUN chown telemetryflow:telemetryflow /etc/tfo-collector/tfo-collector.yaml
+# Copy the staged writable directory tree + default config, owned by the
+# distroless nonroot user (uid/gid 65532). distroless has no shell, so the dirs
+# and ownership were prepared in the builder stage above.
+COPY --from=builder --chown=65532:65532 /out/etc /etc
+COPY --from=builder --chown=65532:65532 /out/var /var
+COPY --from=builder --chown=65532:65532 /out/tmp /tmp
 
-# Switch to non-root user
-USER telemetryflow
+# Run as the distroless nonroot user (uid/gid 65532)
+USER 65532:65532
 
 # Set working directory
-WORKDIR /home/telemetryflow
+WORKDIR /home/nonroot
 
 # Set TMPDIR for Go runtime temp files
 ENV TMPDIR=/tmp/tfo-collector
@@ -178,8 +178,10 @@ EXPOSE 4317 4318 8888 8889 13133 55679 1777
 # =============================================================================
 # Health Check
 # =============================================================================
+# distroless has no shell, so the healthcheck uses the exec form (JSON array)
+# with the static /usr/local/bin/healthcheck probe instead of `curl`.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:13133/ || exit 1
+    CMD ["/usr/local/bin/healthcheck"]
 
 # =============================================================================
 # Entrypoint & Command
