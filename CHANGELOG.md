@@ -7,10 +7,10 @@
 
   <h3>TelemetryFlow Collector (OTEL Collector - OCB Native)</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.3.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.4.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://golang.org/)
-[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.152.1-blueviolet)](https://opentelemetry.io/)
+[![OTEL](https://img.shields.io/badge/OpenTelemetry-0.165.0-blueviolet)](https://opentelemetry.io/)
 [![Coverage](https://img.shields.io/badge/Coverage-95.3%25-brightgreen.svg)](CHANGELOG.md)
 [![OpenTelemetry](https://img.shields.io/badge/OTLP-100%25%20Compliant-success?logo=opentelemetry)](https://opentelemetry.io/)
 
@@ -24,6 +24,37 @@ All notable changes to TelemetryFlow Collector will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.4.0] - 2026-11-22
+
+### Changed
+
+- **OpenTelemetry Collector distribution upgraded `0.152` → `0.165`.** Core
+  release `0.165.0`, contrib `0.165.1`; many contrib components have graduated to
+  v1.x (`k8sattributesprocessor`, `pkg/ottl` at `v1.4.1`) and the stable core
+  modules (`pdata`, `component`, …) are at `v1.71.x`. `manifest.yaml` components
+  were re-pinned to their real upstream versions (NOT a uniform tag — `go get
+  <module>@latest` per family); no components removed. `Makefile` `VERSION 1.3.1
+  → 1.4.0`, `OTEL_VERSION 0.152.1 → 0.165.0`; config/build/deploy surfaces
+  (`.env.example`, `Dockerfile`, `docker-compose*`, Helm `appVersion`, k8s image,
+  `run-*.sh`) bumped to `1.4.0` / `0.165.0`.
+- **`tfoexporter` config adapted to the 0.165 schema:** dropped the unused
+  `sending_queue:` block (the exporter implements `retry_on_failure` only), and
+  resolved the `auth:` key collision introduced by 0.165's stricter `configauth`
+  — both `auth.extension` (tfoauth-extension reference) and
+  `auth.api_key_id`/`api_key_secret` (direct) modes are preserved unchanged.
+
+### Security
+
+- Cleared the outstanding Dependabot advisories via the distribution upgrade +
+  direct-dependency bumps:
+  - `google.golang.org/grpc` → `v1.85.0` — gRPC-Go xDS DoS (missing `:authority`/`Host`)
+  - `go.opentelemetry.io/otel*` → `v1.47.x` — `AttributeValueLengthLimit` bypass,
+    `sdk/log` BatchProcessor busy-spin, `otlploggrpc` env-TLS bypass
+  - `github.com/apache/thrift` → `v0.25.0` — infinite loop
+  - `github.com/go-jose/go-jose/v4` → `v4.1.9` — JWK RSA DoS + JSON/CBC-HMAC panics
+  - `github.com/snowflakedb/gosnowflake/v2` → `v2.4.0` — sensitive-data logging
+  - `github.com/klauspost/compress` at `v1.20.5` — s2 integer overflow / OOB write
 
 ## [1.3.1] - 2026-11-21
 
