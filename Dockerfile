@@ -84,9 +84,12 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -o /tfo-collector ./cmd/tfo-collector
 
 # -----------------------------------------------------------------------------
-# Stage 2: Runtime
+# Stage 2: Runtime (Debian slim — latest stable)
 # -----------------------------------------------------------------------------
-FROM alpine:3.24
+# The tfo-collector binary is built CGO_ENABLED=0 (fully static), so it runs on
+# glibc (Debian) unchanged. Debian trixie-slim is the current latest-stable
+# Debian release and is kept patched via `apt-get dist-upgrade` on every build.
+FROM debian:trixie-slim
 
 # Build arguments for labels
 ARG VERSION=1.3.1
@@ -104,7 +107,7 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     org.opencontainers.image.documentation="https://docs.telemetryflow.id" \
     org.opencontainers.image.source="https://github.com/telemetryflow/telemetryflow-collector" \
     org.opencontainers.image.licenses="Apache-2.0" \
-    org.opencontainers.image.base.name="alpine:3.24" \
+    org.opencontainers.image.base.name="debian:trixie-slim" \
     # TelemetryFlow specific labels
     io.telemetryflow.product="TelemetryFlow Collector" \
     io.telemetryflow.component="tfo-collector" \
@@ -114,19 +117,22 @@ LABEL org.opencontainers.image.title="TelemetryFlow Collector" \
     io.telemetryflow.maintainer="Telemetri Data Indonesia"
 
 # Update all packages for security patches (CVE fixes) and install runtime dependencies
-# SECURITY: apk upgrade ensures all base packages are patched against known CVEs
-# (zlib CVE-2026-22184/CVE-2026-27171, libcrypto/libssl patches, musl libc fixes, etc.)
-RUN apk upgrade --no-cache --available && \
-    apk add --no-cache \
+# SECURITY: `apt-get dist-upgrade` ensures all base packages are patched against
+# known CVEs (glibc, gnutls, krb5, curl, zlib, etc.) on every build.
+# The static tfo-collector binary needs no shared libraries; ca-certificates is
+# required for outbound TLS and curl is used only by the HEALTHCHECK below.
+# --no-install-recommends keeps the image minimal; apt metadata/logs are purged.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates \
-    tzdata \
     curl \
-    && apk del --purge apk-tools 2>/dev/null || true \
-    && rm -rf /var/cache/apk/* /etc/apk /lib/apk
+    tzdata \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/log/apt /var/log/dpkg.log* /var/cache/apt/*
 
 # Create non-root user and group
-RUN addgroup -g 10001 -S telemetryflow && \
-    adduser -u 10001 -S telemetryflow -G telemetryflow -h /home/telemetryflow
+RUN groupadd -g 10001 telemetryflow && \
+    useradd -u 10001 -g telemetryflow -m -d /home/telemetryflow -s /usr/sbin/nologin telemetryflow
 
 # Create required directories
 RUN mkdir -p \
