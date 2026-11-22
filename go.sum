@@ -624,6 +624,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumul
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.165.1/go.mod h1:mIloRwTcwLwp7149vQQJke7IKRoqnH4r3XOec3ikgZ0=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.165.1 h1:nYfTv5lHJNR8QhkQASSf8q2LMmkKMeiIF/ERTyheCrE=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.165.1/go.mod h1:o+2OYkiyjubX61pQ3NRDUCojnIq3qud/9qTE9IBJ4nI=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.165.1 h1:Ej6FFPNrlIpbO6MUKlC/3WFAGHuEXfvH3im0iPU3FLo=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.165.1/go.mod h1:xrpIeVOndfO8vQSTXhnpulTd3yM/QswX3BkH3PFkkCQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v1.4.1 h1:/fLMd8aIkcCj26Rkh+9NwSrR/rc2Xy2r6My3jf5ZvVs=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v1.4.1/go.mod h1:4sEdCoFzeHMkUyZIvRDzjucP/DtrgXrUzdWRN7hzfkE=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.165.1 h1:8IOvRznwCzDU9+9LAk4KYACFzvJAz29tmWvcqNF3VlQ=
